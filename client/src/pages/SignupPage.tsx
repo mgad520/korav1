@@ -74,9 +74,9 @@ export default function SignupPage() {
           <p className="text-sm text-muted-foreground">
             Already have an account?{" "}
             <Link href="/login">
-              <a className="text-primary hover:underline" data-testid="link-login">
+              <span className="text-primary hover:underline cursor-pointer" data-testid="link-login">
                 Sign in
-              </a>
+              </span>
             </Link>
           </p>
           <Link href="/">
