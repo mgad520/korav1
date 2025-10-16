@@ -47,11 +47,11 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
       <Hero />
       
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-12 md:py-20">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16">
+      <div className="max-w-7xl mx-auto px-6 md:px-8 py-16 md:py-24">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-20">
           {stats.map((stat) => (
             <StatsCard
               key={stat.title}
@@ -62,15 +62,17 @@ export default function HomePage() {
           ))}
         </div>
 
-        <div className="space-y-8">
-          <div className="text-center space-y-3">
-            <h2 className="text-3xl md:text-4xl font-bold">Learning Modules</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+        <div className="space-y-12">
+          <div className="text-center space-y-4">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+              Learning Modules
+            </h2>
+            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
               Master Rwanda's driving theory with our comprehensive modules
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             {modules.map((module) => (
               <ModuleCard key={module.id} {...module} />
             ))}

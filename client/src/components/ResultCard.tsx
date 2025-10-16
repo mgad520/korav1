@@ -19,25 +19,27 @@ export default function ResultCard({
   const passed = percentage >= passingPercentage;
 
   return (
-    <Card className="w-full" data-testid="card-result">
-      <CardHeader className="text-center space-y-4 pb-8">
+    <Card className="w-full overflow-hidden" data-testid="card-result">
+      <div className={`absolute inset-0 opacity-5 ${passed ? 'bg-gradient-to-br from-primary to-primary/50' : 'bg-gradient-to-br from-destructive to-destructive/50'}`} />
+      
+      <CardHeader className="text-center space-y-6 pb-8 pt-12 relative">
         <div className="mx-auto">
           {passed ? (
-            <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center">
-              <Trophy className="h-12 w-12 text-primary" />
+            <div className="h-28 w-28 md:h-32 md:w-32 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center shadow-xl">
+              <Trophy className="h-14 w-14 md:h-16 md:w-16 text-primary" />
             </div>
           ) : (
-            <div className="h-24 w-24 rounded-full bg-destructive/10 flex items-center justify-center">
-              <AlertCircle className="h-12 w-12 text-destructive" />
+            <div className="h-28 w-28 md:h-32 md:w-32 rounded-full bg-gradient-to-br from-destructive/20 to-destructive/10 flex items-center justify-center shadow-xl">
+              <AlertCircle className="h-14 w-14 md:h-16 md:w-16 text-destructive" />
             </div>
           )}
         </div>
         
-        <div>
-          <h2 className="text-3xl font-bold mb-2" data-testid="text-result-status">
+        <div className="space-y-3">
+          <h2 className="text-3xl md:text-4xl font-bold" data-testid="text-result-status">
             {passed ? "Congratulations! You Passed!" : "Keep Practicing!"}
           </h2>
-          <p className="text-muted-foreground">
+          <p className="text-base md:text-lg text-muted-foreground max-w-md mx-auto leading-relaxed">
             {passed
               ? "You've successfully completed this exam"
               : "You need 80% to pass. Review the explanations and try again."}

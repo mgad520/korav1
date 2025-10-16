@@ -15,14 +15,14 @@ export default function Navbar() {
   return (
     <>
       {/* Desktop Navigation */}
-      <nav className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 hidden md:block">
-        <div className="max-w-7xl mx-auto px-4 md:px-6">
-          <div className="flex h-16 items-center justify-between">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-lg">RT</span>
+      <nav className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shadow-sm hidden md:block">
+        <div className="max-w-7xl mx-auto px-6 md:px-8">
+          <div className="flex h-18 items-center justify-between">
+            <Link href="/" className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-md">
+                <span className="text-primary-foreground font-bold text-xl">RT</span>
               </div>
-              <span className="font-semibold text-lg">Rwanda Traffic Academy</span>
+              <span className="font-bold text-xl">Rwanda Traffic Academy</span>
             </Link>
 
             <div className="flex items-center gap-4">
@@ -59,21 +59,21 @@ export default function Navbar() {
       </nav>
 
       {/* Mobile Top Bar - Logo Only */}
-      <div className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden">
-        <div className="max-w-7xl mx-auto px-4">
+      <div className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shadow-sm md:hidden">
+        <div className="max-w-7xl mx-auto px-6">
           <div className="flex h-16 items-center justify-center">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
+            <Link href="/" className="flex items-center gap-2.5">
+              <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-md">
                 <span className="text-primary-foreground font-bold text-lg">RT</span>
               </div>
-              <span className="font-semibold text-lg">RTA</span>
+              <span className="font-bold text-xl">RTA</span>
             </Link>
           </div>
         </div>
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shadow-lg md:hidden">
         <div className="grid grid-cols-4 h-16">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -81,13 +81,13 @@ export default function Navbar() {
             return (
               <Link key={item.path} href={item.path}>
                 <button
-                  className={`flex flex-col items-center justify-center h-full gap-1 transition-colors ${
+                  className={`flex flex-col items-center justify-center h-full gap-1.5 transition-all ${
                     isActive ? "text-primary" : "text-muted-foreground"
                   }`}
                   data-testid={`link-mobile-${item.label.toLowerCase()}`}
                 >
-                  <Icon className="h-5 w-5" />
-                  <span className="text-xs font-medium">{item.label}</span>
+                  <Icon className={`h-5 w-5 ${isActive ? 'scale-110' : ''} transition-transform`} />
+                  <span className={`text-xs ${isActive ? 'font-semibold' : 'font-medium'}`}>{item.label}</span>
                 </button>
               </Link>
             );

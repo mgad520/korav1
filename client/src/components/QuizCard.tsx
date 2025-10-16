@@ -58,14 +58,14 @@ export default function QuizCard({
 
   return (
     <Card className="w-full" data-testid={`card-question-${questionNumber}`}>
-      <CardHeader className="space-y-4">
+      <CardHeader className="space-y-6 p-6 md:p-8">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-muted-foreground">
+          <span className="text-sm md:text-base font-semibold text-muted-foreground">
             Question {questionNumber} of {totalQuestions}
           </span>
-          <div className="h-2 w-24 bg-secondary rounded-full overflow-hidden">
+          <div className="h-2.5 w-28 md:w-32 bg-secondary rounded-full overflow-hidden">
             <div
-              className="h-full bg-primary transition-all"
+              className="h-full bg-gradient-to-r from-primary to-primary/80 transition-all duration-300"
               style={{ width: `${(questionNumber / totalQuestions) * 100}%` }}
             />
           </div>
@@ -73,16 +73,18 @@ export default function QuizCard({
 
         {questionImage && (
           <div className="relative group">
-            <img
-              src={questionImage}
-              alt="Question illustration"
-              className="w-full rounded-lg object-contain max-h-64 bg-muted"
-              data-testid={`img-question-${questionNumber}`}
-            />
+            <div className="rounded-xl overflow-hidden bg-gradient-to-br from-muted to-muted/50 p-2">
+              <img
+                src={questionImage}
+                alt="Question illustration"
+                className="w-full rounded-lg object-contain max-h-72 mx-auto"
+                data-testid={`img-question-${questionNumber}`}
+              />
+            </div>
             <Button
               size="icon"
               variant="secondary"
-              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
               onClick={() => setShowImageZoom(true)}
               data-testid="button-zoom-image"
             >
@@ -91,7 +93,7 @@ export default function QuizCard({
           </div>
         )}
 
-        <h3 className="text-lg font-semibold" data-testid={`text-question-${questionNumber}`}>
+        <h3 className="text-lg md:text-xl lg:text-2xl font-bold leading-tight" data-testid={`text-question-${questionNumber}`}>
           {questionText}
         </h3>
       </CardHeader>

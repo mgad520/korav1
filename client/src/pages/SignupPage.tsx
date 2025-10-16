@@ -16,14 +16,14 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-2 text-center">
-          <div className="mx-auto h-12 w-12 rounded-lg bg-primary flex items-center justify-center mb-2">
-            <span className="text-primary-foreground font-bold text-2xl">RT</span>
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background flex items-center justify-center p-6">
+      <Card className="w-full max-w-md shadow-xl">
+        <CardHeader className="space-y-3 text-center pt-8 pb-6">
+          <div className="mx-auto h-16 w-16 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center mb-3 shadow-lg">
+            <span className="text-primary-foreground font-bold text-3xl">RT</span>
           </div>
-          <h2 className="text-2xl font-bold">Create Account</h2>
-          <p className="text-muted-foreground">Start your journey to pass the driving exam</p>
+          <h2 className="text-3xl font-bold">Create Account</h2>
+          <p className="text-base text-muted-foreground">Start your journey to pass the driving exam</p>
         </CardHeader>
 
         <CardContent>
