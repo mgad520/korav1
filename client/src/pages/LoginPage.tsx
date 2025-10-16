@@ -58,6 +58,11 @@ export default function LoginPage() {
         </CardContent>
 
         <CardFooter className="flex flex-col gap-3">
+          <Link href="/forgot-password">
+            <span className="text-sm text-primary hover:underline cursor-pointer" data-testid="link-forgot-password">
+              Forgot your password?
+            </span>
+          </Link>
           <p className="text-sm text-muted-foreground">
             Don't have an account?{" "}
             <Link href="/signup">

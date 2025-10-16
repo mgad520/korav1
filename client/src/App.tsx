@@ -11,6 +11,9 @@ import AccountPage from "@/pages/AccountPage";
 import ResultsPage from "@/pages/ResultsPage";
 import LoginPage from "@/pages/LoginPage";
 import SignupPage from "@/pages/SignupPage";
+import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
+import AdminPage from "@/pages/AdminPage";
+import SubscriptionPage from "@/pages/SubscriptionPage";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -24,6 +27,9 @@ function Router() {
       <Route path="/results" component={ResultsPage} />
       <Route path="/login" component={LoginPage} />
       <Route path="/signup" component={SignupPage} />
+      <Route path="/forgot-password" component={ForgotPasswordPage} />
+      <Route path="/admin" component={AdminPage} />
+      <Route path="/subscribe" component={SubscriptionPage} />
       <Route component={NotFound} />
     </Switch>
   );

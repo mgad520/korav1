@@ -2,9 +2,9 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import ProgressCard from "@/components/ProgressCard";
-import SubscriptionCard from "@/components/SubscriptionCard";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, XCircle, Calendar } from "lucide-react";
+import { Link } from "wouter";
 
 export default function AccountPage() {
   //todo: remove mock functionality
@@ -110,31 +110,17 @@ export default function AccountPage() {
           </div>
 
           <div className="space-y-6">
-            <SubscriptionCard
-              title="Monthly"
-              price={6000}
-              duration="per month"
-              features={[
-                "Unlimited mock exams",
-                "All modules unlocked",
-                "Progress tracking",
-                "Weekly reports",
-              ]}
-              isPopular={true}
-              onSubscribe={() => console.log("Subscribe clicked")}
-            />
-
-            <SubscriptionCard
-              title="Weekly"
-              price={2000}
-              duration="per week"
-              features={[
-                "Unlimited mock exams",
-                "All modules unlocked",
-                "Progress tracking",
-              ]}
-              onSubscribe={() => console.log("Subscribe clicked")}
-            />
+            <Card className="p-6">
+              <h3 className="text-xl font-bold mb-4">Upgrade Your Plan</h3>
+              <p className="text-muted-foreground mb-6">
+                Get unlimited access to all mock exams and premium features
+              </p>
+              <Link href="/subscribe">
+                <Button className="w-full" size="lg" data-testid="button-view-plans">
+                  View Subscription Plans
+                </Button>
+              </Link>
+            </Card>
           </div>
         </div>
       </div>
