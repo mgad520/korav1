@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Navbar from "@/components/Navbar";
+import LandingPage from "./pages/LandingPage";
 import HomePage from "@/pages/HomePage";
 import LessonsPage from "@/pages/LessonsPage";
 import QuizzesPage from "@/pages/QuizzesPage";
@@ -19,7 +20,7 @@ import NotFound from "@/pages/not-found";
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={HomePage} />
+      <Route path="/ahabanza" component={HomePage} />
       <Route path="/inyigisho" component={LessonsPage} />
       <Route path="/inyigisho/:id" component={LessonsPage} />
       <Route path="/ibibazo" component={QuizzesPage} />
@@ -30,6 +31,7 @@ function Router() {
       <Route path="/forgot-password" component={ForgotPasswordPage} />
       <Route path="/admin" component={AdminPage} />
       <Route path="/subscribe" component={SubscriptionPage} />
+       <Route path="/" component={LandingPage} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -40,7 +42,6 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <div className="min-h-screen flex flex-col pb-16 md:pb-0">
-          <Navbar />
           <main className="flex-1">
             <Router />
           </main>
