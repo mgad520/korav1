@@ -7,9 +7,34 @@ import { Link, useLocation } from "wouter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useQuestions, type QuestionSet } from "./useQuestions";
 
-// Mock data for lesson quizzes with exam questions
-// Mock data for lesson quizzes with exam questions
+// Transform API questions to match your app's format
+const transformQuestions = (questionSets: QuestionSet[]) => {
+  return questionSets.map((set, index) => ({
+    id: set.setNumber.toString(),
+    title: `Question Set ${set.setNumber}`,
+    description: `Practice questions from set ${set.setNumber}`,
+    questionsCount: set.questions.length,
+    isPremium: index >= 1, // Make some sets premium for demo
+    duration: Math.ceil(set.questions.length * 2.5), // 2.5 minutes per question
+    difficulty: index === 0 ? "Beginner" : index === 1 ? "Intermediate" : "Advanced",
+    category: "Driving Theory",
+    completed: false,
+    score: null,
+    questions: set.questions.map((q, qIndex) => ({
+      id: qIndex + 1,
+      text: q.title,
+      // Remove imageUrl or set it to undefined since API doesn't provide images
+      imageUrl: undefined,
+      choices: q.choice.map((choiceText, choiceIndex) => ({
+        id: String.fromCharCode(65 + choiceIndex), // A, B, C, D
+        text: choiceText,
+        isCorrect: choiceIndex === q.choiceAnswer
+      }))
+    }))
+  }));
+};
 export const lessonQuizzes = [
   {
     id: "1",
@@ -180,6 +205,12 @@ export default function ExamPage() {
   const [selectedQuiz, setSelectedQuiz] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<"quiz-list" | "exam-prep" | "exam">("quiz-list");
 
+  // Use the custom hook
+  const { questions: questionSets, loading, error, refetch } = useQuestions();
+
+  // Transform API data to match your app format
+  const lessonQuizzes = transformQuestions(questionSets);
+
   // Get current quiz data
   const currentQuiz = selectedQuiz ? lessonQuizzes.find(quiz => quiz.id === selectedQuiz) : null;
 
@@ -193,7 +224,7 @@ export default function ExamPage() {
     questions: currentQuiz.questions,
   } : null;
 
-  // Timer effect - FIXED
+  // Timer effect
   useEffect(() => {
     if (currentView !== "exam" || !examStarted || !examData) return;
 
@@ -216,10 +247,10 @@ export default function ExamPage() {
     };
   }, [examStarted, currentView, examData]);
 
-  // Initialize timer when exam starts - FIXED
+  // Initialize timer when exam starts
   useEffect(() => {
     if (currentView === "exam" && currentQuiz && examStarted) {
-      const initialTime = currentQuiz.duration * 60; // Convert minutes to seconds
+      const initialTime = currentQuiz.duration * 60;
       console.log("Initializing timer:", initialTime, "seconds");
       setTimeRemaining(initialTime);
     }
@@ -321,14 +352,13 @@ export default function ExamPage() {
       console.log("Starting exam for quiz:", currentQuiz.title);
       setExamStarted(true);
       setCurrentView("exam");
-      // Timer will be initialized by the useEffect above
     }
   };
 
   const handleQuizSelect = (quizId: string) => {
     setSelectedQuiz(quizId);
     setCurrentView("exam-prep");
-    setExamStarted(false); // Reset exam state when selecting new quiz
+    setExamStarted(false);
   };
 
   const handleBackToQuizzes = () => {
@@ -398,202 +428,235 @@ export default function ExamPage() {
     );
   };
 
-// Quiz List View
-if (currentView === "quiz-list") {
-  return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div className="max-w-6xl mx-auto px-4 md:px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/ahabanza">
-              <Button variant="ghost" size="sm" className="gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                <span className="hidden sm:inline">Back to Home</span>
-              </Button>
-            </Link>
-            
-            <div className="text-sm text-muted-foreground">
-              Practice Quizzes
+  // Loading state
+  if (loading && currentView === "quiz-list") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading questions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error && currentView === "quiz-list") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-6">
+          <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+          <h2 className="text-xl font-bold mb-2">Failed to load questions</h2>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <Button onClick={refetch}>Try Again</Button>
+        </div>
+      </div>
+    );
+  }
+ if (currentView === "quiz-list") {
+    return (
+      <div className="min-h-screen bg-background">
+        {/* Header */}
+        <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+          <div className="max-w-6xl mx-auto px-4 md:px-6 py-4">
+            <div className="flex items-center justify-between">
+              <Link href="/ahabanza">
+                <Button variant="ghost" size="sm" className="gap-2">
+                  <ArrowLeft className="h-4 w-4" />
+                  <span className="hidden sm:inline">Back to Home</span>
+                </Button>
+              </Link>
+              
+              <div className="text-sm text-muted-foreground">
+                Practice Quizzes
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-4xl mx-auto px-4 md:px-6 py-6">
-        <div className="text-center mb-6">
-          <h1 className="text-2xl md:text-4xl font-bold mb-3">Practice Quizzes</h1>
-          <p className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto px-2">
-            Test your knowledge with these practice quizzes.
-          </p>
-        </div>
+        <div className="max-w-4xl mx-auto px-4 md:px-6 py-6">
+          <div className="text-center mb-6">
+            <h1 className="text-2xl md:text-4xl font-bold mb-3">Practice Quizzes</h1>
+            <p className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto px-2">
+              Test your knowledge with real driving theory questions.
+            </p>
+          </div>
 
-        {/* Mobile Layout */}
-        <div className="md:hidden space-y-3 px-2">
-          {lessonQuizzes.map((quiz) => (
-            <Card 
-              key={quiz.id} 
-              className="hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-green-500"
-              onClick={() => !quiz.isPremium && handleQuizSelect(quiz.id)}
-            >
-              <CardContent className="p-4">
-                <div className="space-y-3">
-                  {/* Header with title and difficulty */}
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="text-base font-semibold leading-tight mb-1">{quiz.title}</h3>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        quiz.difficulty === "Beginner" ? "bg-green-100 text-green-800" :
-                        quiz.difficulty === "Intermediate" ? "bg-yellow-100 text-yellow-800" :
-                        "bg-red-100 text-red-800"
-                      }`}>
-                        {quiz.difficulty}
-                      </span>
+          {/* Show message if no quizzes available */}
+          {lessonQuizzes.length === 0 && !loading && (
+            <div className="text-center py-12">
+              <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No quizzes available</h3>
+              <p className="text-muted-foreground">Check back later for new question sets.</p>
+            </div>
+          )}
+
+          {/* Mobile Layout */}
+          <div className="md:hidden space-y-3 px-2">
+            {lessonQuizzes.map((quiz) => (
+              <Card 
+                key={quiz.id} 
+                className="hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-green-500"
+                onClick={() => !quiz.isPremium && handleQuizSelect(quiz.id)}
+              >
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    {/* Header with title and difficulty */}
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="text-base font-semibold leading-tight mb-1">{quiz.title}</h3>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          quiz.difficulty === "Beginner" ? "bg-green-100 text-green-800" :
+                          quiz.difficulty === "Intermediate" ? "bg-yellow-100 text-yellow-800" :
+                          "bg-red-100 text-red-800"
+                        }`}>
+                          {quiz.difficulty}
+                        </span>
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Description */}
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {quiz.description}
-                  </p>
+                    {/* Description */}
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {quiz.description}
+                    </p>
 
-                  {/* Quiz Details */}
-                  <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <BookOpen className="h-3 w-3" />
-                      <span>{quiz.questionsCount} questions</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      <span>{quiz.duration} min</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span>{quiz.category}</span>
-                    </div>
-                  </div>
-
-                  {/* Score if completed */}
-                  {quiz.completed && (
-                    <div className="flex items-center gap-2 text-xs bg-green-50 px-3 py-2 rounded-lg">
-                      <Check className="h-3 w-3 text-green-600" />
-                      <span className="text-green-700 font-medium">Score: {quiz.score}%</span>
-                    </div>
-                  )}
-
-                  {/* Start Button */}
-                  <Button 
-                    className={`w-full gap-2 h-9 text-sm ${
-                      quiz.isPremium 
-                        ? "bg-yellow-600 hover:bg-yellow-700" 
-                        : "bg-green-600 hover:bg-green-700"
-                    }`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!quiz.isPremium) {
-                        handleQuizSelect(quiz.id);
-                      }
-                    }}
-                  >
-                    {quiz.isPremium ? (
-                      <>
-                        <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 17a2 2 0 0 0 2-2a2 2 0 0 0-2-2a2 2 0 0 0-2 2a2 2 0 0 0 2 2m6-9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2h1V6a5 5 0 0 1 5-5a5 5 0 0 1 5 5v2h1m-6-5a3 3 0 0 0-3 3v2h6V6a3 3 0 0 0-3-3z"/>
-                        </svg>
-                        Premium
-                      </>
-                    ) : (
-                      <>
-                        <Play className="h-3 w-3" />
-                        {quiz.completed ? "Retake Quiz" : "Start Quiz"}
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Desktop Layout */}
-        <div className="hidden md:block space-y-4">
-          {lessonQuizzes.map((quiz) => (
-            <Card 
-              key={quiz.id} 
-              className="hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-green-500"
-              onClick={() => !quiz.isPremium && handleQuizSelect(quiz.id)}
-            >
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-xl font-semibold">{quiz.title}</h3>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        quiz.difficulty === "Beginner" ? "bg-green-100 text-green-800" :
-                        quiz.difficulty === "Intermediate" ? "bg-yellow-100 text-yellow-800" :
-                        "bg-red-100 text-red-800"
-                      }`}>
-                        {quiz.difficulty}
-                      </span>
-                    </div>
-                    <p className="text-muted-foreground mb-4">{quiz.description}</p>
-                    
-                    <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                    {/* Quiz Details */}
+                    <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                       <div className="flex items-center gap-1">
-                        <BookOpen className="h-4 w-4" />
+                        <BookOpen className="h-3 w-3" />
                         <span>{quiz.questionsCount} questions</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        <span>{quiz.duration} minutes</span>
+                        <Clock className="h-3 w-3" />
+                        <span>{quiz.duration} min</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <span>Category: {quiz.category}</span>
+                        <span>{quiz.category}</span>
                       </div>
-                      {quiz.completed && (
-                        <div className="flex items-center gap-1 text-green-600">
-                          <Check className="h-4 w-4" />
-                          <span>Score: {quiz.score}%</span>
-                        </div>
-                      )}
                     </div>
-                  </div>
-                  
-                  <Button 
-                    className={`ml-4 ${
-                      quiz.isPremium 
-                        ? "bg-yellow-600 hover:bg-yellow-700" 
-                        : "bg-green-600 hover:bg-green-700"
-                    }`}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (!quiz.isPremium) {
-                        handleQuizSelect(quiz.id);
-                      }
-                    }}
-                  >
-                    {quiz.isPremium ? (
-                      <>
-                        <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 17a2 2 0 0 0 2-2a2 2 0 0 0-2-2a2 2 0 0 0-2 2a2 2 0 0 0 2 2m6-9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2h1V6a5 5 0 0 1 5-5a5 5 0 0 1 5 5v2h1m-6-5a3 3 0 0 0-3 3v2h6V6a3 3 0 0 0-3-3z"/>
-                        </svg>
-                        Premium
-                      </>
-                    ) : (
-                      <>
-                        <Play className="h-4 w-4 mr-2" />
-                        {quiz.completed ? "Retake" : "Start"}
-                      </>
+
+                    {/* Score if completed */}
+                    {quiz.completed && (
+                      <div className="flex items-center gap-2 text-xs bg-green-50 px-3 py-2 rounded-lg">
+                        <Check className="h-3 w-3 text-green-600" />
+                        <span className="text-green-700 font-medium">Score: {quiz.score}%</span>
+                      </div>
                     )}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+
+                    {/* Start Button */}
+                    <Button 
+                      className={`w-full gap-2 h-9 text-sm ${
+                        quiz.isPremium 
+                          ? "bg-yellow-600 hover:bg-yellow-700" 
+                          : "bg-green-600 hover:bg-green-700"
+                      }`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!quiz.isPremium) {
+                          handleQuizSelect(quiz.id);
+                        }
+                      }}
+                    >
+                      {quiz.isPremium ? (
+                        <>
+                          <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 17a2 2 0 0 0 2-2a2 2 0 0 0-2-2a2 2 0 0 0-2 2a2 2 0 0 0 2 2m6-9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2h1V6a5 5 0 0 1 5-5a5 5 0 0 1 5 5v2h1m-6-5a3 3 0 0 0-3 3v2h6V6a3 3 0 0 0-3-3z"/>
+                          </svg>
+                          Premium
+                        </>
+                      ) : (
+                        <>
+                          <Play className="h-3 w-3" />
+                          {quiz.completed ? "Retake Quiz" : "Start Quiz"}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Desktop Layout */}
+          <div className="hidden md:block space-y-4">
+            {lessonQuizzes.map((quiz) => (
+              <Card 
+                key={quiz.id} 
+                className="hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-green-500"
+                onClick={() => !quiz.isPremium && handleQuizSelect(quiz.id)}
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-xl font-semibold">{quiz.title}</h3>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          quiz.difficulty === "Beginner" ? "bg-green-100 text-green-800" :
+                          quiz.difficulty === "Intermediate" ? "bg-yellow-100 text-yellow-800" :
+                          "bg-red-100 text-red-800"
+                        }`}>
+                          {quiz.difficulty}
+                        </span>
+                      </div>
+                      <p className="text-muted-foreground mb-4">{quiz.description}</p>
+                      
+                      <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1">
+                          <BookOpen className="h-4 w-4" />
+                          <span>{quiz.questionsCount} questions</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          <span>{quiz.duration} minutes</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span>Category: {quiz.category}</span>
+                        </div>
+                        {quiz.completed && (
+                          <div className="flex items-center gap-1 text-green-600">
+                            <Check className="h-4 w-4" />
+                            <span>Score: {quiz.score}%</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <Button 
+                      className={`ml-4 ${
+                        quiz.isPremium 
+                          ? "bg-yellow-600 hover:bg-yellow-700" 
+                          : "bg-green-600 hover:bg-green-700"
+                      }`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!quiz.isPremium) {
+                          handleQuizSelect(quiz.id);
+                        }
+                      }}
+                    >
+                      {quiz.isPremium ? (
+                        <>
+                          <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 17a2 2 0 0 0 2-2a2 2 0 0 0-2-2a2 2 0 0 0-2 2a2 2 0 0 0 2 2m6-9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2h1V6a5 5 0 0 1 5-5a5 5 0 0 1 5 5v2h1m-6-5a3 3 0 0 0-3 3v2h6V6a3 3 0 0 0-3-3z"/>
+                          </svg>
+                          Premium
+                        </>
+                      ) : (
+                        <>
+                          <Play className="h-4 w-4 mr-2" />
+                          {quiz.completed ? "Retake" : "Start"}
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
  // Exam Preparation View
 if (currentView === "exam-prep" && currentQuiz) {
   return (

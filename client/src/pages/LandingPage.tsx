@@ -160,7 +160,7 @@ export default function LandingPage() {
               <span className="bg-gradient-to-r from-green-600 to-green-400 bg-clip-text text-transparent"> For You</span>
             </h2>
             
-            <p className="text-lg lg:text-xl text-muted-foreground leading-relaxed">
+            <p className="text-sm lg:text-lg text-muted-foreground leading-relaxed">
               Let us handle the planning while you focus on learning. We create customized study schedules, 
               track your progress, and adapt to your learning pace for optimal results.
             </p>
