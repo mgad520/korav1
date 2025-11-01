@@ -10,26 +10,26 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useQuestions, type QuestionSet } from "./useQuestions";
 
 // Transform API questions to match your app's format
+// Transform API questions to match your app's format
 const transformQuestions = (questionSets: QuestionSet[]) => {
   return questionSets.map((set, index) => ({
-    id: set.setNumber.toString(),
-    title: `Question Set ${set.setNumber}`,
-    description: `Practice questions from set ${set.setNumber}`,
-    questionsCount: set.questions.length,
-    isPremium: index >= 1, // Make some sets premium for demo
-    duration: Math.ceil(set.questions.length * 2.5), // 2.5 minutes per question
+    id: set.setNumber?.toString() || `set-${index}`,
+    title: `Question Set ${set.setNumber || index + 1}`,
+    description: `Practice questions from set ${set.setNumber || index + 1}`,
+    questionsCount: set.questions?.length || 0,
+    isPremium: index >= 3,
+    duration: Math.ceil((set.questions?.length || 0) * 2.5),
     difficulty: index === 0 ? "Beginner" : index === 1 ? "Intermediate" : "Advanced",
     category: "Driving Theory",
     completed: false,
     score: null,
-    questions: set.questions.map((q, qIndex) => ({
+    questions: (set.questions || []).map((q, qIndex) => ({
       id: qIndex + 1,
-      text: q.title,
-      // Remove imageUrl or set it to undefined since API doesn't provide images
-      imageUrl: undefined,
-      choices: q.choice.map((choiceText, choiceIndex) => ({
+      text: q.title || `Question ${qIndex + 1}`,
+      imageUrl:q.image || undefined,
+      choices: (q.choice || []).map((choiceText, choiceIndex) => ({
         id: String.fromCharCode(65 + choiceIndex), // A, B, C, D
-        text: choiceText,
+        text: choiceText || `Choice ${String.fromCharCode(65 + choiceIndex)}`,
         isCorrect: choiceIndex === q.choiceAnswer
       }))
     }))
@@ -227,8 +227,6 @@ export default function ExamPage() {
   // Timer effect
   useEffect(() => {
     if (currentView !== "exam" || !examStarted || !examData) return;
-
-    console.log("Timer started:", timeRemaining, "seconds remaining");
 
     const timer = setInterval(() => {
       setTimeRemaining(prev => {

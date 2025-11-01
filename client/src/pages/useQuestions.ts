@@ -6,6 +6,7 @@ export interface Question {
   choice: string[];
   choiceAnswer: number;
   questionNumbers: number;
+  image?:string;
   chapterId?: string;
   _owner?: string;
   _createdDate?: string;
