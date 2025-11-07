@@ -12,7 +12,7 @@ import {
   Globe,
 } from "lucide-react";
 import { FaHome, FaUser, FaBook } from "react-icons/fa";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,10 +23,45 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export default function Navbar() {
-  const [location] = useLocation();
-  const [isLoggedIn] = useState(true); // Change this based on your auth state
-  const [currentLanguage, setCurrentLanguage] = useState("en"); // EN or RW
+  const [location, setLocation] = useLocation();
+  const [user, setUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentLanguage, setCurrentLanguage] = useState("en");
   const [isMenuHovered, setIsMenuHovered] = useState(false);
+
+  // Check if user is logged in on component mount
+  useEffect(() => {
+    checkUserAuth();
+  }, []);
+
+  const checkUserAuth = () => {
+    try {
+      const userData = localStorage.getItem("user");
+      if (userData) {
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+      }
+    } catch (error) {
+      console.error("Error checking user auth:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    setUser(null);
+    setLocation("/ahabanza");
+    window.location.reload(); // Refresh to update the whole app state
+  };
+
+  const handleLogin = () => {
+    setLocation("/login");
+  };
+
+  const handleSignup = () => {
+    setLocation("/login?mode=signup");
+  };
 
   const navItems = [
     { path: "/ahabanza", label: "Ahabanza", icon: FaHome },
@@ -41,9 +76,62 @@ export default function Navbar() {
 
   const handleLanguageChange = (languageCode: string) => {
     setCurrentLanguage(languageCode);
-    // Add your language change logic here
     console.log("Language changed to:", languageCode);
   };
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <>
+        {/* Desktop Navigation Loading */}
+        <nav className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shadow-sm hidden md:block">
+          <div className="max-w-7xl mx-auto px-6 md:px-8">
+            <div className="flex h-20 items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-md">
+                  <span className="text-primary-foreground font-bold text-xl">K</span>
+                </div>
+                <span className="font-bold text-xl">Kora</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-20 h-9 bg-muted rounded-md animate-pulse"></div>
+                <div className="w-24 h-9 bg-muted rounded-md animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        {/* Mobile Top Bar Loading */}
+        <div className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shadow-sm md:hidden">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="flex h-16 items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-md">
+                  <span className="text-primary-foreground font-bold text-lg">K</span>
+                </div>
+                <span className="font-bold text-xl">Kora</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 bg-muted rounded-full animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Bottom Navigation Loading */}
+        <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shadow-lg md:hidden pb-safe">
+          <div className="grid grid-cols-3 h-16 px-4">
+            {[1, 2, 3].map((item) => (
+              <div key={item} className="flex flex-col items-center justify-center">
+                <div className="w-5 h-5 bg-muted rounded animate-pulse mb-1"></div>
+                <div className="w-12 h-3 bg-muted rounded animate-pulse"></div>
+              </div>
+            ))}
+          </div>
+        </nav>
+      </>
+    );
+  }
 
   return (
     <>
@@ -107,7 +195,7 @@ export default function Navbar() {
                 </div>
               </div>
 
-              <Link href="/" className="flex items-center gap-3">
+              <Link href="/ahabanza" className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-md">
                   <span className="text-primary-foreground font-bold text-xl">
                     K
@@ -123,7 +211,7 @@ export default function Navbar() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="gap-2">
                     <Globe className="h-4 w-4" />
-                    <span className="text-sm">{currentLanguage}</span>
+                    <span className="text-sm">{currentLanguage.toUpperCase()}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
@@ -155,22 +243,10 @@ export default function Navbar() {
                     variant="ghost"
                     className="flex items-center gap-2 p-2"
                   >
-                    {isLoggedIn ? (
+                    {user ? (
                       // Show profile picture when logged in
-                      <div className="h-8 w-8 rounded-full bg-muted overflow-hidden">
-                        <img
-                          src="/profile-picture.jpg" // Replace with actual profile picture URL
-                          alt="Profile"
-                          className="h-full w-full object-cover"
-                          onError={(e) => {
-                            // Fallback to user icon if image fails to load
-                            e.currentTarget.style.display = "none";
-                          }}
-                        />
-                        <User
-                          className="h-4 w-4 text-muted-foreground absolute inset-0 m-auto"
-                          style={{ display: "none" }}
-                        />
+                      <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-primary-foreground font-semibold text-sm">
+                        {user.loginEmail?.charAt(0)}
                       </div>
                     ) : (
                       // Show user icon when not logged in
@@ -179,20 +255,20 @@ export default function Navbar() {
                       </div>
                     )}
                     <span className="text-sm">
-                      {isLoggedIn ? "Mgad" : "Injira"}
+                      {user ? `${user.loginEmail}` : "Injira"}
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  {isLoggedIn ? (
+                  {user ? (
                     <>
                       <DropdownMenuLabel className="font-normal">
                         <div className="flex flex-col space-y-1">
                           <p className="text-sm font-medium leading-none">
-                            Mgad
+                            {user.loginEmail}
                           </p>
                           <p className="text-xs leading-none text-muted-foreground">
-                            mgad@example.com
+                            {user.email}
                           </p>
                         </div>
                       </DropdownMenuLabel>
@@ -210,7 +286,10 @@ export default function Navbar() {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive cursor-pointer">
+                      <DropdownMenuItem 
+                        className="text-destructive cursor-pointer"
+                        onClick={handleLogout}
+                      >
                         <LogOut className="h-4 w-4 mr-2" />
                         <span>Sohoka</span>
                       </DropdownMenuItem>
@@ -219,17 +298,19 @@ export default function Navbar() {
                     <>
                       <DropdownMenuLabel>Nta konte</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
-                        <Link href="/login" className="cursor-pointer">
-                          <User className="h-4 w-4 mr-2" />
-                          <span>Injira</span>
-                        </Link>
+                      <DropdownMenuItem 
+                        className="cursor-pointer"
+                        onClick={handleLogin}
+                      >
+                        <User className="h-4 w-4 mr-2" />
+                        <span>Injira</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href="/signup" className="cursor-pointer">
-                          <UserCircle className="h-4 w-4 mr-2" />
-                          <span>Kwiyandikisha</span>
-                        </Link>
+                      <DropdownMenuItem 
+                        className="cursor-pointer"
+                        onClick={handleSignup}
+                      >
+                        <UserCircle className="h-4 w-4 mr-2" />
+                        <span>Kwiyandikisha</span>
                       </DropdownMenuItem>
                     </>
                   )}
@@ -245,7 +326,7 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex h-16 items-center justify-between">
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2.5">
+            <Link href="/ahabanza" className="flex items-center gap-2.5">
               <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-md">
                 <span className="text-primary-foreground font-bold text-lg">
                   K
@@ -288,19 +369,25 @@ export default function Navbar() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-9 w-9">
-                    <User className="h-5 w-5" />
+                    {user ? (
+                      <div className="h-6 w-6 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center text-primary-foreground font-semibold text-xs">
+                        {user.loginEmail?.charAt(0)}
+                      </div>
+                    ) : (
+                      <User className="h-5 w-5" />
+                    )}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
-                  {isLoggedIn ? (
+                  {user ? (
                     <>
                       <DropdownMenuLabel className="font-normal">
                         <div className="flex flex-col space-y-1">
                           <p className="text-sm font-medium leading-none">
-                            Mgad
+                            {user.loginEmail}
                           </p>
                           <p className="text-xs leading-none text-muted-foreground">
-                             mgad@example.com
+                            {user.email}
                           </p>
                         </div>
                       </DropdownMenuLabel>
@@ -318,7 +405,10 @@ export default function Navbar() {
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-destructive cursor-pointer">
+                      <DropdownMenuItem 
+                        className="text-destructive cursor-pointer"
+                        onClick={handleLogout}
+                      >
                         <LogOut className="h-4 w-4 mr-2" />
                         <span>Sohoka</span>
                       </DropdownMenuItem>
@@ -327,17 +417,19 @@ export default function Navbar() {
                     <>
                       <DropdownMenuLabel>Nta konte</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem asChild>
-                        <Link href="/login" className="cursor-pointer">
-                          <User className="h-4 w-4 mr-2" />
-                          <span>Injira</span>
-                        </Link>
+                      <DropdownMenuItem 
+                        className="cursor-pointer"
+                        onClick={handleLogin}
+                      >
+                        <User className="h-4 w-4 mr-2" />
+                        <span>Injira</span>
                       </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link href="/signup" className="cursor-pointer">
-                          <UserCircle className="h-4 w-4 mr-2" />
-                          <span>Kwiyandikisha</span>
-                        </Link>
+                      <DropdownMenuItem 
+                        className="cursor-pointer"
+                        onClick={handleSignup}
+                      >
+                        <UserCircle className="h-4 w-4 mr-2" />
+                        <span>Kwiyandikisha</span>
                       </DropdownMenuItem>
                     </>
                   )}

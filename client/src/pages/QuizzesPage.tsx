@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Clock, Flag, ChevronLeft, ChevronRight, Check, Languages, AlertCircle, Play, BookOpen } from "lucide-react";
+import { ArrowLeft, Clock, Flag, ChevronLeft, ChevronRight, Check, Languages, AlertCircle, Play, BookOpen, Lock } from "lucide-react";
 import { Link, useLocation } from "wouter"; 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -10,23 +10,23 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useQuestions, type QuestionSet } from "./useQuestions";
 
 // Transform API questions to match your app's format
-// Transform API questions to match your app's format
 const transformQuestions = (questionSets: QuestionSet[]) => {
   return questionSets.map((set, index) => ({
     id: set.setNumber?.toString() || `set-${index}`,
     title: `Question Set ${set.setNumber || index + 1}`,
     description: `Practice questions from set ${set.setNumber || index + 1}`,
     questionsCount: set.questions?.length || 0,
-    isPremium: index >= 3,
+    isPremium: index >= 1, // First set (index 0) is free, rest are premium
     duration: Math.ceil((set.questions?.length || 0) * 2.5),
     difficulty: index === 0 ? "Beginner" : index === 1 ? "Intermediate" : "Advanced",
     category: "Driving Theory",
     completed: false,
     score: null,
+    requiresLogin: index >= 1, // Sets beyond first require login
     questions: (set.questions || []).map((q, qIndex) => ({
       id: qIndex + 1,
       text: q.title || `Question ${qIndex + 1}`,
-      imageUrl:q.image || undefined,
+      imageUrl: q.image || undefined,
       choices: (q.choice || []).map((choiceText, choiceIndex) => ({
         id: String.fromCharCode(65 + choiceIndex), // A, B, C, D
         text: choiceText || `Choice ${String.fromCharCode(65 + choiceIndex)}`,
@@ -35,163 +35,7 @@ const transformQuestions = (questionSets: QuestionSet[]) => {
     }))
   }));
 };
-export const lessonQuizzes = [
-  {
-    id: "1",
-    title: "Traffic Signs & Signals Quiz",
-    description: "Test your knowledge of road signs, signals, and markings",
-    questionsCount: 6,
-    isPremium:false,
-    duration: 30, // 30 minutes
-    difficulty: "Beginner",
-    category: "Road Signs",
-    completed: false,
-    score: null,
-    questions: [
-      {
-        id: 1,
-        text: "What does a red traffic light indicate?",
-        choices: [
-          { id: "A", text: "Slow down and proceed with caution", isCorrect: false },
-          { id: "B", text: "Stop and wait until it turns green", isCorrect: true },
-          { id: "C", text: "Speed up to cross the intersection", isCorrect: false },
-          { id: "D", text: "Proceed if no other vehicles are present", isCorrect: false },
-        ],
-      },
-      {
-        id: 2,
-        text: "What does this traffic sign mean?",
-        imageUrl: "https://images.unsplash.com/photo-1549313861-33587-3c1b-5f50a6a11c45?w=400&h=200&fit=crop",
-        choices: [
-          { id: "A", text: "No parking allowed", isCorrect: false },
-          { id: "B", text: "Stop sign ahead", isCorrect: true },
-          { id: "C", text: "Yield to oncoming traffic", isCorrect: false },
-          { id: "D", text: "Speed limit zone", isCorrect: false },
-        ],
-      },
-      {
-        id: 3,
-        text: "What does a blue circular sign indicate?",
-        choices: [
-          { id: "A", text: "Warning of danger ahead", isCorrect: false },
-          { id: "B", text: "Mandatory instruction", isCorrect: true },
-          { id: "C", text: "Prohibition", isCorrect: false },
-          { id: "D", text: "Information", isCorrect: false },
-        ],
-      },
-      {
-        id: 4,
-        text: "Identify this road marking:",
-        imageUrl: "https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400&h=200&fit=crop",
-        choices: [
-          { id: "A", text: "Pedestrian crossing", isCorrect: true },
-          { id: "B", text: "No overtaking zone", isCorrect: false },
-          { id: "C", text: "Speed bump ahead", isCorrect: false },
-          { id: "D", text: "Bus lane marking", isCorrect: false },
-        ],
-      },
-      {
-        id: 5,
-        text: "What does a flashing yellow light mean?",
-        choices: [
-          { id: "A", text: "Stop immediately", isCorrect: false },
-          { id: "B", text: "Proceed with caution", isCorrect: true },
-          { id: "C", text: "Speed limit zone", isCorrect: false },
-          { id: "D", text: "No parking allowed", isCorrect: false },
-        ],
-      },
-      {
-        id: 6,
-        text: "What action should you take when you see this sign?",
-        imageUrl: "https://images.myparkingsign.com/img/lg2/K/k2-4958-2.png",
-        choices: [
-          { id: "A", text: "Speed up to merge quickly", isCorrect: false },
-          { id: "B", text: "Stop and wait for gap", isCorrect: false },
-          { id: "C", text: "Yield to traffic on main road", isCorrect: true },
-          { id: "D", text: "Honk horn and proceed", isCorrect: false },
-        ],
-      },
-    ],
-  },
-  {
-    id: "2",
-    title: "Road Safety Rules Quiz",
-    description: "Assess your understanding of defensive driving and safety procedures",
-    questionsCount: 6,
-    isPremium:true,
-    duration: 35, // 35 minutes
-    difficulty: "Intermediate",
-    category: "Safety Rules",
-    completed: true,
-    score: 85,
-    questions: [
-      {
-        id: 1,
-        text: "When approaching a roundabout, you should:",
-        choices: [
-          { id: "A", text: "Speed up to get through quickly", isCorrect: false },
-          { id: "B", text: "Slow down and give way to traffic from your right", isCorrect: true },
-          { id: "C", text: "Honk your horn to alert other drivers", isCorrect: false },
-          { id: "D", text: "Drive in the center of the road", isCorrect: false },
-        ],
-      },
-      {
-        id: 2,
-        text: "What is the safe following distance shown in this situation?",
-        imageUrl: "https://images.unsplash.com/photo-1563720223485-194d4845e1a9?w=400&h=200&fit=crop",
-        choices: [
-          { id: "A", text: "1 second gap", isCorrect: false },
-          { id: "B", text: "2 second gap", isCorrect: true },
-          { id: "C", text: "3 car lengths", isCorrect: false },
-          { id: "D", text: "5 meters", isCorrect: false },
-        ],
-      },
-      {
-        id: 3,
-        text: "When should you use your hazard lights?",
-        choices: [
-          { id: "A", text: "When driving in heavy rain", isCorrect: false },
-          { id: "B", text: "When your vehicle is stopped and obstructing traffic", isCorrect: true },
-          { id: "C", text: "When you're running late", isCorrect: false },
-          { id: "D", text: "When driving through a tunnel", isCorrect: false },
-        ],
-      },
-      {
-        id: 4,
-        text: "What does this emergency vehicle signal mean?",
-        imageUrl: "https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?w=400&h=200&fit=crop",
-        choices: [
-          { id: "A", text: "Road construction ahead", isCorrect: false },
-          { id: "B", text: "Emergency vehicle approaching", isCorrect: true },
-          { id: "C", text: "Police checkpoint", isCorrect: false },
-          { id: "D", text: "Ambulance parking only", isCorrect: false },
-        ],
-      },
-      {
-        id: 5,
-        text: "What should you do when being overtaken?",
-        choices: [
-          { id: "A", text: "Speed up to prevent being overtaken", isCorrect: false },
-          { id: "B", text: "Move to the left and maintain speed", isCorrect: true },
-          { id: "C", text: "Flash your headlights", isCorrect: false },
-          { id: "D", text: "Brake suddenly", isCorrect: false },
-        ],
-      },
-      {
-        id: 6,
-        text: "Identify the correct hand signal for a right turn:",
-        imageUrl: "https://images.myparkingsign.com/img/lg2/K/k2-4958-2.png",
-        choices: [
-          { id: "A", text: "Left arm extended straight out", isCorrect: false },
-          { id: "B", text: "Left arm bent upward at elbow", isCorrect: true },
-          { id: "C", text: "Left arm bent downward at elbow", isCorrect: false },
-          { id: "D", text: "Right arm extended straight out", isCorrect: false },
-        ],
-      },
-    ],
-  },
-];
-
+export const lessonQuizzes = []
 export default function ExamPage() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -204,12 +48,32 @@ export default function ExamPage() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [selectedQuiz, setSelectedQuiz] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<"quiz-list" | "exam-prep" | "exam">("quiz-list");
+  const [isGuest, setIsGuest] = useState(false);
+
+  // Check if user is guest on component mount
+  useEffect(() => {
+    const userData = localStorage.getItem("user");
+    setIsGuest(!userData); // If no user data, it's a guest
+  }, []);
 
   // Use the custom hook
   const { questions: questionSets, loading, error, refetch } = useQuestions();
 
   // Transform API data to match your app format
   const lessonQuizzes = transformQuestions(questionSets);
+
+  // Filter quizzes based on user status
+  const getAvailableQuizzes = () => {
+    if (isGuest) {
+      // Guest users only see the first quiz (free)
+      return lessonQuizzes.filter(quiz => !quiz.requiresLogin);
+    } else {
+      // Logged-in users see all quizzes
+      return lessonQuizzes;
+    }
+  };
+
+  const availableQuizzes = getAvailableQuizzes();
 
   // Get current quiz data
   const currentQuiz = selectedQuiz ? lessonQuizzes.find(quiz => quiz.id === selectedQuiz) : null;
@@ -354,6 +218,24 @@ export default function ExamPage() {
   };
 
   const handleQuizSelect = (quizId: string) => {
+    const quiz = lessonQuizzes.find(q => q.id === quizId);
+    if (!quiz) return;
+
+    // Check if quiz requires login and user is guest
+    if (quiz.requiresLogin && isGuest) {
+      // Redirect to login page
+      setLocation("/login");
+      return;
+    }
+
+    // Check if quiz is premium and user is guest
+    if (quiz.isPremium && isGuest) {
+      // Show upgrade prompt or redirect to signup
+      alert("This is a premium quiz. Please sign up to access all premium content.");
+      setLocation("/signup");
+      return;
+    }
+
     setSelectedQuiz(quizId);
     setCurrentView("exam-prep");
     setExamStarted(false);
@@ -364,6 +246,14 @@ export default function ExamPage() {
     setCurrentView("quiz-list");
     setExamStarted(false);
     setTimeRemaining(0);
+  };
+
+  const handleLoginRedirect = () => {
+    setLocation("/login");
+  };
+
+  const handleSignupRedirect = () => {
+    setLocation("/signup");
   };
 
   // Question number grid component
@@ -451,7 +341,8 @@ export default function ExamPage() {
       </div>
     );
   }
- if (currentView === "quiz-list") {
+
+  if (currentView === "quiz-list") {
     return (
       <div className="min-h-screen bg-background">
         {/* Header */}
@@ -468,6 +359,15 @@ export default function ExamPage() {
               <div className="text-sm text-muted-foreground">
                 Practice Quizzes
               </div>
+
+              {/* User Status Indicator */}
+              <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                isGuest 
+                  ? "bg-yellow-100 text-yellow-800 border border-yellow-200" 
+                  : "bg-green-100 text-green-800 border border-green-200"
+              }`}>
+                {isGuest ? "Guest Mode" : "Logged In"}
+              </div>
             </div>
           </div>
         </div>
@@ -476,33 +376,69 @@ export default function ExamPage() {
           <div className="text-center mb-6">
             <h1 className="text-2xl md:text-4xl font-bold mb-3">Practice Quizzes</h1>
             <p className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto px-2">
-              Test your knowledge with real driving theory questions.
+              {isGuest 
+                ? "Start with our free quiz. Sign up to unlock all premium content!" 
+                : "Test your knowledge with real driving theory questions."}
             </p>
+
+            {/* Guest Notice */}
+            {isGuest && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4 max-w-2xl mx-auto">
+                <div className="flex items-center gap-3">
+                  <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                  <div className="text-left">
+                    <p className="text-blue-800 font-medium text-sm">
+                      Limited Access - Guest Mode
+                    </p>
+                    <p className="text-blue-700 text-xs">
+                      Sign up to unlock {lessonQuizzes.length - availableQuizzes.length} additional quiz sets and premium features
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Show message if no quizzes available */}
-          {lessonQuizzes.length === 0 && !loading && (
+          {availableQuizzes.length === 0 && !loading && (
             <div className="text-center py-12">
               <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-semibold mb-2">No quizzes available</h3>
-              <p className="text-muted-foreground">Check back later for new question sets.</p>
+              <p className="text-muted-foreground mb-4">Check back later for new question sets.</p>
+              {isGuest && (
+                <Button onClick={handleSignupRedirect}>
+                  Sign Up to Access Quizzes
+                </Button>
+              )}
             </div>
           )}
 
           {/* Mobile Layout */}
           <div className="md:hidden space-y-3 px-2">
-            {lessonQuizzes.map((quiz) => (
+            {availableQuizzes.map((quiz) => (
               <Card 
                 key={quiz.id} 
-                className="hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-green-500"
-                onClick={() => !quiz.isPremium && handleQuizSelect(quiz.id)}
+                className={`hover:shadow-md transition-shadow cursor-pointer border-l-4 ${
+                  quiz.isPremium 
+                    ? "border-l-yellow-500 bg-gradient-to-r from-yellow-50 to-transparent" 
+                    : "border-l-green-500"
+                } ${quiz.requiresLogin && isGuest ? "opacity-75" : ""}`}
+                onClick={() => handleQuizSelect(quiz.id)}
               >
                 <CardContent className="p-4">
                   <div className="space-y-3">
                     {/* Header with title and difficulty */}
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h3 className="text-base font-semibold leading-tight mb-1">{quiz.title}</h3>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="text-base font-semibold leading-tight">{quiz.title}</h3>
+                          {quiz.isPremium && (
+                            <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                              <Lock className="h-3 w-3" />
+                              Premium
+                            </span>
+                          )}
+                        </div>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                           quiz.difficulty === "Beginner" ? "bg-green-100 text-green-800" :
                           quiz.difficulty === "Intermediate" ? "bg-yellow-100 text-yellow-800" :
@@ -550,17 +486,13 @@ export default function ExamPage() {
                       }`}
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (!quiz.isPremium) {
-                          handleQuizSelect(quiz.id);
-                        }
+                        handleQuizSelect(quiz.id);
                       }}
                     >
                       {quiz.isPremium ? (
                         <>
-                          <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 17a2 2 0 0 0 2-2a2 2 0 0 0-2-2a2 2 0 0 0-2 2a2 2 0 0 0 2 2m6-9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2h1V6a5 5 0 0 1 5-5a5 5 0 0 1 5 5v2h1m-6-5a3 3 0 0 0-3 3v2h6V6a3 3 0 0 0-3-3z"/>
-                          </svg>
-                          Premium
+                          <Lock className="h-3 w-3" />
+                          {isGuest ? "Sign Up to Access" : "Unlock Premium"}
                         </>
                       ) : (
                         <>
@@ -573,22 +505,95 @@ export default function ExamPage() {
                 </CardContent>
               </Card>
             ))}
+
+            {/* Locked Quizzes for Guests */}
+            {isGuest && lessonQuizzes.length > availableQuizzes.length && (
+              <div className="mt-8">
+                <h3 className="text-lg font-semibold mb-4 text-center text-muted-foreground">
+                  Premium Quizzes Available
+                </h3>
+                <div className="space-y-3">
+                  {lessonQuizzes
+                    .filter(quiz => quiz.requiresLogin || quiz.isPremium)
+                    .map((quiz) => (
+                    <Card key={quiz.id} className="bg-gray-50 border-l-4 border-l-gray-400 opacity-75">
+                      <CardContent className="p-4">
+                        <div className="space-y-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="text-base font-semibold leading-tight text-gray-600">{quiz.title}</h3>
+                                <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                                  <Lock className="h-3 w-3" />
+                                  Premium
+                                </span>
+                              </div>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                quiz.difficulty === "Beginner" ? "bg-gray-200 text-gray-700" :
+                                quiz.difficulty === "Intermediate" ? "bg-gray-200 text-gray-700" :
+                                "bg-gray-200 text-gray-700"
+                              }`}>
+                                {quiz.difficulty}
+                              </span>
+                            </div>
+                          </div>
+
+                          <p className="text-sm text-gray-500 leading-relaxed">
+                            {quiz.description}
+                          </p>
+
+                          <div className="flex flex-wrap gap-3 text-xs text-gray-500">
+                            <div className="flex items-center gap-1">
+                              <BookOpen className="h-3 w-3" />
+                              <span>{quiz.questionsCount} questions</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              <span>{quiz.duration} min</span>
+                            </div>
+                          </div>
+
+                          <Button 
+                            variant="outline"
+                            className="w-full gap-2 h-9 text-sm bg-white text-gray-600 border-gray-300"
+                            onClick={handleSignupRedirect}
+                          >
+                            <Lock className="h-3 w-3" />
+                            Sign Up to Unlock
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Desktop Layout */}
           <div className="hidden md:block space-y-4">
-            {lessonQuizzes.map((quiz) => (
+            {availableQuizzes.map((quiz) => (
               <Card 
                 key={quiz.id} 
-                className="hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-green-500"
-                onClick={() => !quiz.isPremium && handleQuizSelect(quiz.id)}
+                className={`hover:shadow-md transition-shadow cursor-pointer border-l-4 ${
+                  quiz.isPremium 
+                    ? "border-l-yellow-500 bg-gradient-to-r from-yellow-50 to-transparent" 
+                    : "border-l-green-500"
+                } ${quiz.requiresLogin && isGuest ? "opacity-75" : ""}`}
+                onClick={() => handleQuizSelect(quiz.id)}
               >
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-xl font-semibold">{quiz.title}</h3>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        {quiz.isPremium && (
+                          <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
+                            <Lock className="h-4 w-4" />
+                            Premium
+                          </span>
+                        )}
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                           quiz.difficulty === "Beginner" ? "bg-green-100 text-green-800" :
                           quiz.difficulty === "Intermediate" ? "bg-yellow-100 text-yellow-800" :
                           "bg-red-100 text-red-800"
@@ -627,17 +632,13 @@ export default function ExamPage() {
                       }`}
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (!quiz.isPremium) {
-                          handleQuizSelect(quiz.id);
-                        }
+                        handleQuizSelect(quiz.id);
                       }}
                     >
                       {quiz.isPremium ? (
                         <>
-                          <svg className="h-4 w-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 17a2 2 0 0 0 2-2a2 2 0 0 0-2-2a2 2 0 0 0-2 2a2 2 0 0 0 2 2m6-9a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2h1V6a5 5 0 0 1 5-5a5 5 0 0 1 5 5v2h1m-6-5a3 3 0 0 0-3 3v2h6V6a3 3 0 0 0-3-3z"/>
-                          </svg>
-                          Premium
+                          <Lock className="h-4 w-4 mr-2" />
+                          {isGuest ? "Sign Up" : "Unlock"}
                         </>
                       ) : (
                         <>
@@ -650,7 +651,79 @@ export default function ExamPage() {
                 </CardContent>
               </Card>
             ))}
+
+            {/* Locked Quizzes Section for Guests */}
+            {isGuest && lessonQuizzes.length > availableQuizzes.length && (
+              <div className="mt-8">
+                <h3 className="text-xl font-semibold mb-6 text-center text-muted-foreground border-b pb-2">
+                  Premium Quizzes - Sign Up to Unlock
+                </h3>
+                <div className="grid gap-4">
+                  {lessonQuizzes
+                    .filter(quiz => quiz.requiresLogin || quiz.isPremium)
+                    .map((quiz) => (
+                    <Card key={quiz.id} className="bg-gray-50 border-l-4 border-l-gray-400 opacity-75">
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="text-xl font-semibold text-gray-600">{quiz.title}</h3>
+                              <span className="bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
+                                <Lock className="h-4 w-4" />
+                                Premium
+                              </span>
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-700`}>
+                                {quiz.difficulty}
+                              </span>
+                            </div>
+                            <p className="text-gray-500 mb-4">{quiz.description}</p>
+                            
+                            <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+                              <div className="flex items-center gap-1">
+                                <BookOpen className="h-4 w-4" />
+                                <span>{quiz.questionsCount} questions</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-4 w-4" />
+                                <span>{quiz.duration} minutes</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <Button 
+                            variant="outline"
+                            className="ml-4 bg-white text-gray-600 border-gray-300 hover:bg-gray-100"
+                            onClick={handleSignupRedirect}
+                          >
+                            <Lock className="h-4 w-4 mr-2" />
+                            Sign Up to Unlock
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* Sign Up CTA for Guests */}
+          {isGuest && (
+            <div className="text-center mt-8 p-6 bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl border">
+              <h3 className="text-xl font-semibold mb-2">Ready for More?</h3>
+              <p className="text-muted-foreground mb-4">
+                Sign up now to unlock all {lessonQuizzes.length} quiz sets and track your progress!
+              </p>
+              <div className="flex gap-4 justify-center">
+                <Button onClick={handleSignupRedirect} className="bg-green-600 hover:bg-green-700">
+                  Create Free Account
+                </Button>
+                <Button variant="outline" onClick={handleLoginRedirect}>
+                  Already have an account?
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -985,7 +1058,7 @@ if (currentView === "exam-prep" && currentQuiz) {
               <img 
                 src={currentQ.imageUrl} 
                 alt="Question visual reference"
-                className="w-full h-48 md:h-64 object-cover"
+                className="w-full h-48 md:h-64 object-contain"
               />
             </div>
             <p className="text-sm text-muted-foreground mt-2 text-center italic">

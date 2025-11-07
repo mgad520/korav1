@@ -1,4 +1,5 @@
-import { Link } from "wouter";
+import { useEffect, useState } from "react";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import LandNav from "../components/LandNav"
 import Hero from "../components/Hero"
@@ -51,6 +52,36 @@ function AnimatedSection({ children, className = "" }) {
 }
 
 export default function LandingPage() {
+  const [location, setLocation] = useLocation();
+  const [isNewVisitor, setIsNewVisitor] = useState(true);
+
+  useEffect(() => {
+    // Check if user has visited before
+    const hasVisited = localStorage.getItem('hasVisited');
+    
+    if (hasVisited === 'true') {
+      setIsNewVisitor(false);
+      // Redirect to ahabanza if not a new visitor
+      setLocation('/ahabanza');
+    } else {
+      // Mark as visited for future visits
+      localStorage.setItem('hasVisited', 'true');
+      setIsNewVisitor(true);
+    }
+  }, [setLocation]);
+
+  // Show loading or nothing while checking
+  if (!isNewVisitor) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-muted/20">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Redirecting...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
       <LandNav />
@@ -127,11 +158,13 @@ export default function LandingPage() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <Button size="lg" className="gap-3 px-8 py-3 text-lg font-semibold rounded-2xl" asChild>
-                <Link href="/ahabanza">
-                  Start Now 
-                  <ArrowRight className="h-5 w-5" />
-                </Link>
+              <Button 
+                size="lg" 
+                className="gap-3 px-8 py-3 text-lg font-semibold rounded-2xl" 
+                onClick={() => setLocation('/ahabanza')}
+              >
+                Start Now 
+                <ArrowRight className="h-5 w-5" />
               </Button>
             </motion.div>
           </motion.div>
@@ -170,11 +203,13 @@ export default function LandingPage() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <Button size="lg" className="gap-3 px-8 py-3 text-lg font-semibold rounded-2xl" asChild>
-                <Link href="/ahabanza">
-                  Learn More About Planning
-                  <ArrowRight className="h-5 w-5" />
-                </Link>
+              <Button 
+                size="lg" 
+                className="gap-3 px-8 py-3 text-lg font-semibold rounded-2xl" 
+                onClick={() => setLocation('/ahabanza')}
+              >
+                Learn More About Planning
+                <ArrowRight className="h-5 w-5" />
               </Button>
             </motion.div>
           </motion.div>
@@ -220,122 +255,119 @@ export default function LandingPage() {
         </div>
       </section>
 
-     {/* CTA Section */}
-<section className="max-w-4xl mx-auto px-6 py-16 text-center">
-  <motion.div 
-    className="bg-gradient-to-r from-green-600 to-green-500 rounded-3xl p-10 text-white shadow-2xl"
-    initial={{ opacity: 0, y: 30 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.6 }}
-    viewport={{ once: true }}
-  >
-    <h2 className="text-3xl md:text-4xl font-bold mb-4">Urashaka gutangira?</h2>
-    <p className="text-lg md:text-xl mb-8 opacity-95">
-      Wiyandikishe nonaha utangire urugendo rwawe rwo kwiga
-    </p>
-    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-      <motion.div
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-      >
-        <Button 
-          size="lg" 
-          className="gap-3 bg-white text-green-600 hover:bg-gray-100 font-semibold text-base px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300" 
-          asChild
+      {/* CTA Section */}
+      <section className="max-w-4xl mx-auto px-6 py-16 text-center">
+        <motion.div 
+          className="bg-gradient-to-r from-green-600 to-green-500 rounded-3xl p-10 text-white shadow-2xl"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          viewport={{ once: true }}
         >
-          <Link href="/signup">
-            Fungura Konti <ArrowRight className="h-5 w-5" />
-          </Link>
-        </Button>
-      </motion.div>
-      
-      <motion.div
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-      >
-        <Button 
-          size="lg" 
-          variant="outline" 
-          className="gap-3 text-white border-white hover:bg-white/10 font-semibold text-base px-8 py-3 rounded-xl backdrop-blur-sm transition-all duration-300" 
-          asChild
-        >
-          <Link href="/login">
-            Injira Muri Konti
-          </Link>
-        </Button>
-      </motion.div>
-    </div>
-    
-    {/* Additional decorative element */}
-    <div className="mt-6 flex justify-center items-center gap-2 text-white/70">
-      <div className="w-2 h-2 bg-white/50 rounded-full"></div>
-      <div className="w-2 h-2 bg-white/50 rounded-full"></div>
-      <div className="w-2 h-2 bg-white/50 rounded-full"></div>
-    </div>
-  </motion.div>
-</section>
-    {/* Footer */}
-<footer className="bg-background border-t">
-  <div className="max-w-7xl mx-auto px-6 py-12">
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-      {/* Brand & Social */}
-      <div className="md:col-span-1">
-        <Link href="/" className="flex items-center gap-2 mb-4">
-          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-md">
-            <span className="text-white font-bold text-sm">K</span>
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">Urashaka gutangira?</h2>
+          <p className="text-lg md:text-xl mb-8 opacity-95">
+            Wiyandikishe nonaha utangire urugendo rwawe rwo kwiga
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Button 
+                size="lg" 
+                className="gap-3 bg-white text-green-600 hover:bg-gray-100 font-semibold text-base px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300" 
+                onClick={() => setLocation('/signup')}
+              >
+                Fungura Konti <ArrowRight className="h-5 w-5" />
+              </Button>
+            </motion.div>
+            
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="gap-3 text-white border-white hover:bg-white/10 font-semibold text-base px-8 py-3 rounded-xl backdrop-blur-sm transition-all duration-300" 
+                onClick={() => setLocation('/login')}
+              >
+                Injira Muri Konti
+              </Button>
+            </motion.div>
           </div>
-          <span className="font-bold text-lg">Kora</span>
-        </Link>
-        <p className="text-muted-foreground mb-4 text-sm">
-          Pass your driving test with confidence. Interactive lessons and realistic mock exams.
-        </p>
-        <div className="flex gap-3">
-          <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
-            <Facebook className="h-5 w-5" />
-          </a>
-          <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
-            <Twitter className="h-5 w-5" />
-          </a>
-          <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
-            <Instagram className="h-5 w-5" />
-          </a>
-          <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
-            <Mail className="h-5 w-5" />
-          </a>
+          
+          {/* Additional decorative element */}
+          <div className="mt-6 flex justify-center items-center gap-2 text-white/70">
+            <div className="w-2 h-2 bg-white/50 rounded-full"></div>
+            <div className="w-2 h-2 bg-white/50 rounded-full"></div>
+            <div className="w-2 h-2 bg-white/50 rounded-full"></div>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-background border-t">
+        <div className="max-w-7xl mx-auto px-6 py-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Brand & Social */}
+            <div className="md:col-span-1">
+              <Link href="/" className="flex items-center gap-2 mb-4">
+                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-md">
+                  <span className="text-white font-bold text-sm">K</span>
+                </div>
+                <span className="font-bold text-lg">Kora</span>
+              </Link>
+              <p className="text-muted-foreground mb-4 text-sm">
+                Pass your driving test with confidence. Interactive lessons and realistic mock exams.
+              </p>
+              <div className="flex gap-3">
+                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                  <Facebook className="h-5 w-5" />
+                </a>
+                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                  <Twitter className="h-5 w-5" />
+                </a>
+                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                  <Instagram className="h-5 w-5" />
+                </a>
+                <a href="#" className="text-muted-foreground hover:text-foreground transition-colors">
+                  <Mail className="h-5 w-5" />
+                </a>
+              </div>
+            </div>
+
+            {/* Support */}
+            <div className="md:col-span-1">
+              <h3 className="font-semibold text-lg mb-4">Support</h3>
+              <ul className="space-y-2">
+                <li>
+                  <Link href="/contact" className="text-muted-foreground hover:text-foreground transition-colors">
+                    Twandikire
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Contact Info */}
+            <div className="md:col-span-1">
+              <h3 className="font-semibold text-lg mb-4">Contact</h3>
+              <ul className="space-y-2 text-muted-foreground">
+                <li>Kigali, Rwanda</li>
+                <li>info@kora.rw</li>
+                <li>+250 78x xxx xxx</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Bottom Bar */}
+          <div className="border-t mt-8 pt-8 flex flex-col md:flex-row justify-center items-center">
+            <p className="text-muted-foreground text-sm">
+              © {new Date().getFullYear()} Kora. All rights reserved.
+            </p>
+          </div>
         </div>
-      </div>
-
-      {/* Support */}
-      <div className="md:col-span-1">
-        <h3 className="font-semibold text-lg mb-4">Support</h3>
-        <ul className="space-y-2">
-          <li>
-            <Link href="/contact" className="text-muted-foreground hover:text-foreground transition-colors">
-              Twandikire
-            </Link>
-          </li>
-        </ul>
-      </div>
-
-      {/* Contact Info */}
-      <div className="md:col-span-1">
-        <h3 className="font-semibold text-lg mb-4">Contact</h3>
-        <ul className="space-y-2 text-muted-foreground">
-          <li>Kigali, Rwanda</li>
-          <li>info@kora.rw</li>
-          <li>+250 78x xxx xxx</li>
-        </ul>
-      </div>
-    </div>
-
-    {/* Bottom Bar */}
-    <div className="border-t mt-8 pt-8 flex flex-col md:flex-row justify-center items-center">
-      <p className="text-muted-foreground text-sm">
-        © {new Date().getFullYear()} Kora. All rights reserved.
-      </p>
-    </div>
-  </div>
-</footer>
+      </footer>
     </div>
   );
 }
