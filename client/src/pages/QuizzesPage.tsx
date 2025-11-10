@@ -17,7 +17,7 @@ const transformQuestions = (questionSets: QuestionSet[]) => {
     description: `Practice questions from set ${set.setNumber || index + 1}`,
     questionsCount: set.questions?.length || 0,
     isPremium: index >= 1, // First set (index 0) is free, rest are premium
-    duration: Math.ceil((set.questions?.length || 0) * 2.5),
+    duration: Math.ceil((set.questions?.length || 0) * 1),
     difficulty: index === 0 ? "Beginner" : index === 1 ? "Intermediate" : "Advanced",
     category: "Driving Theory",
     completed: false,
@@ -87,36 +87,31 @@ export default function ExamPage() {
     duration: currentQuiz.duration,
     questions: currentQuiz.questions,
   } : null;
+// Initialize timer once
+useEffect(() => {
+  if (currentView === "exam" && currentQuiz && examStarted && timeRemaining === 0) {
+    const initialTime = currentQuiz.duration * 60;
+    setTimeRemaining(initialTime);
+  }
+}, [currentView, currentQuiz, examStarted]);
 
-  // Timer effect
-  useEffect(() => {
-    if (currentView !== "exam" || !examStarted || !examData) return;
+// Countdown logic
+useEffect(() => {
+  if (currentView !== "exam" || !examStarted) return;
 
-    const timer = setInterval(() => {
-      setTimeRemaining(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          handleTimeUp();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+  const timer = setInterval(() => {
+    setTimeRemaining(prev => {
+      if (prev <= 1) {
+        clearInterval(timer);
+        handleTimeUp();
+        return 0;
+      }
+      return prev - 1;
+    });
+  }, 1000);
 
-    return () => {
-      console.log("Timer cleaned up");
-      clearInterval(timer);
-    };
-  }, [examStarted, currentView, examData]);
-
-  // Initialize timer when exam starts
-  useEffect(() => {
-    if (currentView === "exam" && currentQuiz && examStarted) {
-      const initialTime = currentQuiz.duration * 60;
-      console.log("Initializing timer:", initialTime, "seconds");
-      setTimeRemaining(initialTime);
-    }
-  }, [currentView, currentQuiz, examStarted]);
+  return () => clearInterval(timer);
+}, [examStarted, currentView]);
 
   const currentQ = examData?.questions[currentQuestion];
   const progress = examData ? (examData.currentQuestion / examData.totalQuestions) * 100 : 0;
@@ -1008,10 +1003,6 @@ if (currentView === "exam-prep" && currentQuiz) {
               </div>
               
               <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1 text-sm text-orange-600">
-                  <Clock className="h-4 w-4" />
-                  <span>{formatTime(timeRemaining)}</span>
-                </div>
                 <Button variant="outline" size="sm" className="gap-2">
                   <Flag className="h-4 w-4" />
                   <span className="hidden sm:inline">Flag</span>
@@ -1023,18 +1014,25 @@ if (currentView === "exam-prep" && currentQuiz) {
 
         <div className="max-w-6xl mx-auto px-4 md:px-6 py-6">
           {/* Exam Info */}
-          <div className="text-center mb-6">
-            <h1 className="text-2xl md:text-3xl font-bold mb-2">{examData.title}</h1>
-            <div className="flex items-center justify-center gap-4 text-sm text-muted-foreground mb-3">
-              <span>Question {examData.currentQuestion} of {examData.totalQuestions}</span>
-              <span>•</span>
-              <div className="flex items-center gap-1">
-                <Clock className="h-4 w-4" />
-                <span>{formatTime(timeRemaining)} remaining</span>
-              </div>
-            </div>
-            <Progress value={progress} className="h-2" />
-          </div>
+         <div className="mb-6">
+  {/* Top Row: Title and Timer */}
+  <div className="flex items-center justify-between mb-4">
+    <h1 className="text-2xl md:text-3xl font-bold text-center flex-1">{examData.title}</h1>
+    <div className="flex items-center gap-2 text-orange-600 text-lg md:text-xl font-semibold">
+      <Clock className="h-5 w-5" />
+      <span>{formatTime(timeRemaining)}</span>
+    </div>
+  </div>
+
+  {/* Question Info */}
+  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-3">
+    <span>Question {examData.currentQuestion} of {examData.totalQuestions}</span>
+  </div>
+
+  {/* Progress Bar */}
+  <Progress value={progress} className="h-2" />
+</div>
+
 
           {/* Question Numbers Grid - Full Width */}
           <div className="w-full mb-6">
