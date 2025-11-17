@@ -95,11 +95,12 @@ export default function LessonsPage() {
           progressValue: Math.min((index / data.data.length) * 100, 100),
           imageUrl: lesson.lessonImage || "https://c8.alamy.com/comp/2GE268G/set-of-road-safety-signs-warning-road-transport-symbol-vector-collection-2GE268G.jpg",
           content: `
-            <div class="flex flex-col md:flex-row gap-0 items-start">
-              <!-- Text content on the left -->
-              <div class="flex-1 min-w-0">
-                <h2>${lesson.title.split('\n')[0]}</h2>
-              </div>
+  <div class="flex flex-col md:flex-row gap-6 items-start">
+    <!-- Text content on the left -->
+    <div class="flex-1 min-w-0">
+      <h2>${lesson.title.split('\n')[0]}</h2>
+      <p class="lead mt-4">${lesson.title.replace(/\n/g, '<br/>')}</p>
+    </div>
               <!-- Image on the right corner -->
               ${lesson.lessonImage ? `
                 <div class="flex-shrink-0 md:w-48">
