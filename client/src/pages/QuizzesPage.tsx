@@ -248,7 +248,7 @@ useEffect(() => {
   };
 
   const handleSignupRedirect = () => {
-    setLocation("/signup");
+    setLocation("/login");
   };
 
   // Question number grid component
@@ -329,9 +329,9 @@ useEffect(() => {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-6">
           <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
-          <h2 className="text-xl font-bold mb-2">Failed to load questions</h2>
+          <h2 className="text-xl font-bold mb-2">Gukurura ntibyakunze</h2>
           <p className="text-muted-foreground mb-4">{error}</p>
-          <Button onClick={refetch}>Try Again</Button>
+          <Button onClick={refetch}>Ongera Ugerageze</Button>
         </div>
       </div>
     );
@@ -347,12 +347,12 @@ useEffect(() => {
               <Link href="/ahabanza">
                 <Button variant="ghost" size="sm" className="gap-2">
                   <ArrowLeft className="h-4 w-4" />
-                  <span className="hidden sm:inline">Back to Home</span>
+                  <span className="hidden sm:inline">Subira Ahabanza</span>
                 </Button>
               </Link>
               
               <div className="text-sm text-muted-foreground">
-                Practice Quizzes
+                Ibizamini
               </div>
 
               {/* User Status Indicator */}
@@ -369,11 +369,11 @@ useEffect(() => {
 
         <div className="max-w-4xl mx-auto px-4 md:px-6 py-6">
           <div className="text-center mb-6">
-            <h1 className="text-2xl md:text-4xl font-bold mb-3">Practice Quizzes</h1>
+            <h1 className="text-2xl md:text-4xl font-bold mb-3">Ibizamini</h1>
             <p className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto px-2">
               {isGuest 
-                ? "Start with our free quiz. Sign up to unlock all premium content!" 
-                : "Test your knowledge with real driving theory questions."}
+                ? "Dutangira n’ikizamini cyacu cy’ubuntu. Iyandikishe kugira ngo ufungure ibisubizo byose byisumbuye (premium)." 
+                : "Gerageza ubumenyi bwawe ukoresheje ibibazo nyakuri byo mu mategeko y’umuhanda."}
             </p>
 
             {/* Guest Notice */}
@@ -398,11 +398,11 @@ useEffect(() => {
           {availableQuizzes.length === 0 && !loading && (
             <div className="text-center py-12">
               <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No quizzes available</h3>
-              <p className="text-muted-foreground mb-4">Check back later for new question sets.</p>
+              <h3 className="text-lg font-semibold mb-2">Nta bizamini biboneka</h3>
+              <p className="text-muted-foreground mb-4">Garuka hanyuma urebe niba hari ibindi bibazo bishya byongewe.</p>
               {isGuest && (
                 <Button onClick={handleSignupRedirect}>
-                  Sign Up to Access Quizzes
+                 Iyandikishe kugira ngo ubone uburyo bwo gukora ibizamini.
                 </Button>
               )}
             </div>

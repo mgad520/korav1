@@ -22,6 +22,34 @@ import { lessonQuizzes } from "./QuizzesPage";
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 
+// Types for API responses
+interface Section {
+  id: string;
+  title: string;
+  sectionNumber: number;
+}
+
+interface Chapter {
+  id: string;
+  title: string;
+  chapterNumber: number;
+  sections: Section[];
+  image: string;
+}
+
+interface Lesson {
+  id: string;
+  title: string;
+  lessonNumber: number;
+  lessonImage: string | null;
+}
+
+interface LessonData {
+  success: boolean;
+  sectionId: string;
+  data: Lesson[];
+}
+
 export default function HomePage() {
   const [selectedQuiz, setSelectedQuiz] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<
@@ -40,6 +68,11 @@ export default function HomePage() {
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Real data states
+  const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [featuredModules, setFeaturedModules] = useState<any[]>([]);
+  const [loadingModules, setLoadingModules] = useState(true);
+
   // Mock user progress data - will be replaced with real data from backend
   const [userProgress, setUserProgress] = useState({
     learningTime: 8 * 60 + 24, // 8h 24m in minutes
@@ -48,9 +81,10 @@ export default function HomePage() {
     practiceTests: 85,
   });
 
-  // Check if user is logged in on component mount
+  // Check if user is logged in and fetch data on component mount
   useEffect(() => {
     checkUserAuth();
+    fetchChaptersAndModules();
   }, []);
 
   const checkUserAuth = () => {
@@ -84,47 +118,68 @@ export default function HomePage() {
     }
   };
 
-  const handleLoginRedirect = () => {
-    setLocation("/login");
-  };
-
-  const handleSignupRedirect = () => {
-    setLocation("/login?mode=signup");
-  };
-
-  // Features that require authentication
-  const requireAuth = (action: () => void, featureName: string) => {
-    if (!user) {
-      alert(`Please login to ${featureName}`);
-      handleLoginRedirect();
-      return;
+  // Fetch real chapters and create featured modules
+  const fetchChaptersAndModules = async () => {
+    try {
+      setLoadingModules(true);
+      const response = await fetch('https://dataapis.wixsite.com/kora/_functions/ChaptersWithSections');
+      const data: Chapter[] = await response.json();
+      setChapters(data);
+      
+      // Transform chapters into featured modules for homepage
+      const modules = data.slice(0, 3).map((chapter, index) => {
+        const icons = [Target, Zap, TrendingUp];
+        const colors = [
+          "from-blue-500 to-cyan-500",
+          "from-green-500 to-emerald-500", 
+          "from-orange-500 to-red-500"
+        ];
+        
+        return {
+          id: chapter.id,
+          title: chapter.title,
+          description: `Learn essential concepts from Chapter ${chapter.chapterNumber}`,
+          level: `CHAPTER ${chapter.chapterNumber}`,
+          progress: `${chapter.sections.length} sections`,
+          imageUrl: chapter.image,
+          lessonsCount: chapter.sections.length,
+          progressValue: Math.min((index / 3) * 100, 75), // Mock progress based on position
+          icon: icons[index] || BookOpen,
+          color: colors[index] || "from-blue-500 to-cyan-500",
+          chapterNumber: chapter.chapterNumber
+        };
+      });
+      
+      setFeaturedModules(modules);
+    } catch (error) {
+      console.error('Error fetching chapters:', error);
+      // Fallback to dummy data if API fails
+      setFeaturedModules(getFallbackModules());
+    } finally {
+      setLoadingModules(false);
     }
-    action();
   };
 
-  const featuredModules = [
+  // Fallback modules in case API fails
+  const getFallbackModules = () => [
     {
       id: "1",
       title: "Traffic Signs & Signals",
-      description:
-        "Master all essential road signs, signals, and markings for safe driving in Rwanda",
-      level: "LEVEL 1",
+      description: "Master all essential road signs, signals, and markings for safe driving in Rwanda",
+      level: "CHAPTER 1",
       progress: "Basic Road Signs",
-      imageUrl:
-        "https://c8.alamy.com/comp/2GE268G/set-of-road-safety-signs-warning-road-transport-symbol-vector-collection-2GE268G.jpg",
+      imageUrl: "https://c8.alamy.com/comp/2GE268G/set-of-road-safety-signs-warning-road-transport-symbol-vector-collection-2GE268G.jpg",
       lessonsCount: 45,
       progressValue: 75,
       icon: Target,
       color: "from-blue-500 to-cyan-500",
     },
     {
-      id: "2",
+      id: "2", 
       title: "Road Safety Rules",
-      description:
-        "Learn defensive driving techniques and emergency procedures",
-      level: "LEVEL 2",
-      imageUrl:
-        "https://c8.alamy.com/comp/2GE268G/set-of-road-safety-signs-warning-road-transport-symbol-vector-collection-2GE268G.jpg",
+      description: "Learn defensive driving techniques and emergency procedures",
+      level: "CHAPTER 2",
+      imageUrl: "https://c8.alamy.com/comp/2GE268G/set-of-road-safety-signs-warning-road-transport-symbol-vector-collection-2GE268G.jpg",
       progress: "Defensive Driving",
       lessonsCount: 32,
       progressValue: 40,
@@ -133,12 +188,11 @@ export default function HomePage() {
     },
     {
       id: "3",
-      title: "Vehicle Control & Maneuvers",
+      title: "Vehicle Control & Maneuvers", 
       description: "Master parking, turning, and vehicle handling skills",
-      level: "LEVEL 1",
+      level: "CHAPTER 3",
       progress: "Basic Controls",
-      imageUrl:
-        "https://c8.alamy.com/comp/2GE268G/set-of-road-safety-signs-warning-road-transport-symbol-vector-collection-2GE268G.jpg",
+      imageUrl: "https://c8.alamy.com/comp/2GE268G/set-of-road-safety-signs-warning-road-transport-symbol-vector-collection-2GE268G.jpg",
       lessonsCount: 28,
       progressValue: 60,
       icon: TrendingUp,
@@ -150,81 +204,57 @@ export default function HomePage() {
     {
       id: "1",
       title: "Beginner Driver Course",
-      description:
-        "Complete foundation course for new drivers starting from zero",
+      description: "Complete foundation course for new drivers starting from zero",
       levels: 8,
-      duration: "4 weeks",
+      duration: "4 weeks", 
       students: "2.4k",
       icon: BookOpen,
-      imageUrl:
-        "https://c8.alamy.com/comp/2GE268G/set-of-road-safety-signs-warning-road-transport-symbol-vector-collection-2GE268G.jpg",
+      imageUrl: chapters[0]?.image || "https://c8.alamy.com/comp/2GE268G/set-of-road-safety-signs-warning-road-transport-symbol-vector-collection-2GE268G.jpg",
     },
     {
       id: "2",
       title: "Advanced Driving Skills",
-      description: "Master complex driving scenarios and defensive techniques",
+      description: "Master complex driving scenarios and defensive techniques", 
       levels: 6,
       duration: "3 weeks",
       students: "1.8k",
       icon: Trophy,
-      imageUrl:
-        "https://c8.alamy.com/comp/2GE268G/set-of-road-safety-signs-warning-road-transport-symbol-vector-collection-2GE268G.jpg",
+      imageUrl: chapters[1]?.image || "https://c8.alamy.com/comp/2GE268G/set-of-road-safety-signs-warning-road-transport-symbol-vector-collection-2GE268G.jpg",
     },
     {
       id: "3",
       title: "Rwanda Road Test Prep",
-      description:
-        "Specific preparation for Rwanda driving license examination",
+      description: "Specific preparation for Rwanda driving license examination",
       levels: 5,
       duration: "2 weeks",
-      students: "3.2k",
+      students: "3.2k", 
       icon: Users,
-      imageUrl:
-        "https://c8.alamy.com/comp/2GE268G/set-of-road-safety-signs-warning-road-transport-symbol-vector-collection-2GE268G.jpg",
+      imageUrl: chapters[2]?.image || "https://c8.alamy.com/comp/2GE268G/set-of-road-safety-signs-warning-road-transport-symbol-vector-collection-2GE268G.jpg",
     },
   ];
 
   const stats = [
     { title: "Active Learners", value: "12,847", icon: Users, change: "+12%" },
     { title: "Pass Rate", value: "94.2%", icon: Trophy, change: "+3.2%" },
-    {
-      title: "Practice Questions",
-      value: "500+",
-      icon: BookOpen,
-      change: "Updated",
-    },
+    { title: "Practice Questions", value: "500+", icon: BookOpen, change: "Updated" },
     { title: "Avg. Completion", value: "86%", icon: TrendingUp, change: "+8%" },
   ];
 
   const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const mobileWeekDays = ["Mon", "Tue", "Wed", "Th", "Fr"];
 
-  // Mobile modules data
-  const mobileModules = [
-    {
-      id: "1",
-      title: "Traffic Signs & Signals",
-      description: "Master all essential road signs, signals, and markings",
-      level: "LEVEL 1",
-      progress: "Basic Road Signs",
-      lessonsCount: 45,
-      isPremium: false,
-      imageUrl:
-        "https://c8.alamy.com/comp/2GE268G/set-of-road-safety-signs-warning-road-transport-symbol-vector-collection-2GE268G.jpg",
-    },
-    {
-      id: "2",
-      title: "Road Safety Rules",
-      description:
-        "Learn defensive driving techniques and emergency procedures",
-      level: "LEVEL 2",
-      progress: "Defensive Driving",
-      lessonsCount: 32,
-      isPremium: false,
-      imageUrl:
-        "https://greenwoodhigh.edu.in/wp-content/uploads/2024/01/2210.q713.014.P.m012.c25.children-road-rules-illustration-set-scaled.jpg",
-    },
-  ];
+  // Mobile modules data - use real data
+  const mobileModules = featuredModules.slice(0, 2).map(module => ({
+    id: module.id,
+    title: module.title,
+    description: module.description,
+    level: module.level,
+    progress: module.progress,
+    lessonsCount: module.lessonsCount,
+    isPremium: false,
+    imageUrl: module.imageUrl,
+    progressValue: module.progressValue
+  }));
 
   // Calendar functionality
   const getDaysInMonth = (month: number, year: number) => {
@@ -270,22 +300,30 @@ export default function HomePage() {
   };
 
   // Actions that require authentication
- const startQuiz = (quizId: string) => {
-  requireAuth(() => {
-    console.log("Starting quiz navigation");
-    setLocation(`/ibibazo`);
-  }, "take quizzes");
-};
-const startRandomExam = () => {
-  requireAuth(() => {
-    const randomQuiz = lessonQuizzes[Math.floor(Math.random() * lessonQuizzes.length)];
-    setLocation(`/ibibazo`);
-  }, "take practice exams");
-};
+  const startQuiz = (quizId: string) => {
+    requireAuth(() => {
+      console.log("Starting quiz navigation");
+      setLocation(`/ibibazo`);
+    }, "take quizzes");
+  };
+
+  const startRandomExam = () => {
+    requireAuth(() => {
+      const randomQuiz = lessonQuizzes[Math.floor(Math.random() * lessonQuizzes.length)];
+      setLocation(`/ibibazo`);
+    }, "take practice exams");
+  };
 
   const continueModule = (moduleId: string) => {
     requireAuth(() => {
-      setLocation(`/inyigisho`);
+      // Navigate to lessons page and automatically select the first section of this chapter
+      const chapter = chapters.find(ch => ch.id === moduleId);
+      if (chapter && chapter.sections.length > 0) {
+        // You can pass state to the lessons page to auto-select this section
+        setLocation(`/inyigisho`);
+      } else {
+        setLocation(`/inyigisho`);
+      }
     }, "access lessons");
   };
 
@@ -309,9 +347,7 @@ const startRandomExam = () => {
     requireAuth(() => {
       if (day) {
         const date = new Date(currentYear, currentMonth, day);
-        alert(
-          `Selected date: ${date.toDateString()}\nViewing study sessions for this date...`
-        );
+        alert(`Selected date: ${date.toDateString()}\nViewing study sessions for this date...`);
       }
     }, "use study calendar");
   };
@@ -334,13 +370,30 @@ const startRandomExam = () => {
     });
   };
 
+  const requireAuth = (action: () => void, featureName: string) => {
+    if (!user) {
+      alert(`Please login to ${featureName}`);
+      handleLoginRedirect();
+      return;
+    }
+    action();
+  };
+
+  const handleLoginRedirect = () => {
+    setLocation("/login");
+  };
+
+  const handleSignupRedirect = () => {
+    setLocation("/login?mode=signup");
+  };
+
   // Show loading state
-  if (isLoading) {
+  if (isLoading || loadingModules) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
+          <p className="text-muted-foreground">Loading learning content...</p>
         </div>
       </div>
     );
@@ -357,7 +410,7 @@ const startRandomExam = () => {
           <div className="px-4 py-6">
             {/* For You Section */}
             <section className="mb-8">
-              <h2 className="text-black text-2xl font-bold mb-4 px-2">For you</h2>
+              <h2 className="text-black text-2xl font-bold mb-4 px-2">Ahabanza</h2>
               {/* Practice Card */}
               <Card className="mb-6 mx-2 bg-green-100">
                 <CardContent className="p-4">
@@ -365,19 +418,19 @@ const startRandomExam = () => {
                     <div className="flex items-center gap-2">
                       <Zap className="h-5 w-5 text-black" />
                       <span className="text-xs font-semibold text-black-400">
-                        DAILY CHALLENGE
+                        Igerageza ry'uy'umunsi
                       </span>
                     </div>
                     <h3 className="text-sm font-semibold leading-tight">
-                      Sharpen your skills in 5 days with a quick practice exams
+                     kora amagerageza wiyungure ubumenyi
                     </h3>
                     <Button
                       className="w-full gap-2 bg-primary hover:bg-primary/90 h-10 text-sm"
                       onClick={startRandomExam}
                     >
                       {practiceProgress > 0 && user
-                        ? `In Progress... ${practiceProgress}%`
-                        : user ? "Start practice" : "Login to Practice"}
+                        ? `gukurura... ${practiceProgress}%`
+                        : user ? "Tangira Isuzuma" : "Injira ubone kwisuzuma"}
                       <Play className="h-3 w-3" />
                     </Button>
                   </div>
@@ -422,7 +475,7 @@ const startRandomExam = () => {
 
               {/* Jump Back In Section */}
               <div className="mb-6 px-2">
-                <h3 className="text-lg font-semibold mb-3">Jump back in</h3>
+                <h3 className="text-lg font-semibold mb-3">Komereza aho warugeze</h3>
 
                 {/* Progress Cards */}
                 <div className="space-y-3 mb-4">
@@ -457,9 +510,9 @@ const startRandomExam = () => {
                             <Play className="h-3 w-3" />
                           </Button>
                         </div>
-                        <Progress value={75} className="h-1 mb-1" />
+                        <Progress value={module.progressValue} className="h-1 mb-1" />
                         <div className="flex justify-between items-center text-xs text-muted-foreground">
-                          <span>75% complete</span>
+                          <span>{module.progressValue}% complete</span>
                           <span>{user ? "Continue" : "Login to Start"}</span>
                         </div>
                       </CardContent>
@@ -473,14 +526,14 @@ const startRandomExam = () => {
                   className="w-full gap-2 h-10 text-sm"
                   onClick={viewAllLessons}
                 >
-                  All Lessons
+                  Amasomo yose
                   <ChevronRight className="h-3 w-3" />
                 </Button>
               </div>
 
               {/* Lesson Cards Grid */}
               <div className="space-y-3 px-2">
-                {mobileModules.map((module, index) => (
+                {mobileModules.map((module) => (
                   <Card
                     key={module.id}
                     className="hover:shadow-md transition-shadow bg-green-100 cursor-pointer"
@@ -507,7 +560,7 @@ const startRandomExam = () => {
                           </p>
                           <div className="flex justify-between items-center text-xs">
                             <span className="text-muted-foreground">
-                              {module.lessonsCount} lessons
+                              {module.lessonsCount} sections
                             </span>
                             <Button
                               variant="ghost"
@@ -543,11 +596,11 @@ const startRandomExam = () => {
                 <section>
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-                      For You
+                      Ahabanza
                     </h2>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Clock className="h-4 w-4" />
-                      <span>Today's Progress</span>
+                      <span>Ibyagezweho uyu munsi</span>
                     </div>
                   </div>
                   {/* Quick Practice Card */}
@@ -558,11 +611,11 @@ const startRandomExam = () => {
                           <div className="flex items-center gap-2">
                             <Zap className="h-5 w-5 text-black" />
                             <span className="text-xs font-semibold text-black-400">
-                              DAILY CHALLENGE
+                              Igerageza ry'uy'umunsi
                             </span>
                           </div>
                           <h3 className="text-xs text-black font-bold leading-tight">
-                            Sharpen your skills with today's quick practice exam
+                            Kora amagerageza wiyungure ubumenyi
                           </h3>
                         </div>
                         <div className="bg-white/10 p-3 rounded-2xl backdrop-blur-sm">
@@ -654,7 +707,7 @@ const startRandomExam = () => {
                           />
                         </div>
                         <span className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-                          Week {Math.ceil((selectedDay + 1) / 7)} •{" "}
+                          Icyumweru {Math.ceil((selectedDay + 1) / 7)} •{" "}
                           {Math.round(((selectedDay + 1) / 7) * 100)}%
                         </span>
                       </div>
@@ -666,14 +719,14 @@ const startRandomExam = () => {
                 <section>
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-                      Continue Learning
+                      Komereza aho warugeze
                     </h2>
                     <Button
                       variant="ghost"
                       className="gap-2 text-muted-foreground"
                       onClick={viewAllLessons}
                     >
-                      View All
+                      Reba byose
                       <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
@@ -736,7 +789,7 @@ const startRandomExam = () => {
                                   className="h-2 bg-slate-200"
                                 />
                                 <div className="flex justify-between items-center text-xs text-muted-foreground">
-                                  <span>{module.lessonsCount} lessons</span>
+                                  <span>{module.lessonsCount} sections</span>
                                   <span>{user ? "Continue learning" : "Login to start"}</span>
                                 </div>
                               </div>
@@ -751,7 +804,7 @@ const startRandomExam = () => {
                 {/* Learning Paths */}
                 <section>
                   <h2 className="text-3xl w-full font-bold mb-6 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-                    Learning Paths
+                    Amasomo
                   </h2>
                   <div className="flex gap-6">
                     {learningPaths.map((path) => {
@@ -836,10 +889,10 @@ const startRandomExam = () => {
                         </div>
                         <div>
                           <h3 className="font-semibold text-foreground">
-                            Study Calendar
+                            Kalendari
                           </h3>
                           <p className="text-sm text-muted-foreground">
-                            Track your learning journey
+                            Genzura uko wize
                           </p>
                         </div>
                       </div>
@@ -910,13 +963,13 @@ const startRandomExam = () => {
                         <div className="flex items-center gap-3 text-xs">
                           <div className="w-3 h-3 bg-green-500 rounded-full shadow-sm"></div>
                           <span className="text-muted-foreground">
-                            Completed sessions
+                            Izarangiye
                           </span>
                         </div>
                         <div className="flex items-center gap-3 text-xs">
                           <div className="w-3 h-3 bg-blue-500 rounded-full shadow-sm"></div>
                           <span className="text-muted-foreground">
-                            Today's session
+                            Isomo ry'uy'umunsi
                           </span>
                         </div>
                       </div>
@@ -934,7 +987,7 @@ const startRandomExam = () => {
                           <div className="space-y-4">
                             <div className="flex justify-between items-center">
                               <span className="text-sm opacity-90">
-                                Learning Time
+                                Icyo cyo kwiga
                               </span>
                               <span className="text-sm font-semibold">
                                 {Math.floor(userProgress.learningTime / 60)}h{" "}
@@ -948,7 +1001,7 @@ const startRandomExam = () => {
 
                             <div className="flex justify-between items-center">
                               <span className="text-sm opacity-90">
-                                Lessons Completed
+                                Amasomo warangije
                               </span>
                               <span className="text-sm font-semibold">
                                 {userProgress.lessonsCompleted}/
@@ -983,20 +1036,20 @@ const startRandomExam = () => {
                             className="w-full mt-6 bg-white/20 hover:bg-white/30 text-white border-0 h-10"
                             onClick={viewDetailedAnalytics}
                           >
-                            View Detailed Analytics
+                            Reba byose
                           </Button>
                         </>
                       ) : (
                         <div className="text-center py-8">
                           <Users className="h-12 w-12 text-white/50 mx-auto mb-4" />
                           <p className="text-white/70 mb-4">
-                            Login to track your learning progress
+                            Injira utangire gukora amasuzuma
                           </p>
                           <Button
                             className="bg-white/20 hover:bg-white/30 text-white"
                             onClick={handleLoginRedirect}
                           >
-                            Login to View Progress
+                            Injira ukurikirane uko wiga
                           </Button>
                         </div>
                       )}

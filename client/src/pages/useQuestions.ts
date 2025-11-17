@@ -32,7 +32,7 @@ export const useQuestions = () => {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('https://blaise0781.wixstudio.com/house-rent/_functions/AllQuestionsDataInSets/', {
+      const response = await fetch('https://dataapis.wixsite.com/kora/_functions/AllQuestionsDataInSets/', {
         method: 'GET',
         headers: {
           'Accept': 'application/json',

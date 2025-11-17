@@ -258,12 +258,9 @@ export default function AccountPage() {
                     <span className="font-medium">Account Created</span>
                     <span className="text-gray-600">{getAccountCreatedDate()}</span>
                   </div>
-                  <div className="flex justify-between items-center py-3 border-b">
-                    <span className="font-medium">Last Login</span>
-                    <span className="text-gray-600">{getLastLoginDate()}</span>
-                  </div>
+                
                   <div className="flex justify-between items-center py-3">
-                    <span className="font-medium">Account Level</span>
+                    <span className="font-medium">My Subscriptions</span>
                     <Badge className={`${
                       isGuest 
                         ? "bg-gray-100 text-gray-700" 
