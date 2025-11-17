@@ -143,7 +143,7 @@ export default function HomePage() {
           progress: `${chapter.sections.length} sections`,
           imageUrl: chapter.image,
           lessonsCount: chapter.sections.length,
-          progressValue: Math.min((index / 3) * 100, 75), // Mock progress based on position
+          progressValue: Math.round(Math.min((index / 3) * 100, 75)),// Mock progress based on position
           icon: icons[index] || BookOpen,
           color: colors[index] || "from-blue-500 to-cyan-500",
           chapterNumber: chapter.chapterNumber
@@ -475,7 +475,7 @@ export default function HomePage() {
 
               {/* Jump Back In Section */}
               <div className="mb-6 px-2">
-                <h3 className="text-lg font-semibold mb-3">Komereza aho warugeze</h3>
+                <h3 className="text-lg font-semibold mb-3">Komeza Kwiga</h3>
 
                 {/* Progress Cards */}
                 <div className="space-y-3 mb-4">
@@ -719,7 +719,7 @@ export default function HomePage() {
                 <section>
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-                      Komereza aho warugeze
+                      Komeza Kwiga
                     </h2>
                     <Button
                       variant="ghost"
@@ -802,79 +802,69 @@ export default function HomePage() {
                 </section>
 
                 {/* Learning Paths */}
-                <section>
-                  <h2 className="text-3xl w-full font-bold mb-6 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-                    Amasomo
-                  </h2>
-                  <div className="flex gap-6">
-                    {learningPaths.map((path) => {
-                      const Icon = path.icon;
-                      return (
-                        <Card
-                          key={path.id}
-                          className="group hover:shadow-xl transition-all duration-300 border-0 bg-gradient-to-br from-white to-slate-50/50 backdrop-blur-sm overflow-hidden cursor-pointer"
-                          onClick={() => exploreLearningPath(path.id)}
-                        >
-                          <CardContent className="p-0">
-                            {/* Image Section */}
-                            <div className="h-32 bg-gradient-to-r from-blue-500 to-purple-600 relative overflow-hidden">
-                              <img
-                                src={path.imageUrl || "/placeholder-path.jpg"}
-                                alt={path.title}
-                                className="w-full h-full object-cover"
-                              />
-                              <div className="absolute inset-0 bg-black/20"></div>
-                              {/* Icon overlay */}
-                              <div className="absolute top-4 left-4 p-2 rounded-xl bg-white/20 backdrop-blur-sm">
-                                <Icon className="h-5 w-5 text-white" />
-                              </div>
-                            </div>
+    {/* Learning Paths */}
+<section>
+  <h2 className="text-3xl w-full font-bold mb-6 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+    Amasomo
+  </h2>
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {chapters.slice(0, 3).map((chapter, index) => {
+      const icons = [BookOpen, Trophy, Users];
+      const Icon = icons[index] || BookOpen;
+      
+      return (
+        <Card
+          key={chapter.id}
+          className="group hover:shadow-xl transition-all duration-300 border-0 bg-gradient-to-br from-white to-slate-50/50 backdrop-blur-sm overflow-hidden cursor-pointer h-full flex flex-col"
+          onClick={() => continueModule(chapter.id)}
+        >
+          <CardContent className="p-0 flex flex-col h-full">
+            {/* Image Section - Fixed Height */}
+            <div className="h-32 relative overflow-hidden flex-shrink-0">
+              <img
+                src={chapter.image || "/placeholder-path.jpg"}
+                alt={chapter.title}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-black/20"></div>
+              {/* Icon overlay */}
+              <div className="absolute top-3 left-3 p-2 rounded-xl bg-white/20 backdrop-blur-sm">
+                <Icon className="h-4 w-4 text-white" />
+              </div>
+              {/* Chapter badge */}
+              <div className="absolute top-3 right-3 px-2 py-1 rounded-lg bg-primary text-primary-foreground text-xs font-medium">
+                Chapter {chapter.chapterNumber}
+              </div>
+            </div>
 
-                            {/* Content Section */}
-                            <div className="p-6">
-                              <div className="space-y-3 flex-1">
-                                <h3 className="font-semibold text-foreground text-lg">
-                                  {path.title}
-                                </h3>
-                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                  {path.description}
-                                </p>
-                              </div>
-
-                              <div className="flex items-center justify-between text-sm text-muted-foreground mb-4 mt-4">
-                                <div className="flex items-center gap-4">
-                                  <span className="flex items-center gap-1">
-                                    <BookOpen className="h-3 w-3" />
-                                    {path.levels} levels
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <Clock className="h-3 w-3" />
-                                    {path.duration}
-                                  </span>
-                                </div>
-                                <span className="flex items-center gap-1">
-                                  <Users className="h-3 w-3" />
-                                  {path.students}
-                                </span>
-                              </div>
-
-                              <Button
-                                className="w-full bg-primary hover:bg-primary/90 h-11 font-semibold"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  exploreLearningPath(path.id);
-                                }}
-                              >
-                                {user ? "Explore Path" : "Get Started"}
-                                <ArrowRight className="h-4 w-4 ml-2" />
-                              </Button>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                </section>
+            {/* Content Section - Flexible */}
+            <div className="p-4 flex-1 flex flex-col">
+              <div className="flex-1 space-y-2 mb-4">
+                <h3 className="font-semibold text-foreground text-base leading-tight line-clamp-2">
+                  {chapter.title}
+                </h3>
+                <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
+                  Tangira kwiga isomo  {chapter.title}
+                </p>
+              </div>
+              {/* Button - Fixed at Bottom */}
+              <Button
+                className="w-full bg-primary hover:bg-primary/90 h-9 text-sm font-semibold"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  continueModule(chapter.id);
+                }}
+              >
+                {user ? "Start" : "Get Started"}
+                <ArrowRight className="h-3 w-3 ml-1" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    })}
+  </div>
+</section>
               </div>
 
               {/* Right Column - Calendar & Progress */}

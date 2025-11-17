@@ -245,7 +245,7 @@ const getLessonProgress = (lessonId: number) => {
     return (
       <div className="min-h-screen bg-background">
         {/* Desktop Back Button */}
-        <div className="hidden md:block max-w-4xl mx-auto px-6 pt-6">
+        <div className="flex max-w-4xl mx-auto px-6 pt-6">
           <Button
             variant="ghost"
             className="gap-2 mb-4"
@@ -537,6 +537,7 @@ const getLessonProgress = (lessonId: number) => {
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-4">
           {/* Mobile Layout */}
           <div className="md:hidden">
+            
             <LessonViewer />
           </div>
 
