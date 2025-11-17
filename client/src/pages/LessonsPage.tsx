@@ -92,7 +92,7 @@ export default function LessonsPage() {
           description: lesson.title.length > 100 ? lesson.title.substring(0, 100) + '...' : lesson.title,
           progress: "In Progress",
           lessonsCount: data.data.length,
-          progressValue: Math.min((index / data.data.length) * 100, 100),
+          progressValue: Math.round(Math.min((index / data.data.length) * 100, 100)),
           imageUrl: lesson.lessonImage || "https://c8.alamy.com/comp/2GE268G/set-of-road-safety-signs-warning-road-transport-symbol-vector-collection-2GE268G.jpg",
           content: `
   <div class="flex flex-col md:flex-row gap-6 items-start">
@@ -177,10 +177,10 @@ export default function LessonsPage() {
     alert(`Starting quiz for lesson ${lessonId}`);
   };
 
-  const getLessonProgress = (lessonId: number) => {
-    const lesson = lessons.find(l => l.id === lessonId);
-    return lesson ? lesson.progressValue : 0;
-  };
+const getLessonProgress = (lessonId: number) => {
+  const lesson = lessons.find(l => l.id === lessonId);
+  return lesson ? Math.round(lesson.progressValue) : 0;
+};
 
   // Function to get section title by ID
   const getSectionTitle = (sectionId: string) => {
