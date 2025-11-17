@@ -56,11 +56,6 @@ export default function LessonsPage() {
         const response = await fetch('https://dataapis.wixsite.com/kora/_functions/ChaptersWithSections');
         const data: Chapter[] = await response.json();
         setChapters(data);
-        
-        // Expand all chapters by default for better UX
-        const allChapterIds = new Set(data.map(chapter => chapter.id));
-        setExpandedChapters(allChapterIds);
-        
         // If URL has a section ID, load that section
         if (urlSectionId) {
           handleSectionClick(urlSectionId);
@@ -159,8 +154,8 @@ export default function LessonsPage() {
   };
 
   const expandAllChapters = () => {
-    const allChapterIds = new Set(chapters.map(chapter => chapter.id));
-    setExpandedChapters(allChapterIds);
+   
+    setExpandedChapters(new Set());
   };
 
   const collapseAllChapters = () => {
@@ -385,85 +380,67 @@ export default function LessonsPage() {
     const isExpanded = expandedChapters.has(chapter.id);
     
     return (
-      <div className="space-y-2">
+     <div className="space-y-2">
+  <Button
+    variant="ghost"
+    className="w-full justify-between h-auto p-3 hover:bg-accent"
+    onClick={() => toggleChapter(chapter.id)}
+  >
+    <div className="flex items-start gap-3 text-left flex-1 min-w-0">
+      {/* Image preview for chapter from backend */}
+      <div className="flex-shrink-0">
+        <img 
+          src={chapter.image} 
+          alt={chapter.title}
+          className="w-12 h-12 object-cover rounded-lg"
+        />
+      </div>
+      
+      <div className="flex-1 min-w-0 overflow-hidden">
+        <div className="font-medium text-sm truncate">
+          Chapter {chapter.chapterNumber}
+        </div>
+        <div className="text-xs text-muted-foreground truncate">
+          {chapter.title}
+        </div>
+        
+      </div>
+    </div>
+    {isExpanded ? (
+      <ChevronUp className="h-4 w-4 flex-shrink-0 ml-2" />
+    ) : (
+      <ChevronDown className="h-4 w-4 flex-shrink-0 ml-2" />
+    )}
+  </Button>
+  
+  {/* Line separator added below */}
+  <div className="border-t-2 border-muted mx-3"></div>
+  
+  {isExpanded && (
+    <div className="ml-4 space-y-1 border-l-2 border-muted pl-3">
+      {chapter.sections.map((section) => (
         <Button
-          variant="ghost"
-          className="w-full justify-between h-auto p-3 hover:bg-accent"
-          onClick={() => toggleChapter(chapter.id)}
+          key={section.id}
+          variant={selectedSection === section.id ? "secondary" : "ghost"}
+          className="w-full justify-start h-auto py-2 px-3 text-left min-w-0"
+          onClick={() => handleSectionSelect(section.id)}
         >
-          <div className="flex items-start gap-3 text-left flex-1 min-w-0">
-            {/* Image preview for chapter from backend */}
-            <div className="flex-shrink-0">
-              <img 
-                src={chapter.image} 
-                alt={chapter.title}
-                className="w-12 h-12 object-cover rounded-lg"
-              />
-            </div>
-            
+          <div className="flex items-center gap-2 w-full min-w-0">
+            <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
             <div className="flex-1 min-w-0 overflow-hidden">
-              <div className="font-medium text-sm truncate">
-                Chapter {chapter.chapterNumber}
+              <div className="text-xs font-medium truncate">
+                Section {section.sectionNumber}
               </div>
               <div className="text-xs text-muted-foreground truncate">
-                {chapter.title}
-              </div>
-              
-              {/* Chapter metadata */}
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                <Clock className="h-3 w-3 flex-shrink-0" />
-                <span className="truncate">{chapter.sections.length} sections</span>
-                <span>•</span>
-                <span>45-60 min</span>
-              </div>
-              
-              {/* Progress bar for chapter */}
-              <div className="mt-2">
-                <div className="flex justify-between items-center text-xs mb-1">
-                  <span className="text-muted-foreground">Progress</span>
-                  <span>25%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-1.5">
-                  <div 
-                    className="bg-green-500 h-1.5 rounded-full transition-all duration-300"
-                    style={{ width: `25%` }}
-                  />
-                </div>
+                {section.title}
               </div>
             </div>
           </div>
-          {isExpanded ? (
-            <ChevronUp className="h-4 w-4 flex-shrink-0 ml-2" />
-          ) : (
-            <ChevronDown className="h-4 w-4 flex-shrink-0 ml-2" />
-          )}
         </Button>
-        
-        {isExpanded && (
-          <div className="ml-4 space-y-1 border-l-2 border-muted pl-3">
-            {chapter.sections.map((section) => (
-              <Button
-                key={section.id}
-                variant={selectedSection === section.id ? "secondary" : "ghost"}
-                className="w-full justify-start h-auto py-2 px-3 text-left min-w-0"
-                onClick={() => handleSectionSelect(section.id)}
-              >
-                <div className="flex items-center gap-2 w-full min-w-0">
-                  <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
-                  <div className="flex-1 min-w-0 overflow-hidden">
-                    <div className="text-xs font-medium truncate">
-                      Section {section.sectionNumber}
-                    </div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      {section.title}
-                    </div>
-                  </div>
-                </div>
-              </Button>
-            ))}
-          </div>
-        )}
-      </div>
+      ))}
+    </div>
+  )}
+</div>
     );
   };
 
