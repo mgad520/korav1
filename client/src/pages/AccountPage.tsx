@@ -2,31 +2,109 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ChevronRight, Settings, Bell, Languages, MessageCircle, Info, Users, LogOut, User } from "lucide-react";
+import { ChevronRight, Settings, Bell, Languages, MessageCircle, Info, Users, LogOut, User, Crown } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import { useLocation } from "wouter";
+
+interface UserPlan {
+  id: string;
+  status: string;
+  startDate: string;
+  endDate: string;
+  planName: string;
+}
+
+interface UserPlanResponse {
+  userPlans: UserPlan[];
+  userActivePlan: UserPlan | null;
+}
 
 export default function AccountPage() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [language, setLanguage] = useState("English");
   const [activeSection, setActiveSection] = useState("profile");
   const [user, setUser] = useState<any>(null);
+  const [userPlan, setUserPlan] = useState<UserPlan | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isGuest, setIsGuest] = useState(false);
   const [, setLocation] = useLocation();
 
-  // Load user data from localStorage on component mount
+  // Updated function to read user from localStorage
+  const readUserFromLocalStorage = () => {
+    try {
+      if (typeof window === "undefined") return {};
+      
+      const userData = localStorage.getItem("user");
+      if (userData) {
+        const parsedUser = JSON.parse(userData);
+        return {
+          id: parsedUser._id || undefined,
+          loginEmail: parsedUser.loginEmail || undefined,
+          phone: parsedUser.phoneNumber || undefined,
+          phoneCountryCode: parsedUser.phoneCountryCode || undefined,
+          firstName: parsedUser.firstName || undefined,
+          lastName: parsedUser.lastName || undefined,
+          owner: parsedUser._owner || undefined,
+          createdDate: parsedUser._createdDate || undefined,
+          updatedDate: parsedUser._updatedDate || undefined,
+          ...parsedUser
+        };
+      }
+      
+      return {
+        id: localStorage.getItem("id") || undefined,
+        loginEmail: localStorage.getItem("loginEmail") || undefined,
+        phone: localStorage.getItem("phone") || localStorage.getItem("phoneNumber") || undefined,
+      };
+    } catch (error) {
+      console.error("Error reading user data:", error);
+      return {};
+    }
+  };
+
+  // Fetch user plan data - called only once on component mount
+  const fetchUserPlan = async (userId: string) => {
+    if (!userId) return;
+    
+    try {
+      const response = await fetch("https://dataapis.wixsite.com/kora/_functions/getUserPlan", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId }),
+      });
+
+      if (response.ok) {
+        const data: UserPlanResponse = await response.json();
+        setUserPlan(data.userActivePlan);
+      } else {
+        console.error("Failed to fetch user plan");
+        setUserPlan(null);
+      }
+    } catch (error) {
+      console.error("Error fetching user plan:", error);
+      setUserPlan(null);
+    }
+  };
+
+  // Load user data and plan from localStorage on component mount - ONLY ONCE
   useEffect(() => {
-    const loadUserData = () => {
+    const loadUserData = async () => {
       try {
         const userData = localStorage.getItem("user");
         if (userData) {
           const parsedUser = JSON.parse(userData);
           setUser(parsedUser);
-          // Check if user is guest (you might want to add a guest flag to your user object)
           setIsGuest(parsedUser.isGuest || false);
+          
+          // Fetch user plan if user exists - only once on load
+          const userId = parsedUser._id;
+          if (userId) {
+            await fetchUserPlan(userId);
+          }
         } else {
           setIsGuest(true);
         }
@@ -39,13 +117,13 @@ export default function AccountPage() {
     };
 
     loadUserData();
-  }, []);
+  }, []); // Empty dependency array ensures this runs only once on mount
 
   const handleLogout = () => {
     if (confirm("Are you sure you want to log out?")) {
       localStorage.removeItem("user");
       setLocation("/");
-      window.location.reload(); // Refresh to update the whole app state
+      window.location.reload();
     }
   };
 
@@ -57,7 +135,33 @@ export default function AccountPage() {
     setLocation("/signup");
   };
 
+  // Get user level based on plan data
+  const getUserLevel = () => {
+    if (isGuest) return "Guest";
+    if (!userPlan) return "Free Plan";
+    return userPlan.planName || "Free Plan";
+  };
+
+  // Get plan status
+  const getPlanStatus = () => {
+    if (!userPlan) return "Inactive";
+    return userPlan.status || "Inactive";
+  };
+
+  // Get plan end date
+  const getPlanEndDate = () => {
+    if (!userPlan) return "---";
+    return userPlan.endDate || "---";
+  };
+
   const menuItems = [
+    {
+      title: "Subscription Plans",
+      value: getUserLevel(),
+      hasArrow: true,
+      type: "subscription",
+      icon: Crown,
+    },
     {
       title: "Language",
       value: language,
@@ -125,6 +229,9 @@ export default function AccountPage() {
 
   const handleMenuItemClick = (type: string) => {
     switch (type) {
+      case "subscription":
+        setLocation("/subscribe");
+        break;
       case "language":
         handleLanguageSelect();
         break;
@@ -167,13 +274,7 @@ export default function AccountPage() {
   // Get phone number
   const getPhoneNumber = () => {
     if (isGuest) return "---";
-    return user?.phone || "---";
-  };
-
-  // Get user level
-  const getUserLevel = () => {
-    if (isGuest) return "Guest";
-    return user?.level || "Free Plan";
+    return user?.phone || user?.phoneNumber || "---";
   };
 
   // Get account creation date
@@ -188,6 +289,15 @@ export default function AccountPage() {
     if (isGuest) return "---";
     if (!user?.lastLogin) return "---";
     return new Date(user.lastLogin).toLocaleDateString();
+  };
+
+  // Get badge color based on plan
+  const getPlanBadgeColor = () => {
+    const level = getUserLevel();
+    if (level === "Free Plan" || level === "Guest") return "bg-gray-100 text-gray-700";
+    if (level.includes("Basic")) return "bg-blue-100 text-blue-700";
+    if (level.includes("Premium") || level.includes("Pro")) return "bg-yellow-100 text-yellow-700";
+    return "bg-green-100 text-green-700";
   };
 
   // Content for different sections
@@ -209,6 +319,22 @@ export default function AccountPage() {
           <User className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Guest Mode</h2>
           <p className="text-gray-600 mb-6">Sign in to access all features and save your progress</p>
+          
+          {/* Subscription teaser for guest users */}
+          <Card className="max-w-md mx-auto mb-6 bg-gradient-to-r from-green-50 to-blue-50 border-green-200">
+            <CardContent className="p-6">
+              <Crown className="h-8 w-8 text-yellow-500 mx-auto mb-3" />
+              <h3 className="font-semibold text-lg text-gray-900 mb-2">Upgrade to Premium</h3>
+              <p className="text-gray-600 text-sm mb-4">
+                Get access to exclusive features, HD streaming, and ad-free experience
+              </p>
+              <div className="flex gap-2 justify-center">
+                <span className="text-2xl font-bold text-green-600">500 RWF</span>
+                <span className="text-gray-500 self-end">/ week</span>
+              </div>
+            </CardContent>
+          </Card>
+          
           <div className="flex gap-4 justify-center">
             <Button onClick={handleLoginRedirect}>
               Sign In
@@ -239,6 +365,33 @@ export default function AccountPage() {
         return (
           <div className="space-y-6">
             <h2 className="text-2xl font-bold text-gray-900">Profile Information</h2>
+            
+            {/* Subscription Status Card */}
+            <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-green-200">
+              <CardContent className="p-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="font-semibold text-lg text-gray-900">{getUserLevel()}</h3>
+                    <p className="text-gray-600">
+                      
+                      {userPlan?.endDate && ` Expires: ${getPlanEndDate()}`}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Badge className={getPlanBadgeColor()}>
+                    {getPlanStatus()}
+                    </Badge>
+                    <Button 
+                      onClick={() => setLocation("/subscribe")}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      {userPlan ? "Manage" : "Upgrade"}
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardContent className="p-6">
                 <div className="space-y-4">
@@ -258,16 +411,9 @@ export default function AccountPage() {
                     <span className="font-medium">Account Created</span>
                     <span className="text-gray-600">{getAccountCreatedDate()}</span>
                   </div>
-                
                   <div className="flex justify-between items-center py-3">
-                    <span className="font-medium">My Subscriptions</span>
-                    <Badge className={`${
-                      isGuest 
-                        ? "bg-gray-100 text-gray-700" 
-                        : "bg-green-100 text-green-700"
-                    }`}>
-                      {getUserLevel()}
-                    </Badge>
+                    <span className="font-medium">Last Login</span>
+                    <span className="text-gray-600">{getLastLoginDate()}</span>
                   </div>
                 </div>
               </CardContent>
@@ -301,6 +447,11 @@ export default function AccountPage() {
                             {item.type === "language" && (
                               <span className="text-gray-500">
                                 Current: {language}
+                              </span>
+                            )}
+                            {item.type === "subscription" && (
+                              <span className="text-gray-500">
+                                {getUserLevel()}
                               </span>
                             )}
                           </div>
@@ -401,16 +552,7 @@ export default function AccountPage() {
                     <h2 className="text-white font-semibold text-lg mb-1">
                       {getFullName()}
                     </h2>
-                    <p className={`${
-                      isGuest ? "text-gray-100" : "text-green-100"
-                    } text-sm mb-2`}>
-                      {getEmail()}
-                    </p>
-                    <Badge className={`${
-                      isGuest
-                        ? "bg-gray-300 text-gray-700"
-                        : "bg-white text-green-600"
-                    } border-0 px-3 py-1 font-semibold`}>
+                    <Badge className={`${getPlanBadgeColor()} border-0 px-3 py-1 font-semibold`}>
                       {getUserLevel()}
                     </Badge>
                   </div>
@@ -475,6 +617,11 @@ export default function AccountPage() {
                           {item.type === "language" && (
                             <span className="text-gray-500 text-sm">
                               {language}
+                            </span>
+                          )}
+                          {item.type === "subscription" && (
+                            <span className="text-gray-500 text-sm">
+                              {getUserLevel()}
                             </span>
                           )}
                         </div>
@@ -567,14 +714,7 @@ export default function AccountPage() {
                     <h2 className="text-xl font-bold text-white mb-1">
                       {getFullName()}
                     </h2>
-                    <p className="text-gray-200 mb-2">
-                      {getEmail()}
-                    </p>
-                    <Badge className={`${
-                      isGuest
-                        ? "bg-gray-500 text-white"
-                        : "bg-green-500 text-white"
-                    } border-0 px-3 py-1 font-semibold`}>
+                    <Badge className={`${getPlanBadgeColor()} border-0 px-3 py-1 font-semibold`}>
                       {getUserLevel()}
                     </Badge>
                   </div>
@@ -606,6 +746,16 @@ export default function AccountPage() {
                     >
                       <Settings className="h-4 w-4 mr-3" />
                       Account Settings
+                    </Button>
+
+                    {/* Subscription Button */}
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start h-12 text-white hover:bg-white/10"
+                      onClick={() => setLocation("/subscribe")}
+                    >
+                      <Crown className="h-4 w-4 mr-3" />
+                      {userPlan ? "Manage Plan" : "Upgrade Plan"}
                     </Button>
                   </div>
 

@@ -157,7 +157,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
       console.log("Sending signup data:", signupData);
 
-      const response = await fetch("https://blaise0781.wixstudio.com/house-rent/_functions/signUp", {
+      const response = await fetch("https://dataapis.wixsite.com/kora/_functions/signUp", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -191,7 +191,7 @@ const handleSubmit = async (e: React.FormEvent) => {
 
       console.log("Sending login data:", loginData);
 
-      const response = await fetch("https://blaise0781.wixstudio.com/house-rent/_functions/login", {
+      const response = await fetch("https://dataapis.wixsite.com/kora/_functions/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
