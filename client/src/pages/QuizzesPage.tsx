@@ -9,15 +9,277 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQuestions, type QuestionSet } from "./useQuestions";
 
+// Skeleton Components
+const QuizListSkeleton = () => (
+  <div className="min-h-screen bg-background">
+    {/* Header Skeleton */}
+    <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <div className="max-w-6xl mx-auto px-4 md:px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="h-8 bg-muted rounded w-24 animate-pulse"></div>
+          <div className="h-4 bg-muted rounded w-20 animate-pulse"></div>
+          <div className="h-6 bg-muted rounded w-20 animate-pulse"></div>
+        </div>
+      </div>
+    </div>
+
+    <div className="max-w-4xl mx-auto px-4 md:px-6 py-6">
+      {/* Header Text Skeleton */}
+      <div className="text-center mb-6 space-y-3">
+        <div className="h-8 bg-muted rounded w-1/3 mx-auto animate-pulse"></div>
+        <div className="h-4 bg-muted rounded w-2/3 mx-auto animate-pulse"></div>
+      </div>
+
+      {/* Guest Notice Skeleton */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4 max-w-2xl mx-auto animate-pulse">
+        <div className="flex items-center gap-3">
+          <div className="w-5 h-5 bg-muted rounded"></div>
+          <div className="space-y-2 flex-1">
+            <div className="h-4 bg-muted rounded w-1/3"></div>
+            <div className="h-3 bg-muted rounded w-2/3"></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Quiz Cards Skeleton */}
+      <div className="md:hidden space-y-3 px-2 mt-6">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <Card key={index} className="bg-muted/50 animate-pulse">
+            <CardContent className="p-4">
+              <div className="space-y-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="h-5 bg-muted rounded w-2/3"></div>
+                      <div className="h-5 bg-muted rounded w-16"></div>
+                    </div>
+                    <div className="h-4 bg-muted rounded w-1/4"></div>
+                  </div>
+                </div>
+                <div className="h-4 bg-muted rounded w-full"></div>
+                <div className="flex flex-wrap gap-3">
+                  <div className="h-3 bg-muted rounded w-20"></div>
+                  <div className="h-3 bg-muted rounded w-16"></div>
+                  <div className="h-3 bg-muted rounded w-24"></div>
+                </div>
+                <div className="h-9 bg-muted rounded"></div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Desktop Quiz Cards Skeleton */}
+      <div className="hidden md:block space-y-4 mt-6">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <Card key={index} className="bg-muted/50 animate-pulse">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex-1 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-6 bg-muted rounded w-1/3"></div>
+                    <div className="h-6 bg-muted rounded w-20"></div>
+                    <div className="h-6 bg-muted rounded w-16"></div>
+                  </div>
+                  <div className="h-4 bg-muted rounded w-2/3"></div>
+                  <div className="flex flex-wrap gap-4">
+                    <div className="h-4 bg-muted rounded w-24"></div>
+                    <div className="h-4 bg-muted rounded w-20"></div>
+                    <div className="h-4 bg-muted rounded w-28"></div>
+                  </div>
+                </div>
+                <div className="h-10 bg-muted rounded w-24"></div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Sign Up CTA Skeleton */}
+      <div className="text-center mt-8 p-6 bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl border animate-pulse">
+        <div className="h-6 bg-muted rounded w-1/4 mx-auto mb-2"></div>
+        <div className="h-4 bg-muted rounded w-1/2 mx-auto mb-4"></div>
+        <div className="flex gap-4 justify-center">
+          <div className="h-10 bg-muted rounded w-32"></div>
+          <div className="h-10 bg-muted rounded w-40"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const ExamPrepSkeleton = () => (
+  <div className="min-h-screen bg-background">
+    {/* Header Skeleton */}
+    <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <div className="max-w-6xl mx-auto px-4 md:px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="h-8 bg-muted rounded w-24 animate-pulse"></div>
+          <div className="h-4 bg-muted rounded w-20 animate-pulse"></div>
+        </div>
+      </div>
+    </div>
+
+    <div className="max-w-4xl mx-auto px-4 md:px-6 py-8">
+      {/* Header Text Skeleton */}
+      <div className="text-center mb-8 space-y-3">
+        <div className="h-8 bg-muted rounded w-1/2 mx-auto animate-pulse"></div>
+        <div className="h-4 bg-muted rounded w-2/3 mx-auto animate-pulse"></div>
+      </div>
+
+      {/* Quiz Details Grid Skeleton */}
+      <div className="grid md:grid-cols-2 gap-8 mb-8">
+        {Array.from({ length: 2 }).map((_, index) => (
+          <Card key={index} className="bg-muted/50 animate-pulse">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-5 h-5 bg-muted rounded"></div>
+                <div className="h-5 bg-muted rounded w-1/3"></div>
+              </div>
+              <div className="space-y-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="flex justify-between">
+                    <div className="h-4 bg-muted rounded w-1/3"></div>
+                    <div className="h-4 bg-muted rounded w-1/4"></div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Configuration Section Skeleton */}
+      <Card className="mb-8 bg-muted/50 animate-pulse">
+        <CardContent className="p-6">
+          <div className="h-6 bg-muted rounded w-1/4 mb-6"></div>
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-muted rounded"></div>
+                <div className="h-4 bg-muted rounded w-1/3"></div>
+              </div>
+              <div className="h-10 bg-muted rounded"></div>
+              <div className="h-3 bg-muted rounded w-2/3"></div>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-start space-x-2">
+                <div className="w-4 h-4 bg-muted rounded mt-1"></div>
+                <div className="space-y-2 flex-1">
+                  <div className="h-4 bg-muted rounded w-full"></div>
+                  <div className="h-3 bg-muted rounded w-5/6"></div>
+                  <div className="h-3 bg-muted rounded w-4/6"></div>
+                  <div className="h-3 bg-muted rounded w-3/6"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Start Button Skeleton */}
+      <div className="text-center">
+        <div className="h-12 bg-muted rounded w-48 mx-auto animate-pulse"></div>
+      </div>
+    </div>
+  </div>
+);
+
+const ExamInterfaceSkeleton = () => (
+  <div className="min-h-screen bg-background">
+    {/* Header Skeleton */}
+    <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <div className="max-w-6xl mx-auto px-4 md:px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="h-4 bg-muted rounded w-32 animate-pulse"></div>
+          <div className="h-8 bg-muted rounded w-20 animate-pulse"></div>
+        </div>
+      </div>
+    </div>
+
+    <div className="max-w-6xl mx-auto px-4 md:px-6 py-6">
+      {/* Exam Info Skeleton */}
+      <div className="mb-6 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="h-8 bg-muted rounded w-1/3 animate-pulse"></div>
+          <div className="h-6 bg-muted rounded w-20 animate-pulse"></div>
+        </div>
+        <div className="h-2 bg-muted rounded-full animate-pulse"></div>
+      </div>
+
+      {/* Question Grid Skeleton */}
+      <div className="w-full mb-6">
+        <div className="hidden md:block">
+          <div className="flex flex-wrap gap-2">
+            {Array.from({ length: 20 }).map((_, index) => (
+              <div key={index} className="w-12 h-12 bg-muted rounded animate-pulse"></div>
+            ))}
+          </div>
+        </div>
+        <div className="md:hidden">
+          <div className="flex justify-between items-center mb-3">
+            <div className="h-8 bg-muted rounded w-20 animate-pulse"></div>
+            <div className="h-4 bg-muted rounded w-24 animate-pulse"></div>
+            <div className="h-8 bg-muted rounded w-20 animate-pulse"></div>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {Array.from({ length: 10 }).map((_, index) => (
+              <div key={index} className="w-8 h-8 bg-muted rounded animate-pulse"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Question Card Skeleton */}
+      <Card className="mb-6 bg-muted/50 animate-pulse">
+        <CardContent className="p-6">
+          <div className="flex flex-col md:flex-row gap-6">
+            {/* Image Skeleton */}
+            <div className="md:w-80 flex-shrink-0 order-first md:order-last">
+              <div className="h-48 md:h-64 bg-muted rounded-xl"></div>
+              <div className="h-3 bg-muted rounded w-20 mx-auto mt-2"></div>
+            </div>
+
+            {/* Question Content Skeleton */}
+            <div className="flex-1 space-y-4">
+              <div className="h-6 bg-muted rounded w-full"></div>
+              <div className="h-4 bg-muted rounded w-2/3"></div>
+              
+              {/* Choices Skeleton */}
+              <div className="space-y-3">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div key={index} className="h-16 bg-muted rounded-lg"></div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Navigation Skeleton */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 shadow-lg">
+        <div className="flex justify-between items-center">
+          <div className="h-8 bg-muted rounded w-24 animate-pulse"></div>
+          <div className="flex flex-col items-center gap-1">
+            <div className="h-4 bg-muted rounded w-16"></div>
+            <div className="h-3 bg-muted rounded w-12"></div>
+          </div>
+          <div className="h-8 bg-muted rounded w-24 animate-pulse"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
 // Transform API questions to match your app's format
 const transformQuestions = (questionSets: QuestionSet[]) => {
   return questionSets.map((set, index) => ({
     id: set.setNumber?.toString() || `set-${index}`,
-    title: `Question Set ${set.setNumber || index + 1}`,
+    title: `Ibibazo ${set.setNumber || index + 1}`,
     description: `Practice questions from set ${set.setNumber || index + 1}`,
     questionsCount: set.questions?.length || 0,
     isPremium: index >= 1, // First set (index 0) is free, rest are premium
-    duration: Math.ceil((set.questions?.length || 0) * 1),
+    duration: Math.ceil((set.questions?.length || 0) * 0.2),
     difficulty: index === 0 ? "Beginner" : index === 1 ? "Intermediate" : "Advanced",
     category: "Driving Theory",
     completed: false,
@@ -25,7 +287,7 @@ const transformQuestions = (questionSets: QuestionSet[]) => {
     requiresLogin: index >= 1, // Sets beyond first require login
     questions: (set.questions || []).map((q, qIndex) => ({
       id: qIndex + 1,
-      text: q.title || `Question ${qIndex + 1}`,
+      text: q.title || `Ibibazo ${qIndex + 1}`,
       imageUrl: q.image || undefined,
       choices: (q.choice || []).map((choiceText, choiceIndex) => ({
         id: String.fromCharCode(65 + choiceIndex), // A, B, C, D
@@ -35,6 +297,7 @@ const transformQuestions = (questionSets: QuestionSet[]) => {
     }))
   }));
 };
+
 export const lessonQuizzes = []
 export default function ExamPage() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -87,31 +350,32 @@ export default function ExamPage() {
     duration: currentQuiz.duration,
     questions: currentQuiz.questions,
   } : null;
-// Initialize timer once
-useEffect(() => {
-  if (currentView === "exam" && currentQuiz && examStarted && timeRemaining === 0) {
-    const initialTime = currentQuiz.duration * 60;
-    setTimeRemaining(initialTime);
-  }
-}, [currentView, currentQuiz, examStarted]);
 
-// Countdown logic
-useEffect(() => {
-  if (currentView !== "exam" || !examStarted) return;
+  // Initialize timer once
+  useEffect(() => {
+    if (currentView === "exam" && currentQuiz && examStarted && timeRemaining === 0) {
+      const initialTime = currentQuiz.duration * 60;
+      setTimeRemaining(initialTime);
+    }
+  }, [currentView, currentQuiz, examStarted]);
 
-  const timer = setInterval(() => {
-    setTimeRemaining(prev => {
-      if (prev <= 1) {
-        clearInterval(timer);
-        handleTimeUp();
-        return 0;
-      }
-      return prev - 1;
-    });
-  }, 1000);
+  // Countdown logic
+  useEffect(() => {
+    if (currentView !== "exam" || !examStarted) return;
 
-  return () => clearInterval(timer);
-}, [examStarted, currentView]);
+    const timer = setInterval(() => {
+      setTimeRemaining(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          handleTimeUp();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [examStarted, currentView]);
 
   const currentQ = examData?.questions[currentQuestion];
   const progress = examData ? (examData.currentQuestion / examData.totalQuestions) * 100 : 0;
@@ -313,14 +577,7 @@ useEffect(() => {
 
   // Loading state
   if (loading && currentView === "quiz-list") {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading questions...</p>
-        </div>
-      </div>
-    );
+    return <QuizListSkeleton />;
   }
 
   // Error state
@@ -372,8 +629,8 @@ useEffect(() => {
             <h1 className="text-2xl md:text-4xl font-bold mb-3">Ibizamini</h1>
             <p className="text-sm md:text-lg text-muted-foreground max-w-2xl mx-auto px-2">
               {isGuest 
-                ? "Dutangira n’ikizamini cyacu cy’ubuntu. Iyandikishe kugira ngo ufungure ibisubizo byose byisumbuye (premium)." 
-                : "Gerageza ubumenyi bwawe ukoresheje ibibazo nyakuri byo mu mategeko y’umuhanda."}
+                ? "Dutangira n'ikizamini cyacu cy'ubuntu. Iyandikishe kugira ngo ufungure ibisubizo byose byisumbuye (premium)." 
+                : "Gerageza ubumenyi bwawe ukoresheje ibibazo nyakuri byo mu mategeko y'umuhanda."}
             </p>
 
             {/* Guest Notice */}
@@ -723,194 +980,62 @@ useEffect(() => {
       </div>
     );
   }
- // Exam Preparation View
-if (currentView === "exam-prep" && currentQuiz) {
-  return (
-    <>
-      {/* Mobile Layout - Full Screen */}
-      <div className="md:hidden min-h-screen bg-background">
-        {/* Header */}
-        <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-          <div className="max-w-6xl mx-auto px-4 md:px-6 py-4">
-            <div className="flex items-center justify-between">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="gap-2"
-                onClick={handleBackToQuizzes}
-              >
-                <ArrowLeft className="h-4 w-4" />
-                <span className="hidden sm:inline">Back to Quizzes</span>
-              </Button>
-              
-              <div className="text-sm text-muted-foreground">
-                {currentQuiz.title}
-              </div>
-            </div>
-          </div>
-        </div>
 
-        <div className="max-w-4xl mx-auto px-4 md:px-6 py-8">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4">{currentQuiz.title}</h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              {currentQuiz.description}
-            </p>
-          </div>
+  // Exam Preparation View - Show skeleton while loading
+  if (currentView === "exam-prep" && !currentQuiz) {
+    return <ExamPrepSkeleton />;
+  }
 
-          <div className="grid md:grid-cols-2 gap-8 mb-8">
-            {/* Quiz Details */}
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                  <AlertCircle className="h-5 w-5 text-blue-500" />
-                  Quiz Details
-                </h3>
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Total Questions:</span>
-                    <span className="font-medium">{currentQuiz.questionsCount}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Time Limit:</span>
-                    <span className="font-medium">{currentQuiz.duration} minutes</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Difficulty:</span>
-                    <span className="font-medium">{currentQuiz.difficulty}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Category:</span>
-                    <span className="font-medium">{currentQuiz.category}</span>
-                  </div>
-                  {currentQuiz.completed && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Previous Score:</span>
-                      <span className="font-medium text-green-600">{currentQuiz.score}%</span>
-                    </div>
-                  )}
+  if (currentView === "exam-prep" && currentQuiz) {
+    return (
+      <>
+        {/* Mobile Layout - Full Screen */}
+        <div className="md:hidden min-h-screen bg-background">
+          {/* Header */}
+          <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+            <div className="max-w-6xl mx-auto px-4 md:px-6 py-4">
+              <div className="flex items-center justify-between">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="gap-2"
+                  onClick={handleBackToQuizzes}
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  <span className="hidden sm:inline">Back to Quizzes</span>
+                </Button>
+                
+                <div className="text-sm text-muted-foreground">
+                  {currentQuiz.title}
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Configuration Section */}
-          <Card className="mb-8">
-            <CardContent className="p-6">
-              <h3 className="text-xl font-semibold mb-6">Quiz Configuration</h3>
-              
-              <div className="space-y-6">
-                {/* Language Selection */}
-                <div className="space-y-3">
-                  <Label htmlFor="language" className="flex items-center gap-2 text-base">
-                    <Languages className="h-4 w-4" />
-                    Select Quiz Language
-                  </Label>
-                  <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Choose language" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="english">English</SelectItem>
-                      <SelectItem value="kinyarwanda">Kinyarwanda</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-sm text-muted-foreground">
-                    The quiz questions and instructions will be displayed in {selectedLanguage}.
-                  </p>
-                </div>
-
-                {/* Terms and Conditions */}
-                <div className="space-y-3">
-                  <div className="flex items-start space-x-2">
-                    <Checkbox
-                      id="terms"
-                      checked={agreedToTerms}
-                      onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
-                    />
-                    <label
-                      htmlFor="terms"
-                      className="text-sm leading-relaxed cursor-pointer"
-                    >
-                      I agree to the terms and conditions of this quiz. I understand that:
-                      <ul className="mt-2 space-y-1 text-muted-foreground">
-                        <li>• I must complete the quiz within the time limit</li>
-                        <li>• I cannot pause or restart the quiz once started</li>
-                        <li>• My answers will be automatically submitted when time expires</li>
-                        <li>• This is a practice quiz for learning purposes</li>
-                      </ul>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Start Button */}
-          <div className="text-center">
-            <Button
-              size="lg"
-              onClick={handleStartExam}
-              disabled={!agreedToTerms}
-              className="px-8 py-3 text-lg bg-green-600 hover:bg-green-700"
-            >
-              {currentQuiz.completed ? "Retake Quiz" : "Start Quiz"}
-            </Button>
-            {!agreedToTerms && (
-              <p className="text-sm text-muted-foreground mt-3">
-                Please agree to the terms and conditions to start the quiz
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Desktop Layout - Modal Overlay */}
-      <div className="hidden md:flex fixed inset-0 bg-black/50 backdrop-blur-sm z-50 items-center justify-center p-8">
-        <div className="bg-background rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-          {/* Modal Header */}
-          <div className="sticky top-0 bg-background border-b px-6 py-4 rounded-t-2xl">
-            <div className="flex items-center justify-between">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="gap-2"
-                onClick={handleBackToQuizzes}
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Back to Quizzes
-              </Button>
-              <div className="text-sm text-muted-foreground">
-                Quiz Preparation
               </div>
             </div>
           </div>
 
-          {/* Modal Content */}
-          <div className="p-6">
-            <div className="text-center mb-6">
-              <h1 className="text-2xl font-bold mb-2">{currentQuiz.title}</h1>
-              <p className="text-muted-foreground">
+          <div className="max-w-4xl mx-auto px-4 md:px-6 py-8">
+            <div className="text-center mb-8">
+              <h1 className="text-3xl md:text-4xl font-bold mb-4">{currentQuiz.title}</h1>
+              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
                 {currentQuiz.description}
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-6 mb-6">
+            <div className="grid md:grid-cols-2 gap-8 mb-8">
               {/* Quiz Details */}
               <Card>
-                <CardContent className="p-4">
-                  <h3 className="font-semibold mb-3 flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4 text-blue-500" />
+                <CardContent className="p-6">
+                  <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5 text-blue-500" />
                     Quiz Details
                   </h3>
-                  <div className="space-y-2 text-sm">
+                  <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Questions:</span>
+                      <span className="text-muted-foreground">Total Questions:</span>
                       <span className="font-medium">{currentQuiz.questionsCount}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Time:</span>
-                      <span className="font-medium">{currentQuiz.duration} min</span>
+                      <span className="text-muted-foreground">Time Limit:</span>
+                      <span className="font-medium">{currentQuiz.duration} minutes</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Difficulty:</span>
@@ -929,42 +1054,59 @@ if (currentView === "exam-prep" && currentQuiz) {
                   </div>
                 </CardContent>
               </Card>
+            </div>
 
-              {/* Quick Actions */}
-              <Card>
-                <CardContent className="p-4">
-                  <h3 className="font-semibold mb-3 flex items-center gap-2">
-                    <Languages className="h-4 w-4 text-green-500" />
-                    Quick Setup
-                  </h3>
+            {/* Configuration Section */}
+            <Card className="mb-8">
+              <CardContent className="p-6">
+                <h3 className="text-xl font-semibold mb-6">Quiz Configuration</h3>
+                
+                <div className="space-y-6">
+                  {/* Language Selection */}
                   <div className="space-y-3">
+                    <Label htmlFor="language" className="flex items-center gap-2 text-base">
+                      <Languages className="h-4 w-4" />
+                      Select Quiz Language
+                    </Label>
                     <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
                       <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Language" />
+                        <SelectValue placeholder="Choose language" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="english">English</SelectItem>
                         <SelectItem value="kinyarwanda">Kinyarwanda</SelectItem>
                       </SelectContent>
                     </Select>
-                    
-                    <div className="flex items-center space-x-2">
+                    <p className="text-sm text-muted-foreground">
+                      The quiz questions and instructions will be displayed in {selectedLanguage}.
+                    </p>
+                  </div>
+
+                  {/* Terms and Conditions */}
+                  <div className="space-y-3">
+                    <div className="flex items-start space-x-2">
                       <Checkbox
-                        id="desktop-terms"
+                        id="terms"
                         checked={agreedToTerms}
                         onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
                       />
                       <label
-                        htmlFor="desktop-terms"
-                        className="text-xs leading-relaxed cursor-pointer"
+                        htmlFor="terms"
+                        className="text-sm leading-relaxed cursor-pointer"
                       >
-                        I agree to the terms
+                        I agree to the terms and conditions of this quiz. I understand that:
+                        <ul className="mt-2 space-y-1 text-muted-foreground">
+                          <li>• I must complete the quiz within the time limit</li>
+                          <li>• I cannot pause or restart the quiz once started</li>
+                          <li>• My answers will be automatically submitted when time expires</li>
+                          <li>• This is a practice quiz for learning purposes</li>
+                        </ul>
                       </label>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Start Button */}
             <div className="text-center">
@@ -972,67 +1114,172 @@ if (currentView === "exam-prep" && currentQuiz) {
                 size="lg"
                 onClick={handleStartExam}
                 disabled={!agreedToTerms}
-                className="w-full bg-green-600 hover:bg-green-700 h-12 text-base"
+                className="px-8 py-3 text-lg bg-green-600 hover:bg-green-700"
               >
-                {currentQuiz.completed ? "Retake Quiz" : "Start Quiz Now"}
+                {currentQuiz.completed ? "Retake Quiz" : "Start Quiz"}
               </Button>
               {!agreedToTerms && (
-                <p className="text-sm text-muted-foreground mt-2">
-                  Please agree to the terms to continue
+                <p className="text-sm text-muted-foreground mt-3">
+                  Please agree to the terms and conditions to start the quiz
                 </p>
               )}
             </div>
           </div>
         </div>
-      </div>
-    </>
-  );
-}
-  // Main Exam Interface
-  if (currentView === "exam" && examData && currentQ) {
-    return (
-      <div className="min-h-screen bg-background">
-        {/* Header */}
-        <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-          <div className="max-w-6xl mx-auto px-4 md:px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <span className="text-sm text-muted-foreground hidden sm:inline">
-                  Language: {selectedLanguage}
-                </span>
-              </div>
-              
-              <div className="flex items-center gap-4">
-                <Button variant="outline" size="sm" className="gap-2">
-                  <Flag className="h-4 w-4" />
-                  <span className="hidden sm:inline">Flag</span>
+
+        {/* Desktop Layout - Modal Overlay */}
+        <div className="hidden md:flex fixed inset-0 bg-black/50 backdrop-blur-sm z-50 items-center justify-center p-8">
+          <div className="bg-background rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-background border-b px-6 py-4 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="gap-2"
+                  onClick={handleBackToQuizzes}
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back to Quizzes
                 </Button>
+                <div className="text-sm text-muted-foreground">
+                  Quiz Preparation
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-6">
+              <div className="text-center mb-6">
+                <h1 className="text-2xl font-bold mb-2">{currentQuiz.title}</h1>
+                <p className="text-muted-foreground">
+                  {currentQuiz.description}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6 mb-6">
+                {/* Quiz Details */}
+                <Card>
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4 text-blue-500" />
+                      Quiz Details
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Questions:</span>
+                        <span className="font-medium">{currentQuiz.questionsCount}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Time:</span>
+                        <span className="font-medium">{currentQuiz.duration} min</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Difficulty:</span>
+                        <span className="font-medium">{currentQuiz.difficulty}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Category:</span>
+                        <span className="font-medium">{currentQuiz.category}</span>
+                      </div>
+                      {currentQuiz.completed && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Previous Score:</span>
+                          <span className="font-medium text-green-600">{currentQuiz.score}%</span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Quick Actions */}
+                <Card>
+                  <CardContent className="p-4">
+                    <h3 className="font-semibold mb-3 flex items-center gap-2">
+                      <Languages className="h-4 w-4 text-green-500" />
+                      Quick Setup
+                    </h3>
+                    <div className="space-y-3">
+                      <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Language" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="english">English</SelectItem>
+                          <SelectItem value="kinyarwanda">Kinyarwanda</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="desktop-terms"
+                          checked={agreedToTerms}
+                          onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
+                        />
+                        <label
+                          htmlFor="desktop-terms"
+                          className="text-xs leading-relaxed cursor-pointer"
+                        >
+                          I agree to the terms
+                        </label>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Start Button */}
+              <div className="text-center">
+                <Button
+                  size="lg"
+                  onClick={handleStartExam}
+                  disabled={!agreedToTerms}
+                  className="w-full bg-green-600 hover:bg-green-700 h-12 text-base"
+                >
+                  {currentQuiz.completed ? "Retake Quiz" : "Start Quiz Now"}
+                </Button>
+                {!agreedToTerms && (
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Please agree to the terms to continue
+                  </p>
+                )}
               </div>
             </div>
           </div>
         </div>
+      </>
+    );
+  }
+
+  // Main Exam Interface - Show skeleton while loading
+  if (currentView === "exam" && (!examData || !currentQ)) {
+    return <ExamInterfaceSkeleton />;
+  }
+
+  if (currentView === "exam" && examData && currentQ) {
+    return (
+      <div className="min-h-screen bg-background">
 
         <div className="max-w-6xl mx-auto px-4 md:px-6 py-6">
           {/* Exam Info */}
-         <div className="mb-6">
-  {/* Top Row: Title and Timer */}
-  <div className="flex items-center justify-between mb-4">
-    <h1 className="text-2xl md:text-3xl font-bold text-center flex-1">{examData.title}</h1>
-    <div className="flex items-center gap-2 text-orange-600 text-lg md:text-xl font-semibold">
-      <Clock className="h-5 w-5" />
-      <span>{formatTime(timeRemaining)}</span>
-    </div>
-  </div>
+          <div className="mb-6">
+            {/* Top Row: Title and Timer */}
+            <div className="flex items-center justify-between mb-4">
+              <h1 className="text-2xl md:text-3xl font-bold text-center flex-1">{examData.title}</h1>
+              <div className="flex items-center gap-2 text-orange-600 text-lg md:text-xl font-semibold">
+                <Clock className="h-5 w-5" />
+                <span>{formatTime(timeRemaining)}</span>
+              </div>
+            </div>
 
-  {/* Question Info */}
-  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-3">
-    <span>Question {examData.currentQuestion} of {examData.totalQuestions}</span>
-  </div>
+            {/* Question Info */}
+            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-3">
+              <span>Question {examData.currentQuestion} of {examData.totalQuestions}</span>
+            </div>
 
-  {/* Progress Bar */}
-  <Progress value={progress} className="h-2" />
-</div>
-
+            {/* Progress Bar */}
+            <Progress value={progress} className="h-2" />
+          </div>
 
           {/* Question Numbers Grid - Full Width */}
           <div className="w-full mb-6">
@@ -1044,99 +1291,98 @@ if (currentView === "exam-prep" && currentQuiz) {
             </div>
           </div>
 
-{/* Question Card */}
-<Card className="mb-6">
-  <CardContent className="p-6">
-    <div className="flex flex-col md:flex-row gap-6">
-      {/* Question Image - Top on Mobile, Right Side on Desktop */}
-      {currentQ.imageUrl && (
-        <div className="md:w-80 flex-shrink-0 order-first md:order-last">
-          <div className="md:sticky md:top-6">
-            <div className="rounded-xl overflow-hidden border-2 border-gray-200 shadow-sm">
-              <img 
-                src={currentQ.imageUrl} 
-                alt="Question visual reference"
-                className="w-full h-48 md:h-64 object-contain"
-              />
-            </div>
-            <p className="text-sm text-muted-foreground mt-2 text-center italic">
-              Visual reference
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Question Text and Choices - Bottom on Mobile, Left Side on Desktop */}
-      <div className="flex-1">
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-lg md:text-xl font-semibold mb-4 leading-relaxed">
-              {currentQ.text}
-            </h3>
-          </div>
-
-          <div className="space-y-3">
-            {currentQ.choices.map((choice) => (
-              <button
-                key={choice.id}
-                className={`w-full text-left p-4 rounded-lg border-2 transition-all group ${
-                  selectedAnswer === choice.id
-                    ? "border-primary bg-primary/5 shadow-sm"
-                    : "border-border bg-background hover:bg-muted/50 hover:border-muted-foreground/20"
-                }`}
-                onClick={() => handleAnswerSelect(choice.id)}
-              >
-                <div className="flex items-start gap-3">
-                  <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center text-sm font-medium transition-colors ${
-                    selectedAnswer === choice.id
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border group-hover:border-primary/50"
-                  }`}>
-                    {choice.id}
+          {/* Question Card */}
+          <Card className="mb-6">
+            <CardContent className="p-6">
+              <div className="flex flex-col md:flex-row gap-6">
+                {/* Question Image - Top on Mobile, Right Side on Desktop */}
+                {currentQ.imageUrl && (
+                  <div className="md:w-80 flex-shrink-0 order-first md:order-last">
+                    <div className="md:sticky md:top-6">
+                      <div className="rounded-xl overflow-hidden border-2 border-gray-200 shadow-sm">
+                        <img 
+                          src={currentQ.imageUrl} 
+                          alt="Question visual reference"
+                          className="w-full h-48 md:h-64 object-contain"
+                        />
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-2 text-center italic">
+                        Visual reference
+                      </p>
+                    </div>
                   </div>
-                  <span className="text-sm md:text-base leading-relaxed">{choice.text}</span>
+                )}
+
+                {/* Question Text and Choices - Bottom on Mobile, Left Side on Desktop */}
+                <div className="flex-1">
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-lg md:text-xl font-semibold mb-4 leading-relaxed">
+                        {currentQ.text}
+                      </h3>
+                    </div>
+
+                    <div className="space-y-3">
+                      {currentQ.choices.map((choice) => (
+                        <button
+                          key={choice.id}
+                          className={`w-full text-left p-4 rounded-lg border-2 transition-all group ${
+                            selectedAnswer === choice.id
+                              ? "border-primary bg-primary/5 shadow-sm"
+                              : "border-border bg-background hover:bg-muted/50 hover:border-muted-foreground/20"
+                          }`}
+                          onClick={() => handleAnswerSelect(choice.id)}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center text-sm font-medium transition-colors ${
+                              selectedAnswer === choice.id
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-border group-hover:border-primary/50"
+                            }`}>
+                              {choice.id}
+                            </div>
+                            <span className="text-sm md:text-base leading-relaxed">{choice.text}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </button>
-            ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Mobile Bottom Navigation - Fixed but only when needed */}
+          <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 shadow-lg">
+            <div className="flex justify-between items-center">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handlePrevious}
+                disabled={currentQuestion === 0}
+                className="flex-1 max-w-[120px]"
+              >
+                Previous
+              </Button>
+              
+              <div className="flex flex-col items-center gap-1 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  <span>{formatTime(timeRemaining)}</span>
+                </div>
+                <span>Q{examData.currentQuestion}/{examData.totalQuestions}</span>
+              </div>
+              
+              <Button
+                size="sm"
+                onClick={currentQuestion === examData.questions.length - 1 ? handleFinish : handleNext}
+                disabled={!selectedAnswer}
+                className="flex-1 max-w-[120px] bg-primary hover:bg-primary/90"
+              >
+                {currentQuestion === examData.questions.length - 1 ? "Finish" : "Next"}
+              </Button>
+            </div>
           </div>
-        </div>
-      </div>
-    </div>
-  </CardContent>
-</Card>
-
-
-{/* Mobile Bottom Navigation - Fixed but only when needed */}
-<div className=" fixed bottom-0 left-0 right-0 bg-background border-t p-4 shadow-lg">
-  <div className="flex justify-between items-center">
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={handlePrevious}
-      disabled={currentQuestion === 0}
-      className="flex-1 max-w-[120px]"
-    >
-      Previous
-    </Button>
-    
-    <div className="flex flex-col items-center gap-1 text-xs text-muted-foreground">
-      <div className="flex items-center gap-1">
-        <Clock className="h-3 w-3" />
-        <span>{formatTime(timeRemaining)}</span>
-      </div>
-      <span>Q{examData.currentQuestion}/{examData.totalQuestions}</span>
-    </div>
-    
-    <Button
-      size="sm"
-      onClick={currentQuestion === examData.questions.length - 1 ? handleFinish : handleNext}
-      disabled={!selectedAnswer}
-      className="flex-1 max-w-[120px] bg-primary hover:bg-primary/90"
-    >
-      {currentQuestion === examData.questions.length - 1 ? "Finish" : "Next"}
-    </Button>
-  </div>
-</div>
         </div>
       </div>
     );

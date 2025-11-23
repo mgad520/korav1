@@ -34,7 +34,7 @@ export default function ResultsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto px-4 md:px-6 py-8">
+      <div className="max-w-4xl mx-auto px-4 md:px-6 py-0">
         <div className="space-y-8">
           <ResultCard
             score={result.score}

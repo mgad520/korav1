@@ -222,7 +222,13 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
-
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
 /**
  * Using the elevate system.
  * Automatic contrast adjustment.

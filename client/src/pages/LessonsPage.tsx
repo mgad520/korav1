@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, BookOpen, Clock, CheckCircle, Play, ArrowLeft, ChevronRight, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronLeft, BookOpen, Clock, CheckCircle, Play, ArrowLeft, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
 import { Link, useRoute } from "wouter";
 import Navbar from "@/components/Navbar";
 
@@ -32,6 +32,111 @@ interface LessonData {
   sectionId: string;
   data: Lesson[];
 }
+
+// Skeleton Components
+const ChapterSkeleton = () => (
+  <div className="space-y-3">
+    {Array.from({ length: 4 }).map((_, index) => (
+      <div key={index} className="space-y-2">
+        <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 animate-pulse">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <div className="w-12 h-12 bg-muted rounded-lg flex-shrink-0"></div>
+            <div className="flex-1 min-w-0 space-y-2">
+              <div className="h-4 bg-muted rounded w-3/4"></div>
+              <div className="h-3 bg-muted rounded w-1/2"></div>
+            </div>
+          </div>
+          <div className="w-4 h-4 bg-muted rounded ml-2 flex-shrink-0"></div>
+        </div>
+        <div className="border-t-2 border-muted/30 mx-3"></div>
+      </div>
+    ))}
+  </div>
+);
+
+const LessonContentSkeleton = () => (
+  <div className="space-y-6 animate-pulse">
+    {/* Header Skeleton */}
+    <div className="text-center md:text-left">
+      <div className="h-8 bg-muted rounded w-3/4 mx-auto md:mx-0 mb-3"></div>
+    </div>
+
+    {/* Progress Bar Skeleton */}
+    <div className="bg-muted/50 rounded-lg p-4">
+      <div className="flex items-center justify-between mb-2">
+        <div className="h-4 bg-muted rounded w-20"></div>
+        <div className="h-4 bg-muted rounded w-16"></div>
+      </div>
+      <div className="w-full bg-muted rounded-full h-2"></div>
+    </div>
+
+    {/* Content Skeleton */}
+    <Card className="overflow-hidden">
+      <CardContent className="p-4 md:p-6 space-y-4">
+        <div className="flex flex-col md:flex-row gap-6 items-start">
+          {/* Text content skeleton */}
+          <div className="flex-1 min-w-0 space-y-3">
+            <div className="h-6 bg-muted rounded w-full"></div>
+            <div className="h-4 bg-muted rounded w-full"></div>
+            <div className="h-4 bg-muted rounded w-5/6"></div>
+            <div className="h-4 bg-muted rounded w-4/6"></div>
+            <div className="h-4 bg-muted rounded w-full"></div>
+            <div className="h-4 bg-muted rounded w-3/4"></div>
+          </div>
+          {/* Image skeleton */}
+          <div className="flex-shrink-0 md:w-48">
+            <div className="w-full h-48 bg-muted rounded-lg"></div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+
+    {/* Button Skeletons */}
+    <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex-1 h-12 bg-muted rounded"></div>
+      <div className="flex-1 h-12 bg-muted rounded"></div>
+    </div>
+
+    {/* Navigation Skeletons */}
+    <div className="flex justify-between items-center gap-4">
+      <div className="flex-1 h-10 bg-muted rounded"></div>
+      <div className="w-12 h-6 bg-muted rounded"></div>
+      <div className="flex-1 h-10 bg-muted rounded"></div>
+    </div>
+  </div>
+);
+
+const MobileSectionSkeleton = () => (
+  <div className="space-y-4 pb-4">
+    {/* Expand/Collapse Buttons Skeleton */}
+    <div className="flex gap-2">
+      <div className="flex-1 h-8 bg-muted rounded animate-pulse"></div>
+      <div className="flex-1 h-8 bg-muted rounded animate-pulse"></div>
+    </div>
+
+    {/* Chapters Skeletons */}
+    {Array.from({ length: 3 }).map((_, index) => (
+      <Card key={index}>
+        <CardContent className="p-4 space-y-3">
+          <div className="flex justify-between items-center">
+            <div className="space-y-2 flex-1">
+              <div className="h-5 bg-muted rounded w-4/5"></div>
+              <div className="h-4 bg-muted rounded w-3/5"></div>
+            </div>
+            <div className="w-5 h-5 bg-muted rounded"></div>
+          </div>
+          
+          {/* Sections Skeletons */}
+          <div className="space-y-2">
+            {Array.from({ length: 2 }).map((_, sectionIndex) => (
+              <div key={sectionIndex} className="h-12 bg-muted/50 rounded animate-pulse"></div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    ))}
+  </div>
+);
 
 export default function LessonsPage() {
   const [selectedLessonIndex, setSelectedLessonIndex] = useState<number>(0);
@@ -258,101 +363,75 @@ const getLessonProgress = (lessonId: number) => {
 
         {/* Lesson Content */}
         <div className="max-w-4xl mx-auto px-4 md:px-6 pb-20 md:pb-6">
-          <div className="space-y-6">
-            {/* Lesson Header */}
-            <div className="text-center md:text-left">
-              <h1 className="text-2xl md:text-3xl text-primary font-bold mb-3">Ibisobanuro birambuye</h1>
-            </div>
-
-            {/* Progress Bar */}
-            <div className="bg-muted/50 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">Progress</span>
-                <span className="text-sm text-muted-foreground">
-                  {currentLesson.progressValue}% Complete
-                </span>
+          {loadingLessons ? (
+            <LessonContentSkeleton />
+          ) : (
+            <div className="space-y-6">
+              {/* Lesson Header */}
+              <div className="text-center md:text-left">
+                <h1 className="text-2xl md:text-3xl text-primary font-bold mb-3">Ibisobanuro birambuye</h1>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-primary h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${currentLesson.progressValue}%` }}
-                />
-              </div>
-            </div>
 
-            {/* Lesson Content */}
-            <Card className="overflow-hidden">
-              <CardContent className="p-4 md:p-6">
-                <div 
-                  className="prose prose-sm md:prose-base max-w-none"
-                  dangerouslySetInnerHTML={{ __html: currentLesson.content }}
-                />
-              </CardContent>
-            </Card>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button
-                variant={isCompleted ? "outline" : "default"}
-                className="flex-1 gap-2 h-12"
-                onClick={() => handleMarkComplete(currentLesson.id)}
-              >
-                {isCompleted ? (
-                  <>
-                    <CheckCircle className="h-4 w-4" />
-                    Completed
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="h-4 w-4" />
-                    Mark as Complete
-                  </>
-                )}
-              </Button>
-              
-              <Button
-                variant="outline"
-                className="flex-1 gap-2 h-12"
-                onClick={() => handleTryQuiz(currentLesson.id)}
-              >
-                <Play className="h-4 w-4" />
-                Try Quiz
-              </Button>
-            </div>
-
-            {/* Navigation - Fixed Bottom for Both Mobile and Desktop */}
-            <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 md:relative md:bg-transparent md:border-t-0 md:p-0">
-              <div className="flex justify-between items-center gap-4 max-w-4xl mx-auto">
-                <Button
-                  variant="outline"
-                  className="flex-1 gap-2 h-10 md:flex-initial md:px-4"
-                  onClick={handlePreviousLesson}
-                  disabled={!hasPreviousLesson}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  <span className="md:hidden">Previous</span>
-                  <span className="hidden md:inline">Previous Lesson</span>
-                </Button>
-                
-                <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-12 justify-center">
-                  <span>{selectedLessonIndex + 1}</span>
-                  <span>/</span>
-                  <span>{lessons.length}</span>
+              {/* Progress Bar */}
+              <div className="bg-muted/50 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">Progress</span>
+                  <span className="text-sm text-muted-foreground">
+                    {currentLesson.progressValue}% Complete
+                  </span>
                 </div>
-                
-                <Button
-                  variant="outline"
-                  className="flex-1 gap-2 h-10 md:flex-initial md:px-4"
-                  onClick={handleNextLesson}
-                  disabled={!hasNextLesson}
-                >
-                  <span className="md:hidden">Next</span>
-                  <span className="hidden md:inline">Next Lesson</span>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div 
+                    className="bg-primary h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${currentLesson.progressValue}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Lesson Content */}
+              <Card className="overflow-hidden">
+                <CardContent className="p-4 md:p-6">
+                  <div 
+                    className="prose prose-sm md:prose-base max-w-none"
+                    dangerouslySetInnerHTML={{ __html: currentLesson.content }}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Navigation - Fixed Bottom for Both Mobile and Desktop */}
+              <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 md:relative md:bg-transparent md:border-t-0 md:p-0">
+                <div className="flex justify-between items-center gap-4 max-w-4xl mx-auto">
+                  <Button
+                    variant="outline"
+                    className="flex-1 gap-2 h-10 md:flex-initial md:px-4"
+                    onClick={handlePreviousLesson}
+                    disabled={!hasPreviousLesson}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    <span className="md:hidden">Previous</span>
+                    <span className="hidden md:inline">Previous Lesson</span>
+                  </Button>
+                  
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-12 justify-center">
+                    <span>{selectedLessonIndex + 1}</span>
+                    <span>/</span>
+                    <span>{lessons.length}</span>
+                  </div>
+                  
+                  <Button
+                    variant="outline"
+                    className="flex-1 gap-2 h-10 md:flex-initial md:px-4"
+                    onClick={handleNextLesson}
+                    disabled={!hasNextLesson}
+                  >
+                    <span className="md:hidden">Next</span>
+                    <span className="hidden md:inline">Next Lesson</span>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Add some padding at the bottom for mobile to account for fixed navigation */}
@@ -366,10 +445,41 @@ const getLessonProgress = (lessonId: number) => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 flex items-center justify-center">
-          <div className="flex items-center gap-2">
-            <Loader2 className="h-6 w-6 animate-spin" />
-            <span>Loading lessons...</span>
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
+          {/* Mobile Skeleton */}
+          <div className="md:hidden">
+            <MobileSectionSkeleton />
+          </div>
+
+          {/* Desktop Skeleton */}
+          <div className="hidden md:grid lg:grid-cols-4 gap-6">
+            {/* Chapters Sidebar Skeleton */}
+            <div className="lg:col-span-1">
+              <Card className="sticky top-4">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-5 h-5 bg-muted rounded animate-pulse"></div>
+                    <div className="space-y-2 flex-1">
+                      <div className="h-5 bg-muted rounded w-3/4"></div>
+                      <div className="h-3 bg-muted rounded w-1/2"></div>
+                    </div>
+                  </div>
+
+                  {/* Expand/Collapse Buttons Skeleton */}
+                  <div className="flex gap-2 mb-3">
+                    <div className="flex-1 h-8 bg-muted rounded animate-pulse"></div>
+                    <div className="flex-1 h-8 bg-muted rounded animate-pulse"></div>
+                  </div>
+
+                  <ChapterSkeleton />
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Content Area Skeleton */}
+            <div className="lg:col-span-3">
+              <LessonContentSkeleton />
+            </div>
           </div>
         </div>
       </div>
@@ -521,9 +631,11 @@ const getLessonProgress = (lessonId: number) => {
 
       {loadingLessons && (
         <Card>
-          <CardContent className="p-6 text-center">
-            <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">Loading lessons...</p>
+          <CardContent className="p-6">
+            <div className="space-y-3">
+              <div className="h-4 bg-muted rounded w-3/4 mx-auto"></div>
+              <div className="h-3 bg-muted rounded w-1/2 mx-auto"></div>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -661,9 +773,9 @@ const getLessonProgress = (lessonId: number) => {
                   Select a section from the chapters list to start learning
                 </p>
                 {loadingLessons && (
-                  <div className="flex items-center justify-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Loading lessons...</span>
+                  <div className="space-y-3 max-w-md mx-auto">
+                    <div className="h-4 bg-muted rounded w-3/4 mx-auto"></div>
+                    <div className="h-3 bg-muted rounded w-1/2 mx-auto"></div>
                   </div>
                 )}
               </CardContent>
