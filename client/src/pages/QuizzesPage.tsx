@@ -7,7 +7,7 @@ import { Link, useLocation } from "wouter";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useQuestions, type QuestionSet } from "./useQuestions";
+import { useQuestions, type QuestionSet, type UserPlan } from "./useQuestions";
 
 // Skeleton Components
 const QuizListSkeleton = () => (
@@ -271,33 +271,76 @@ const ExamInterfaceSkeleton = () => (
   </div>
 );
 
-// Transform API questions to match your app's format
-const transformQuestions = (questionSets: QuestionSet[]) => {
-  return questionSets.map((set, index) => ({
-    id: set.setNumber?.toString() || `set-${index}`,
-    title: `Ibibazo ${set.setNumber || index + 1}`,
-    description: `Practice questions from set ${set.setNumber || index + 1}`,
-    questionsCount: set.questions?.length || 0,
-    isPremium: index >= 1, // First set (index 0) is free, rest are premium
-    duration: Math.ceil((set.questions?.length || 0) * 0.2),
-    difficulty: index === 0 ? "Beginner" : index === 1 ? "Intermediate" : "Advanced",
-    category: "Driving Theory",
-    completed: false,
-    score: null,
-    requiresLogin: index >= 1, // Sets beyond first require login
-    questions: (set.questions || []).map((q, qIndex) => ({
-      id: qIndex + 1,
-      text: q.title || `Ibibazo ${qIndex + 1}`,
-      imageUrl: q.image || undefined,
-      choices: (q.choice || []).map((choiceText, choiceIndex) => ({
-        id: String.fromCharCode(65 + choiceIndex), // A, B, C, D
-        text: choiceText || `Choice ${String.fromCharCode(65 + choiceIndex)}`,
-        isCorrect: choiceIndex === q.choiceAnswer
+// Transform API questions to match your app's format with plan-based logic
+const transformQuestions = (questionSets: QuestionSet[] | null | undefined, userPlan: UserPlan | null) => {
+  // Handle cases where questionSets is not an array
+  if (!questionSets || !Array.isArray(questionSets)) {
+    console.warn('questionSets is not an array:', questionSets);
+    return [];
+  }
+  
+  console.log('User plan in transform:', userPlan);
+  
+  return questionSets.map((set, index) => {
+    const setNumber = set.setNumber || index + 1;
+    
+    // Determine access based on user plan
+    let isPremium = false;
+    let requiresLogin = false;
+    
+    if (!userPlan) {
+      // No user plan (guest or not logged in) - only set 1 is available
+      isPremium = setNumber > 1;
+      requiresLogin = setNumber > 1;
+    } else {
+      const planName = userPlan.planName?.toLowerCase() || '';
+      
+      if (planName === "no active plan" || planName === "") {
+        // User has no active plan - only set 1 is available
+        isPremium = setNumber > 1;
+        requiresLogin = setNumber > 1;
+      } else if (planName === "basic") {
+        // Basic plan - sets 1 and 2 are available
+        isPremium = setNumber > 2;
+        requiresLogin = setNumber > 2;
+      } else if (planName === "classic" || planName === "unique") {
+        // Classic or Unique plan - all sets are available
+        isPremium = false;
+        requiresLogin = false;
+      } else {
+        // Unknown plan - default to basic access
+        isPremium = setNumber > 1;
+        requiresLogin = setNumber > 1;
+      }
+    }
+    
+    console.log(`Set ${setNumber}: Premium=${isPremium}, RequiresLogin=${requiresLogin}, Plan=${userPlan?.planName}`);
+    
+    return {
+      id: setNumber.toString(),
+      title: `Isuzuma rya ${setNumber}`,
+      description: `Isuzuma ${setNumber}`,
+      questionsCount: set.questions?.length || 0,
+      isPremium,
+      requiresLogin,
+      duration: Math.ceil((set.questions?.length || 0) * 0.2),
+      difficulty: setNumber === 1 ? "Beginner" : setNumber === 2 ? "Intermediate" : "Advanced",
+      category: "Driving Theory",
+      completed: false,
+      score: null,
+      questions: (set.questions || []).map((q, qIndex) => ({
+        id: qIndex + 1,
+        text: q.title || `Isuzuma rya ${qIndex + 1}`,
+        imageUrl: q.image || undefined,
+        choices: (q.choice || []).map((choiceText, choiceIndex) => ({
+          id: String.fromCharCode(65 + choiceIndex), // A, B, C, D
+          text: choiceText || `Choice ${String.fromCharCode(65 + choiceIndex)}`,
+          isCorrect: choiceIndex === q.choiceAnswer
+        }))
       }))
-    }))
-  }));
+    };
+  });
 };
-
 export const lessonQuizzes = []
 export default function ExamPage() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -316,22 +359,44 @@ export default function ExamPage() {
   // Check if user is guest on component mount
   useEffect(() => {
     const userData = localStorage.getItem("user");
-    setIsGuest(!userData); // If no user data, it's a guest
+    setIsGuest(!userData);
   }, []);
 
-  // Use the custom hook
-  const { questions: questionSets, loading, error, refetch } = useQuestions();
+  // Use the custom hook - now including userPlan
+  const { questions: questionSets, userPlan, loading, error, refetch } = useQuestions();
 
-  // Transform API data to match your app format
-  const lessonQuizzes = transformQuestions(questionSets);
+  // Debug logs to track data flow
+  useEffect(() => {
+    console.log('=== DATA FLOW DEBUG ===');
+    console.log('Question sets from hook:', questionSets);
+    console.log('User plan:', userPlan);
+    console.log('Number of sets:', questionSets?.length);
+    console.log('Loading state:', loading);
+    console.log('Error state:', error);
+  }, [questionSets, userPlan, loading, error]);
 
-  // Filter quizzes based on user status
+  // Transform API data with plan-based logic
+  const lessonQuizzes = transformQuestions(questionSets, userPlan);
+  
+  useEffect(() => {
+    console.log('Transformed quizzes:', lessonQuizzes);
+    console.log('Number of transformed quizzes:', lessonQuizzes.length);
+    console.log('Available sets breakdown:');
+    lessonQuizzes.forEach(quiz => {
+      console.log(`Set ${quiz.id}: Premium=${quiz.isPremium}, RequiresLogin=${quiz.requiresLogin}`);
+    });
+  }, [lessonQuizzes]);
+
+  // Filter quizzes based on user status and plan
   const getAvailableQuizzes = () => {
     if (isGuest) {
-      // Guest users only see the first quiz (free)
-      return lessonQuizzes.filter(quiz => !quiz.requiresLogin);
+      // Guest users only see non-premium, no-login-required sets
+      const guestQuizzes = lessonQuizzes.filter(quiz => !quiz.isPremium && !quiz.requiresLogin);
+      console.log('Guest available quizzes:', guestQuizzes.length);
+      return guestQuizzes;
     } else {
-      // Logged-in users see all quizzes
+      // Logged-in users see all sets based on their plan
+      console.log('Logged-in user available quizzes:', lessonQuizzes.length);
       return lessonQuizzes;
     }
   };
@@ -487,12 +552,17 @@ export default function ExamPage() {
       return;
     }
 
-    // Check if quiz is premium and user is guest
-    if (quiz.isPremium && isGuest) {
-      // Show upgrade prompt or redirect to signup
-      alert("This is a premium quiz. Please sign up to access all premium content.");
-      setLocation("/signup");
-      return;
+    // Check if quiz is premium and user doesn't have access
+    if (quiz.isPremium) {
+      if (isGuest) {
+        // Show upgrade prompt or redirect to signup
+        alert("This is a premium quiz. Please sign up to access all premium content.");
+        setLocation("/signup");
+        return;
+      } else if (userPlan?.planName === "No Active Plan" || !userPlan) {
+        alert("This is a premium quiz. Please upgrade your plan to access this content.");
+        return;
+      }
     }
 
     setSelectedQuiz(quizId);
@@ -575,6 +645,21 @@ export default function ExamPage() {
     );
   };
 
+  // Get user plan display name
+  const getUserPlanDisplay = () => {
+    if (isGuest) return "Guest";
+    if (!userPlan) return "Free";
+    return userPlan.planName === "No Active Plan" ? "Free" : userPlan.planName;
+  };
+
+  // Get user status color
+  const getUserStatusColor = () => {
+    if (isGuest) return "bg-yellow-100 text-yellow-800 border-yellow-200";
+    if (!userPlan || userPlan.planName === "No Active Plan") return "bg-blue-100 text-blue-800 border-blue-200";
+    if (userPlan.planName === "Basic") return "bg-green-100 text-green-800 border-green-200";
+    return "bg-purple-100 text-purple-800 border-purple-200";
+  };
+
   // Loading state
   if (loading && currentView === "quiz-list") {
     return <QuizListSkeleton />;
@@ -589,6 +674,20 @@ export default function ExamPage() {
           <h2 className="text-xl font-bold mb-2">Gukurura ntibyakunze</h2>
           <p className="text-muted-foreground mb-4">{error}</p>
           <Button onClick={refetch}>Ongera Ugerageze</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Empty state after loading
+  if (!loading && !error && availableQuizzes.length === 0 && currentView === "quiz-list") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Nta bizamini biboneka</h3>
+          <p className="text-muted-foreground mb-4">No quiz sets available at the moment.</p>
+          <Button onClick={refetch}>Refresh</Button>
         </div>
       </div>
     );
@@ -613,12 +712,8 @@ export default function ExamPage() {
               </div>
 
               {/* User Status Indicator */}
-              <div className={`px-3 py-1 rounded-full text-xs font-medium ${
-                isGuest 
-                  ? "bg-yellow-100 text-yellow-800 border border-yellow-200" 
-                  : "bg-green-100 text-green-800 border border-green-200"
-              }`}>
-                {isGuest ? "Guest Mode" : "Logged In"}
+              <div className={`px-3 py-1 rounded-full text-xs font-medium border ${getUserStatusColor()}`}>
+                {getUserPlanDisplay()} Mode
               </div>
             </div>
           </div>
@@ -644,6 +739,27 @@ export default function ExamPage() {
                     </p>
                     <p className="text-blue-700 text-xs">
                       Sign up to unlock {lessonQuizzes.length - availableQuizzes.length} additional quiz sets and premium features
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Plan Info for Logged-in Users */}
+            {!isGuest && userPlan && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4 max-w-2xl mx-auto">
+                <div className="flex items-center gap-3">
+                  <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
+                  <div className="text-left">
+                    <p className="text-green-800 font-medium text-sm">
+                      {userPlan.planName === "No Active Plan" ? "Free Plan" : userPlan.planName + " Plan"}
+                    </p>
+                    <p className="text-green-700 text-xs">
+                      {userPlan.planName === "No Active Plan" 
+                        ? "Access to Set 1. Upgrade for more sets." 
+                        : userPlan.planName === "Basic"
+                          ? "Access to Sets 1-2. Upgrade for all sets."
+                          : "Full access to all question sets."}
                     </p>
                   </div>
                 </div>
@@ -710,11 +826,11 @@ export default function ExamPage() {
                     <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <BookOpen className="h-3 w-3" />
-                        <span>{quiz.questionsCount} questions</span>
+                        <span>Ibibazo {quiz.questionsCount}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        <span>{quiz.duration} min</span>
+                        <span>Iminota {quiz.duration} </span>
                       </div>
                       <div className="flex items-center gap-1">
                         <span>{quiz.category}</span>
@@ -749,7 +865,7 @@ export default function ExamPage() {
                       ) : (
                         <>
                           <Play className="h-3 w-3" />
-                          {quiz.completed ? "Retake Quiz" : "Start Quiz"}
+                          {quiz.completed ? "Subiramo Isuzuma" : "Tangira Isuzuma"}
                         </>
                       )}
                     </Button>

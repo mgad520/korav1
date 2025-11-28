@@ -6,7 +6,7 @@ export interface Question {
   choice: string[];
   choiceAnswer: number;
   questionNumbers: number;
-  image?:string;
+  image?: string;
   chapterId?: string;
   _owner?: string;
   _createdDate?: string;
@@ -18,12 +18,23 @@ export interface QuestionSet {
   questions: Question[];
 }
 
+export interface UserPlan {
+  planId: string | null;
+  planName: string;
+}
+
 export interface ApiResponse {
-  sets: QuestionSet[];
+  success: boolean;
+  sets: {
+    userPlan: UserPlan;
+    totalSets: number;
+    sets: QuestionSet[];
+  };
 }
 
 export const useQuestions = () => {
   const [questions, setQuestions] = useState<QuestionSet[]>([]);
+  const [userPlan, setUserPlan] = useState<UserPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,12 +43,31 @@ export const useQuestions = () => {
       setLoading(true);
       setError(null);
       
+      // Get userId from localStorage
+      const userData = localStorage.getItem('user');
+      let userId = '';
+
+      if (userData) {
+        try {
+          const parsedUser = JSON.parse(userData);
+          userId = parsedUser?._id || '';
+          console.log('Extracted user ID:', userId);
+        } catch (parseError) {
+          console.error('Error parsing user data from localStorage:', parseError);
+        }
+      }
+
+      console.log('Final userId being sent:', userId);
+
       const response = await fetch('https://dataapis.wixsite.com/kora/_functions/AllQuestionsDataInSets/', {
-        method: 'GET',
+        method: 'POST',
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          userId: userId
+        }),
       });
 
       if (!response.ok) {
@@ -45,7 +75,18 @@ export const useQuestions = () => {
       }
 
       const data: ApiResponse = await response.json();
-      setQuestions(data.sets || []);
+      
+      // Store user plan information
+      setUserPlan(data.sets?.userPlan || null);
+      
+      // Access the nested sets array
+      const questionSets = data.sets?.sets || [];
+      setQuestions(questionSets);
+      
+      console.log('User plan:', data.sets?.userPlan);
+      console.log('Total sets:', data.sets?.totalSets);
+      console.log('Questions sets:', questionSets);
+      
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch questions');
       console.error('Error fetching questions:', err);
@@ -64,6 +105,7 @@ export const useQuestions = () => {
 
   return {
     questions,
+    userPlan,
     loading,
     error,
     refetch,

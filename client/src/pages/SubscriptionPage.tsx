@@ -105,7 +105,7 @@ export default function SubscriptionPage() {
   ];
 
   const paymentMethods: PaymentMethod[] = [
-    {
+        {
       id: "mtn-rw",
       name: "MTN | Airtel Rwanda",
       description: "Choose to pay with MTN | Airtel Rwanda",
@@ -115,7 +115,8 @@ export default function SubscriptionPage() {
       id: "visa",
       name: "VISA & MasterCard",
       description: "Choose to Pay with VISA & MasterCard",
-      image: "https://upload.wikimedia.org/wikipedia/commons/4/41/Visa_Logo.png",
+      image:
+        "https://upload.wikimedia.org/wikipedia/commons/4/41/Visa_Logo.png",
     },
     {
       id: "mtn-ug",
@@ -141,8 +142,31 @@ export default function SubscriptionPage() {
       description: "Choose to pay with LUMICASH || Ecocash Burundi",
       image: "https://flagcdn.com/w320/bi.png",
     },
+    {
+      id: "airtel-drc",
+      name: "AIRTEL | VODACOM ORANGE | DRC 2",
+      description: "Choose to pay with AIRTEL | VODACOM ORANGE | DRC 2",
+      image: "https://flagcdn.com/w320/cd.png",
+    },
+    {
+      id: "vodacom-orange",
+      name: "AIRTEL | VODACOM ORANGE | DRC franc",
+      description: "Choose to pay with AIRTEL | VODACOM ORANGE | DRC Franc",
+      image: "https://flagcdn.com/w320/cd.png",
+    },
+    {
+      id: "mpesa-tz",
+      name: "MPESA Tanzania",
+      description: "Choose to pay with MPESA Tanzania",
+      image: "https://flagcdn.com/w320/tz.png",
+    },
+    {
+      id: "mtn-orange",
+      name: "MTN | ORANGE",
+      description: "Choose to pay with MTN | ORANGE",
+      image: "https://flagcdn.com/w320/cm.png",
+    },
   ];
-
   // Duration plans calculation
   const calculateDurationPlans = (plan: SubscriptionPlan) => {
     const weeks: DurationPlan[] = Array.from({ length: 3 }, (_, i) => {
@@ -513,235 +537,154 @@ export default function SubscriptionPage() {
     </div>
   );
 
-  // Render functions
-const renderPlanSelection = () => {
-  const [activeCard, setActiveCard] = useState(1); // For mobile scroll tracking
-
-  return (
-    <div className="space-y-8">
+ const renderPlanSelection = () => (
+    <div className="space-y-6">
       <div className="text-center">
         <h1 className="text-3xl font-bold text-gray-900">Hitamo Ifatabuguzi</h1>
         <p className="text-gray-600 mt-2">Hitamo ifatabuguzi rikwiye ibyo ushaka</p>
       </div>
 
-      {/* Mobile Layout - Horizontal Scroll */}
-      <div className="sm:hidden mb-12">
-        <div className="relative">
-          <div className="flex overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-8 gap-4 px-4">
-            {subscriptionPlans.map((plan, index) => (
-              <div
-                key={plan.id}
-                className={`flex-shrink-0 w-80 snap-center transition-all transform ${
-                  index === 1 ? 'scale-105' : 'scale-95'
-                }`}
-                onClick={() => setSelectedPlan(plan.id)}
-              >
-                <div
-                  className={`relative py-4 cursor-pointer transition-all rounded-2xl border-2 shadow-lg ${
-                    selectedPlan === plan.id
-                      ? "border-green-500 bg-green-50"
-                      : index === 1 
-                      ? "border-blue-500 bg-blue-50" 
-                      : "border-gray-200"
-                  } ${index === 1 ? 'h-72' : 'h-68'}`}
-                >
-                  {/* Recommended Badge for Middle Plan */}
-                  {index === 1 && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <div className="bg-blue-600 text-white px-4 py-1 rounded-full text-xs font-bold">
-                        BIRACYANYUYE
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Plan Header */}
-                  <div className="text-center px-4 pb-3 border-b">
-                    <div className={`mx-auto mb-2 ${
-                      plan.id === "unique" ? "text-yellow-500" : 
-                      plan.id === "classic" ? "text-blue-500" : "text-gray-400"
-                    }`}>
-                      <Crown className="h-6 w-6 mx-auto" />
-                    </div>
-                    <h3 className="text-lg font-bold text-gray-900">{plan.name}</h3>
-                    <div className="mt-2">
-                      <span className="text-2xl font-bold text-gray-900">
-                        {plan.price.toLocaleString()}
-                      </span>
-                      <span className="text-gray-600 text-sm ml-1">{plan.period}</span>
-                    </div>
-                  </div>
-
-                  {/* Features */}
-                  <div className="px-4 py-3">
-                    <ul className="space-y-2">
-                      {plan.features.slice(0, 3).map((feature, i) => (
-                        <li key={i} className="flex items-center gap-2 text-sm">
-                          {feature.included ? (
-                            <Check className="w-4 h-4 text-green-500" />
-                          ) : (
-                            <X className="w-4 h-4 text-gray-300" />
-                          )}
-                          <span className={feature.included ? "text-gray-800" : "text-gray-400"}>
-                            {feature.name}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Select Button */}
-                  <div className="px-4 mt-2">
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedPlan(plan.id);
-                      }}
-                      className={`w-full rounded-lg py-2 font-semibold ${
-                        selectedPlan === plan.id
-                          ? "bg-green-600 hover:bg-green-700 text-white"
-                          : index === 1
-                          ? "bg-blue-600 hover:bg-blue-700 text-white"
-                          : "bg-gray-600 hover:bg-gray-700 text-white"
-                      }`}
-                    >
-                      {selectedPlan === plan.id ? (
-                        <>
-                          <Check className="w-4 h-4 mr-2" />
-                          Byahiswemo
-                        </>
-                      ) : (
-                        "Hitamo"
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Scroll Dots Indicator */}
-          <div className="flex justify-center space-x-2 mt-4">
-            {subscriptionPlans.map((_, index) => (
-              <button
-                key={index}
-                className={`w-2 h-2 rounded-full transition-all ${
-                  activeCard === index ? 'bg-green-600 w-4' : 'bg-gray-300'
-                }`}
-                onClick={() => {
-                  const container = document.querySelector('.scrollbar-hide');
-                  if (container) {
-                    container.scrollTo({
-                      left: index * (320 + 16), // card width + gap
-                      behavior: 'smooth'
-                    });
-                  }
-                  setActiveCard(index);
-                }}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Desktop Layout */}
-      <div className="hidden sm:flex justify-center items-stretch gap-4 lg:gap-6">
-        {subscriptionPlans.map((plan, index) => (
+      {/* Mobile Layout */}
+      <div className="flex flex-col gap-6 sm:hidden mb-12">
+        {subscriptionPlans.map((plan) => (
           <div
             key={plan.id}
-            className={`flex flex-col transition-all duration-300 ${
-              index === 1 
-                ? 'scale-105 z-10 -mx-2' 
-                : 'scale-95 hover:scale-100'
+            onClick={() => setSelectedPlan(plan.id)}
+            className={`relative py-3 cursor-pointer transition-all rounded-xl border shadow-md ${
+              selectedPlan === plan.id
+                ? "border-green-500"
+                : "border-green-500"
             }`}
           >
-            {/* Recommended Badge */}
-            {index === 1 && (
-              <div className="text-center mb-4">
-                <div className="bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-bold inline-block">
-                  BIRACYANYUYE
-                </div>
+            {/* Floating Header Box */}
+            <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-4">
+              <div
+                className={`px-2 py-3 text-xs font-semibold border rounded-md ${
+                  selectedPlan === plan.id
+                    ? "bg-green-600 text-black border-green-500"
+                    : "bg-green-600 text-black border-green-500"
+                }`}
+              >
+                Icyumweru / Amezi
               </div>
-            )}
-            
-            <Card
-              className={`cursor-pointer transition-all border-2 min-h-96 flex flex-col ${
-                selectedPlan === plan.id
-                  ? "border-green-500 bg-green-50 shadow-xl"
-                  : index === 1
-                  ? "border-blue-500 bg-white shadow-lg"
-                  : "border-gray-200 hover:border-gray-300 bg-white"
-              }`}
-              onClick={() => setSelectedPlan(plan.id)}
-            >
-              <CardContent className="p-6 flex flex-col flex-grow">
-                {/* Plan Header */}
-                <div className="text-center mb-6">
-                  <div className={`mb-4 ${
-                    plan.id === "unique" ? "text-yellow-500" : 
-                    plan.id === "classic" ? "text-blue-500" : "text-gray-400"
-                  }`}>
-                    <Crown className="h-8 w-8 mx-auto" />
+            </div>
+
+            {/* Content */}
+            <div className="p-4 flex flex-col gap-3 rounded-xl">
+              {/* Title + Price + Features */}
+              <div className="flex justify-between items-start gap-4">
+                {/* Left side: title + price */}
+                <div>
+                  <h3 className="text-base font-semibold text-white">
+                    {plan.name}
+                  </h3>
+                  <div className="text-sm text-muted-foreground mb-2">
+                    {plan.currency}
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{plan.name}</h3>
-                  <div className="my-4">
-                    <span className="text-3xl font-bold text-gray-900">
-                      {plan.price.toLocaleString()}
-                    </span>
-                    <span className="text-gray-600 ml-1">{plan.period}</span>
+                  <div className="text-green-400 text-3xl font-bold">
+                    {plan.price}
                   </div>
-                  <p className="text-sm text-gray-600">{plan.description}</p>
                 </div>
 
-                {/* Features */}
-                <ul className="space-y-3 mb-6 flex-grow">
-                  {plan.features.map((feature, featureIndex) => (
-                    <li key={featureIndex} className="flex items-center gap-3">
+                {/* Right side: features */}
+                <ul className="space-y-1">
+                  {plan.features.map((feature, i) => (
+                    <li
+                      key={i}
+                      className="flex items-center gap-2 text-sm text-gray-200"
+                    >
                       {feature.included ? (
-                        <Check className="h-4 w-4 text-green-500" />
+                        <Check className="w-4 h-4 text-green-500" />
                       ) : (
-                        <X className="h-4 w-4 text-gray-300" />
+                        <XIcon className="w-4 h-4 text-gray-500" />
                       )}
-                      <span className={`text-sm ${
-                        feature.included ? "text-gray-900" : "text-gray-400"
-                      }`}>
-                        {feature.name}
-                      </span>
+                      {feature.name}
                     </li>
                   ))}
                 </ul>
+              </div>
 
-                {/* Selection Indicator */}
-                <div className="mt-auto">
-                  {selectedPlan === plan.id ? (
-                    <div className="flex items-center justify-center gap-2 text-green-600 font-medium py-2">
-                      <Check className="h-5 w-5" />
-                      <span>Byahiswemo</span>
-                    </div>
-                  ) : (
-                    <Button
-                      className={`w-full py-2 font-semibold ${
-                        index === 1
-                          ? "bg-blue-600 hover:bg-blue-700 text-white"
-                          : "bg-gray-600 hover:bg-gray-700 text-white"
-                      }`}
-                    >
-                      Hitamo
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+              {/* Button */}
+              <Button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedPlan(plan.id);
+                  setCurrentStep("payment-method");
+                }}
+                className={`mt-2 w-full rounded-lg py-2 font-semibold ${
+                  selectedPlan === plan.id
+                    ? "bg-green-500 hover:bg-green-600 text-black"
+                    : "bg-green-500 hover:bg-gray-600 text-black"
+                }`}
+              >
+                <Check className="w-4 h-4 mr-2" />
+                Komeza
+              </Button>
+            </div>
           </div>
         ))}
       </div>
 
-      {/* Continue Button */}
+      {/* Desktop Layout */}
+      <div className="hidden sm:grid grid-cols-1 md:grid-cols-3 gap-6">
+        {subscriptionPlans.map((plan) => (
+          <Card
+            key={plan.id}
+            className={`cursor-pointer transition-all border-2 ${
+              selectedPlan === plan.id
+                ? "border-green-500 bg-green-50 shadow-lg"
+                : "border-gray-200 hover:border-gray-300"
+            }`}
+            onClick={() => setSelectedPlan(plan.id)}
+          >
+            <CardContent className="p-6">
+              <div className="text-center mb-6">
+                <Crown className={`h-8 w-8 mx-auto mb-3 ${
+                  plan.id === "unique" ? "text-yellow-500" : 
+                  plan.id === "classic" ? "text-blue-500" : "text-gray-400"
+                }`} />
+                <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
+                <div className="my-4">
+                  <span className="text-3xl font-bold text-gray-900">
+                    {plan.price.toLocaleString()}
+                  </span>
+                  <span className="text-gray-600">{plan.period}</span>
+                </div>
+                <p className="text-sm text-gray-600">{plan.description}</p>
+              </div>
+
+              <ul className="space-y-3 mb-6">
+                {plan.features.map((feature, index) => (
+                  <li key={index} className="flex items-center gap-3">
+                    {feature.included ? (
+                      <Check className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <X className="h-4 w-4 text-gray-300" />
+                    )}
+                    <span className={`text-sm ${
+                      feature.included ? "text-gray-900" : "text-gray-400"
+                    }`}>
+                      {feature.name}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              {selectedPlan === plan.id && (
+                <div className="flex items-center justify-center gap-2 text-green-600 font-medium">
+                  <Check className="h-4 w-4" />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
       {selectedPlan && (
-        <div className="flex justify-center pt-6">
+        <div className="flex justify-center">
           <Button
             onClick={() => setCurrentStep("payment-method")}
-            className="bg-green-600 hover:bg-green-700 px-8 py-3 text-lg font-semibold"
-            size="lg"
+            className="bg-green-600 hover:bg-green-700 px-8 py-2"
           >
             Komeza Kwishyura
           </Button>
@@ -749,7 +692,6 @@ const renderPlanSelection = () => {
       )}
     </div>
   );
-};
 
   const renderPaymentMethod = () => (
     <div className="space-y-6">
