@@ -105,7 +105,7 @@ export default function SubscriptionPage() {
   ];
 
   const paymentMethods: PaymentMethod[] = [
-        {
+    {
       id: "mtn-rw",
       name: "MTN | Airtel Rwanda",
       description: "Choose to pay with MTN | Airtel Rwanda",
@@ -167,6 +167,7 @@ export default function SubscriptionPage() {
       image: "https://flagcdn.com/w320/cm.png",
     },
   ];
+
   // Duration plans calculation
   const calculateDurationPlans = (plan: SubscriptionPlan) => {
     const weeks: DurationPlan[] = Array.from({ length: 3 }, (_, i) => {
@@ -357,22 +358,22 @@ export default function SubscriptionPage() {
   const renderMobilePaymentOverlay = () => (
     <div className="fixed inset-0 z-50 sm:hidden flex items-end">
       <div
-        className="absolute inset-0 bg-black/40"
+        className="absolute inset-0 bg-black/40 dark:bg-black/40"
         onClick={() => setShowPaymentOverlay(false)}
       />
 
-      <div className="relative bg-[#1c1c1c] w-full rounded-t-2xl max-h-[60vh] flex flex-col shadow-2xl z-50">
+      <div className="relative bg-white dark:bg-[#1c1c1c] w-full rounded-t-2xl max-h-[70vh] flex flex-col shadow-2xl z-50">
         <div className="flex justify-center py-2">
-          <div className="w-12 h-1 bg-gray-500 rounded-full" />
+          <div className="w-12 h-1 bg-gray-300 dark:bg-gray-500 rounded-full" />
         </div>
 
         <div className="px-4 pb-2 text-center">
-          <h3 className="text-white font-medium text-base">Hitamo Uburyo Bwo Kwishyura</h3>
-          <p className="text-gray-400 text-xs">Kanda kuri serivisi wishaka gukoresha</p>
+          <h3 className="text-gray-900 dark:text-white font-medium text-base">Hitamo Uburyo Bwo Kwishyura</h3>
+          <p className="text-gray-600 dark:text-gray-400 text-xs">Kanda kuri serivisi wishaka gukoresha</p>
         </div>
 
         <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex-1 overflow-y-auto px-4 space-y-2">
+          <div className="flex-1 overflow-y-auto px-4 space-y-2 py-2">
             {paymentMethods.map((method) => (
               <button
                 key={method.id}
@@ -380,8 +381,8 @@ export default function SubscriptionPage() {
                 onClick={() => setTempSelectedPaymentMethod(method.id)}
                 className={`w-full flex items-center justify-between rounded-lg px-4 py-3 border ${
                   tempSelectedPaymentMethod === method.id
-                    ? "border-green-500 bg-green-600/20"
-                    : "border-gray-600 bg-[#2a2a2a]"
+                    ? "border-green-500 bg-green-50 dark:bg-green-600/20"
+                    : "border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-[#2a2a2a]"
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -390,7 +391,7 @@ export default function SubscriptionPage() {
                     alt={method.name}
                     className="w-8 h-6 object-contain rounded-sm"
                   />
-                  <span className="text-sm text-white font-medium">
+                  <span className="text-sm text-gray-900 dark:text-white font-medium">
                     {method.name}
                   </span>
                 </div>
@@ -398,15 +399,15 @@ export default function SubscriptionPage() {
                 {tempSelectedPaymentMethod === method.id ? (
                   <Check className="w-5 h-5 text-green-500" />
                 ) : (
-                  <div className="w-5 h-5 rounded-full border border-gray-500" />
+                  <div className="w-5 h-5 rounded-full border border-gray-400 dark:border-gray-500" />
                 )}
               </button>
             ))}
 
-            <div className="h-6" />
+            <div className="h-4" />
           </div>
 
-          <div className="sticky bottom-0 w-full p-4 bg-[#1c1c1c] border-t border-gray-700">
+          <div className="sticky bottom-0 w-full p-4 bg-white dark:bg-[#1c1c1c] border-t border-gray-200 dark:border-gray-700">
             <Button
               type="button"
               onClick={() => {
@@ -416,7 +417,8 @@ export default function SubscriptionPage() {
                   setCurrentStep("duration");
                 }
               }}
-              className="w-full bg-green-500 hover:bg-green-600 text-black font-semibold rounded-lg"
+              disabled={!tempSelectedPaymentMethod}
+              className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg py-3 disabled:bg-gray-400 disabled:text-gray-600 dark:disabled:bg-gray-600 dark:disabled:text-gray-400"
             >
               Komeza
             </Button>
@@ -429,25 +431,25 @@ export default function SubscriptionPage() {
   const renderMobileDurationOverlay = () => (
     <div className="fixed inset-0 z-50 sm:hidden flex items-end">
       <div
-        className="absolute inset-0 bg-black/40"
+        className="absolute inset-0 bg-black/40 dark:bg-black/40"
         onClick={() => setShowDurationOverlay(false)}
       />
 
-      <div className="relative bg-[#1c1c1c] w-full rounded-t-2xl max-h-[60vh] flex flex-col shadow-2xl z-50">
+      <div className="relative bg-white dark:bg-[#1c1c1c] w-full rounded-t-2xl max-h-[70vh] flex flex-col shadow-2xl z-50">
         <div className="flex justify-center py-2">
-          <div className="w-12 h-1 bg-gray-500 rounded-full" />
+          <div className="w-12 h-1 bg-gray-300 dark:bg-gray-500 rounded-full" />
         </div>
 
         <div className="px-4 pb-2 text-center">
-          <h3 className="text-white font-medium text-base">Hitamo Igihe</h3>
-          <p className="text-gray-400 text-xs">Kanda kuri icyumweru cyangwa amezi wishaka</p>
+          <h3 className="text-gray-900 dark:text-white font-medium text-base">Hitamo Igihe</h3>
+          <p className="text-gray-600 dark:text-gray-400 text-xs">Kanda kuri icyumweru cyangwa amezi wishaka</p>
         </div>
 
         <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex-1 overflow-y-auto px-4">
+          <div className="flex-1 overflow-y-auto px-4 py-2">
             {/* Icyumweru Section */}
-            <div>
-              <h4 className="text-green-200 text-lg font-medium mb-3 text-center">Icyumweru</h4>
+            <div className="mb-4">
+              <h4 className="text-green-600 dark:text-green-200 text-lg font-medium mb-3 text-center">Icyumweru</h4>
               <div className="space-y-2">
                 {durationPlans.weeks.map((plan) => (
                   <button
@@ -455,23 +457,23 @@ export default function SubscriptionPage() {
                     onClick={() => setTempSelectedDuration(plan.id)}
                     className={`w-full flex items-center justify-between rounded-lg px-4 py-3 border ${
                       tempSelectedDuration === plan.id
-                        ? "border-green-500 bg-green-600/20"
-                        : "border-gray-600 bg-[#2a2a2a]"
+                        ? "border-green-500 bg-green-50 dark:bg-green-600/20"
+                        : "border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-[#2a2a2a]"
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <span className="text-sm text-white font-medium">
+                      <span className="text-sm text-gray-900 dark:text-white font-medium">
                         {plan.name}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-green-400">
+                      <span className="text-sm text-green-600 dark:text-green-400">
                         {plan.price.toLocaleString()} RWF
                       </span>
                       {tempSelectedDuration === plan.id ? (
                         <Check className="w-5 h-5 text-green-500" />
                       ) : (
-                        <div className="w-5 h-5 rounded-full border border-gray-500" />
+                        <div className="w-5 h-5 rounded-full border border-gray-400 dark:border-gray-500" />
                       )}
                     </div>
                   </button>
@@ -481,7 +483,7 @@ export default function SubscriptionPage() {
 
             {/* Amezi Section */}
             <div>
-              <h4 className="text-green-200 text-lg font-medium mb-3 text-center">Amezi</h4>
+              <h4 className="text-green-600 dark:text-green-200 text-lg font-medium mb-3 text-center">Amezi</h4>
               <div className="space-y-2">
                 {durationPlans.months.slice(0, 6).map((plan) => (
                   <button
@@ -489,23 +491,23 @@ export default function SubscriptionPage() {
                     onClick={() => setTempSelectedDuration(plan.id)}
                     className={`w-full flex items-center justify-between rounded-lg px-4 py-3 border ${
                       tempSelectedDuration === plan.id
-                        ? "border-green-500 bg-green-600/20"
-                        : "border-gray-600 bg-[#2a2a2a]"
+                        ? "border-green-500 bg-green-50 dark:bg-green-600/20"
+                        : "border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-[#2a2a2a]"
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <span className="text-sm text-white font-medium">
+                      <span className="text-sm text-gray-900 dark:text-white font-medium">
                         {plan.name}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-green-400">
+                      <span className="text-sm text-green-600 dark:text-green-400">
                         {plan.price.toLocaleString()} RWF
                       </span>
                       {tempSelectedDuration === plan.id ? (
                         <Check className="w-5 h-5 text-green-500" />
                       ) : (
-                        <div className="w-5 h-5 rounded-full border border-gray-500" />
+                        <div className="w-5 h-5 rounded-full border border-gray-400 dark:border-gray-500" />
                       )}
                     </div>
                   </button>
@@ -513,10 +515,10 @@ export default function SubscriptionPage() {
               </div>
             </div>
 
-            <div className="h-20" />
+            <div className="h-4" />
           </div>
 
-          <div className="sticky bottom-0 w-full p-4 bg-[#1c1c1c] border-t border-gray-700">
+          <div className="sticky bottom-0 w-full p-4 bg-white dark:bg-[#1c1c1c] border-t border-gray-200 dark:border-gray-700">
             <Button
               type="button"
               onClick={() => {
@@ -527,7 +529,7 @@ export default function SubscriptionPage() {
                 }
               }}
               disabled={!tempSelectedDuration}
-              className="w-full bg-green-500 hover:bg-green-600 text-black font-semibold rounded-lg py-3 disabled:bg-gray-600 disabled:text-gray-400"
+              className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg py-3 disabled:bg-gray-400 disabled:text-gray-600 dark:disabled:bg-gray-600 dark:disabled:text-gray-400"
             >
               Komeza
             </Button>
@@ -537,32 +539,32 @@ export default function SubscriptionPage() {
     </div>
   );
 
- const renderPlanSelection = () => (
+  const renderPlanSelection = () => (
     <div className="space-y-6">
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900">Hitamo Ifatabuguzi</h1>
-        <p className="text-gray-600 mt-2">Hitamo ifatabuguzi rikwiye ibyo ushaka</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Hitamo Ifatabuguzi</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-2 text-sm sm:text-base">Hitamo ifatabuguzi rikwiye ibyo ushaka</p>
       </div>
 
       {/* Mobile Layout */}
-      <div className="flex flex-col gap-6 sm:hidden mb-12">
+      <div className="flex flex-col gap-4 sm:hidden mb-8">
         {subscriptionPlans.map((plan) => (
           <div
             key={plan.id}
             onClick={() => setSelectedPlan(plan.id)}
-            className={`relative py-3 cursor-pointer transition-all rounded-xl border shadow-md ${
+            className={`relative py-2 cursor-pointer transition-all rounded-lg border-2 shadow-sm ${
               selectedPlan === plan.id
-                ? "border-green-500"
-                : "border-green-500"
+                ? "border-green-500 bg-green-50 dark:bg-green-500/10"
+                : "border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800"
             }`}
           >
             {/* Floating Header Box */}
-            <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-4">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3">
               <div
-                className={`px-2 py-3 text-xs font-semibold border rounded-md ${
+                className={`px-2 py-1 text-[10px] font-semibold border rounded-md ${
                   selectedPlan === plan.id
-                    ? "bg-green-600 text-black border-green-500"
-                    : "bg-green-600 text-black border-green-500"
+                    ? "bg-green-500 text-white border-green-500"
+                    : "bg-gray-500 text-white border-gray-500"
                 }`}
               >
                 Icyumweru / Amezi
@@ -570,37 +572,42 @@ export default function SubscriptionPage() {
             </div>
 
             {/* Content */}
-            <div className="p-4 flex flex-col gap-3 rounded-xl">
+            <div className="p-3 flex flex-col gap-2">
               {/* Title + Price + Features */}
-              <div className="flex justify-between items-start gap-4">
+              <div className="flex justify-between items-start gap-3">
                 {/* Left side: title + price */}
-                <div>
-                  <h3 className="text-base font-semibold text-white">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                     {plan.name}
                   </h3>
-                  <div className="text-sm text-muted-foreground mb-2">
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">
                     {plan.currency}
                   </div>
-                  <div className="text-green-400 text-3xl font-bold">
+                  <div className="text-green-600 dark:text-green-400 text-xl font-bold">
                     {plan.price}
                   </div>
                 </div>
 
                 {/* Right side: features */}
-                <ul className="space-y-1">
-                  {plan.features.map((feature, i) => (
+                <ul className="flex-1 space-y-0.5 min-w-0">
+                  {plan.features.slice(0, 3).map((feature, i) => (
                     <li
                       key={i}
-                      className="flex items-center gap-2 text-sm text-gray-200"
+                      className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-300"
                     >
                       {feature.included ? (
-                        <Check className="w-4 h-4 text-green-500" />
+                        <Check className="w-3 h-3 text-green-500 flex-shrink-0" />
                       ) : (
-                        <XIcon className="w-4 h-4 text-gray-500" />
+                        <XIcon className="w-3 h-3 text-gray-400 flex-shrink-0" />
                       )}
-                      {feature.name}
+                      <span className="truncate">{feature.name}</span>
                     </li>
                   ))}
+                  {plan.features.length > 3 && (
+                    <li className="text-xs text-gray-500 dark:text-gray-400 pl-4.5">
+                      + {plan.features.length - 3} more
+                    </li>
+                  )}
                 </ul>
               </div>
 
@@ -611,13 +618,13 @@ export default function SubscriptionPage() {
                   setSelectedPlan(plan.id);
                   setCurrentStep("payment-method");
                 }}
-                className={`mt-2 w-full rounded-lg py-2 font-semibold ${
+                className={`mt-1 w-full rounded-md py-1.5 text-sm font-semibold ${
                   selectedPlan === plan.id
-                    ? "bg-green-500 hover:bg-green-600 text-black"
-                    : "bg-green-500 hover:bg-gray-600 text-black"
+                    ? "bg-green-500 hover:bg-green-600 text-white shadow-sm"
+                    : "bg-gray-500 hover:bg-gray-600 text-white"
                 }`}
               >
-                <Check className="w-4 h-4 mr-2" />
+                <Check className="w-3 h-3 mr-1.5" />
                 Komeza
               </Button>
             </div>
@@ -625,66 +632,119 @@ export default function SubscriptionPage() {
         ))}
       </div>
 
-      {/* Desktop Layout */}
-      <div className="hidden sm:grid grid-cols-1 md:grid-cols-3 gap-6">
-        {subscriptionPlans.map((plan) => (
-          <Card
-            key={plan.id}
-            className={`cursor-pointer transition-all border-2 ${
-              selectedPlan === plan.id
-                ? "border-green-500 bg-green-50 shadow-lg"
-                : "border-gray-200 hover:border-gray-300"
-            }`}
-            onClick={() => setSelectedPlan(plan.id)}
+{/* Desktop Layout */}
+<div className="hidden sm:grid grid-cols-1 md:grid-cols-3 gap-10 max-w-6xl mx-auto mt-16 px-4">
+  {subscriptionPlans.map((plan) => {
+    const isSelected = selectedPlan === plan.id;
+    const isPopular = plan.isPopular; // optional flag
+
+    return (
+      <Card
+        key={plan.id}
+        onClick={() => setSelectedPlan(plan.id)}
+        className={`
+          relative cursor-pointer rounded-3xl border transition-all duration-300 
+          flex flex-col h-[470px]
+          ${
+            isSelected
+              ? "border-green-500 shadow-green-200 shadow-xl scale-[1.02]"
+              : "border-gray-200 shadow-md hover:shadow-xl hover:-translate-y-1"
+          }
+          ${isPopular ? "ring-2 ring-green-400" : ""}
+          bg-white
+        `}
+      >
+        {/* Popular Badge */}
+        {isPopular && (
+          <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-green-500 text-white text-xs font-semibold px-4 py-1 rounded-full shadow">
+            Most Popular
+          </div>
+        )}
+
+        <CardContent className="p-8 flex flex-col flex-1">
+
+          {/* ===== HEADER ===== */}
+          <div className="text-center mb-8">
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">
+              {plan.name}
+            </h3>
+
+            <div className="flex items-end justify-center gap-2 mb-3">
+              <span className="text-5xl font-extrabold text-green-500 tracking-tight">
+                {plan.price.toLocaleString()}
+              </span>
+              <span className="text-lg font-semibold text-gray-700 mb-1">
+                RWF
+              </span>
+            </div>
+
+            <div className="text-sm font-medium text-gray-500 mb-3">
+              {plan.period}
+            </div>
+
+            <p className="text-sm text-gray-500 leading-relaxed max-w-xs mx-auto">
+              Ibi nibyo uzahabwa nugura iri fatabuguzi 
+            </p>
+          </div>
+
+          {/* ===== FEATURES ===== */}
+          <div className="border-t border-gray-100 my-4" />
+
+          <ul className="space-y-4 mb-8 flex-1">
+            {plan.features.map((feature, index) => (
+              <li key={index} className="flex items-center gap-4">
+                <div
+                  className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold ${
+                    feature.included
+                      ? "bg-green-100 text-green-600"
+                      : "bg-gray-100 text-gray-400"
+                  }`}
+                >
+                  {feature.included ? "✓" : "×"}
+                </div>
+
+                <span
+                  className={`text-sm ${
+                    feature.included
+                      ? "text-gray-800 font-medium"
+                      : "text-gray-400 line-through"
+                  }`}
+                >
+                  {feature.name}
+                </span>
+              </li>
+            ))}
+          </ul>
+
+          {/* ===== CTA ===== */}
+          <Button
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedPlan(plan.id);
+              setCurrentStep("payment-method");
+            }}
+            className={`
+              w-full h-12 rounded-xl text-base font-semibold transition-all
+              ${
+                isSelected
+                  ? "bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-200"
+                  : "bg-gray-900 hover:bg-gray-800 text-white"
+              }
+            `}
           >
-            <CardContent className="p-6">
-              <div className="text-center mb-6">
-                <Crown className={`h-8 w-8 mx-auto mb-3 ${
-                  plan.id === "unique" ? "text-yellow-500" : 
-                  plan.id === "classic" ? "text-blue-500" : "text-gray-400"
-                }`} />
-                <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
-                <div className="my-4">
-                  <span className="text-3xl font-bold text-gray-900">
-                    {plan.price.toLocaleString()}
-                  </span>
-                  <span className="text-gray-600">{plan.period}</span>
-                </div>
-                <p className="text-sm text-gray-600">{plan.description}</p>
-              </div>
-
-              <ul className="space-y-3 mb-6">
-                {plan.features.map((feature, index) => (
-                  <li key={index} className="flex items-center gap-3">
-                    {feature.included ? (
-                      <Check className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <X className="h-4 w-4 text-gray-300" />
-                    )}
-                    <span className={`text-sm ${
-                      feature.included ? "text-gray-900" : "text-gray-400"
-                    }`}>
-                      {feature.name}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-
-              {selectedPlan === plan.id && (
-                <div className="flex items-center justify-center gap-2 text-green-600 font-medium">
-                  <Check className="h-4 w-4" />
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+            Komeza
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  })}
+</div>
 
       {selectedPlan && (
-        <div className="flex justify-center">
+        <div className="hidden justify-center">
           <Button
             onClick={() => setCurrentStep("payment-method")}
-            className="bg-green-600 hover:bg-green-700 px-8 py-2"
+            className="bg-green-600 hover:bg-green-700 px-8 py-2 text-white"
           >
             Komeza Kwishyura
           </Button>
@@ -696,205 +756,237 @@ export default function SubscriptionPage() {
   const renderPaymentMethod = () => (
     <div className="space-y-6">
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900">Hitamo Uburyo Bwo Kwishyura</h1>
-        <p className="text-gray-600 mt-2">Hitamo uburyo wishaka kwishyura</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Hitamo Uburyo Bwo Kwishyura</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-2 text-sm sm:text-base">Hitamo uburyo wishaka kwishyura</p>
       </div>
 
       {/* Mobile - Show button to open overlay */}
       <div className="sm:hidden">
         <Button
           onClick={() => setShowPaymentOverlay(true)}
-          className="w-full bg-green-600 hover:bg-green-700 py-3"
+          className="w-full bg-green-600 hover:bg-green-700 py-3 text-white"
         >
           Hitamo Uburyo Bwo Kwishyura
           <ChevronRight className="h-4 w-4 ml-2" />
         </Button>
-      </div>
-
-      {/* Desktop Layout */}
-      <div className="hidden sm:grid grid-cols-1 md:grid-cols-4 gap-4 max-w-full mx-auto">
-        {paymentMethods.map((method) => (
-          <Card
-            key={method.id}
-            className={`bg-green-50 cursor-pointer transition-all border-2 h-32 flex flex-col ${
-              selectedPaymentMethod === method.id
-                ? "border-green-500 bg-green-100"
-                : "border-gray-200 hover:border-gray-300"
-            }`}
-            onClick={() => setSelectedPaymentMethod(method.id)}
-          >
-            <CardContent className="p-4 flex flex-col justify-between h-full">
-              <div className="flex items-center gap-3">
-                <img
-                  src={method.image}
-                  alt={method.name}
-                  className="w-10 h-7 object-contain rounded flex-shrink-0"
-                />
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-gray-900 text-sm leading-tight truncate">
-                    {method.name}
-                  </h3>
-                  <p className="text-xs text-gray-600 mt-1 line-clamp-2">
-                    {method.description}
-                  </p>
-                </div>
-              </div>
-              <div className="flex justify-end mt-2">
-                {selectedPaymentMethod === method.id && (
-                  <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <div className="flex justify-center gap-4">
-        <Button
-          variant="outline"
-          onClick={() => setCurrentStep("plans")}
-        >
-          Subira Inyuma
-        </Button>
+        
         {selectedPaymentMethod && (
+          <div className="mt-4 p-3 bg-green-50 dark:bg-green-500/10 rounded-lg border border-green-200 dark:border-green-500/30">
+            <p className="text-sm text-green-800 dark:text-green-300 font-medium">
+              Wahisemo: {paymentMethods.find(m => m.id === selectedPaymentMethod)?.name}
+            </p>
+          </div>
+        )}
+      </div>
+
+     {/* Desktop Layout */}
+<div className="hidden sm:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto mt-8 px-4">
+  {paymentMethods.map((method) => {
+    const isSelected = selectedPaymentMethod === method.id;
+
+    return (
+      <Card
+        key={method.id}
+        className={`
+          relative rounded-2xl border transition-all duration-300 
+          flex flex-col h-[170px] bg-white
+          ${
+            isSelected
+              ? "border-green-500 shadow-green-200 shadow-lg scale-[1.01]"
+              : "border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5"
+          }
+        `}
+      >
+        <CardContent className="p-8 flex flex-col justify-between h-full">
+
+          {/* ==== TOP CONTENT ==== */}
+          <div className="flex items-center gap-3">
+            <img
+              src={method.image}
+              alt={method.name}
+              className="w-10 h-7 object-contain rounded flex-shrink-0"
+            />
+
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-gray-900 text-sm leading-tight truncate">
+                {method.name}
+              </h3>
+              <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                {method.description}
+              </p>
+            </div>
+          </div>
+
+          {/* ==== KOMEZA BUTTON INSIDE CARD ==== */}
           <Button
-            onClick={() => setCurrentStep("duration")}
-            className="bg-green-600 hover:bg-green-700"
+            onClick={() => setSelectedPaymentMethod(method.id)}
+            className={`
+              mt-2 h-9 w-full rounded-lg text-sm font-semibold transition-all
+              ${
+                isSelected
+                  ? "bg-green-500 hover:bg-green-600 text-white shadow shadow-green-200"
+                  : "bg-gray-900 hover:bg-gray-800 text-white"
+              }
+            `}
           >
             Komeza
           </Button>
-        )}
-      </div>
-    </div>
-  );
 
+        </CardContent>
+      </Card>
+    );
+  })}
+</div>
+
+{/* ==== ACTION BUTTONS ==== */}
+<div className="flex justify-center gap-6 pt-10">
+  <Button
+    variant="outline"
+    onClick={() => setCurrentStep("plans")}
+    className="h-10 px-8 rounded-lg text-sm font-semibold"
+  >
+    Subira Inyuma
+  </Button>
+
+  <Button
+    disabled={!selectedPaymentMethod}
+    onClick={() => setCurrentStep("duration")}
+    className={`
+      h-10 px-8 rounded-lg text-sm font-semibold transition-all
+      ${
+        selectedPaymentMethod
+          ? "bg-green-500 hover:bg-green-600 text-white shadow-md shadow-green-200"
+          : "bg-gray-300 text-gray-500 cursor-not-allowed"
+      }
+    `}
+  >
+    Komeza
+  </Button>
+</div>
+</div>
+  );
   const renderDurationSelection = () => (
     <div className="space-y-8">
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900">Hitamo Igihe</h1>
-        <p className="text-gray-600 mt-2">Hitamo igihe wishaka gukoresha ifatabuguzi</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Hitamo Igihe</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-2 text-sm sm:text-base">Hitamo igihe wishaka gukoresha ifatabuguzi</p>
       </div>
 
       {/* Mobile - Show button to open overlay */}
       <div className="sm:hidden">
         <Button
           onClick={() => setShowDurationOverlay(true)}
-          className="w-full bg-green-600 hover:bg-green-700 py-3"
+          className="w-full bg-green-600 hover:bg-green-700 py-3 text-white"
         >
           Hitamo Igihe
           <ChevronRight className="h-4 w-4 ml-2" />
         </Button>
+        
+        {selectedDuration && (
+          <div className="mt-4 p-3 bg-green-50 dark:bg-green-500/10 rounded-lg border border-green-200 dark:border-green-500/30">
+            <p className="text-sm text-green-800 dark:text-green-300 font-medium">
+              Wahiye: {[...durationPlans.weeks, ...durationPlans.months].find(d => d.id === selectedDuration)?.name}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Desktop Layout */}
       <div className="hidden sm:block space-y-8">
-      {/* Weeks */}
-<div>
-  <h3 className="text-xl font-semibold text-gray-900 mb-4 text-center">Ibyumweru</h3>
-  <div className="flex flex-col sm:flex-row sm:flex-wrap justify-center gap-4">
-    {durationPlans.weeks.map((plan, index) => (
-      <button
-        key={plan.id}
-        onClick={() => setSelectedDuration(plan.id)}
-        className={`px-5 py-3 rounded-xl border-2 transition-colors flex justify-between items-center 
-          w-full sm:w-72
-          ${
-            selectedDuration === plan.id
-              ? "bg-green-50 text-green-700 border-green-500 shadow-md"
-              : "bg-white text-gray-700 border-gray-200 hover:border-green-300 hover:bg-green-50/50"
-          }`}
-      >
-        {/* Left: name */}
-        <span
-          className="font-medium"
-        >
-          {plan.name}
-        </span>
-
-        {/* Right: price + circle */}
-        <div className="flex items-center gap-2">
-          <span
-            className="text-sm font-semibold"
-          >
-            {plan.price.toLocaleString()} RWF
-          </span>
-          <span
-            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center 
-              ${
-                selectedDuration === plan.id
-                  ? "bg-green-500 border-green-500"
-                  : "border-gray-300 bg-white"
-              }`}
-          >
-            {selectedDuration === plan.id && (
-              <Check className="w-3 h-3 text-white" strokeWidth={3} />
-            )}
-          </span>
+        {/* Weeks */}
+        <div>
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 text-center">Ibyumweru</h3>
+          <div className="flex flex-col sm:flex-row sm:flex-wrap justify-center gap-4">
+            {durationPlans.weeks.map((plan) => (
+              <button
+                key={plan.id}
+                onClick={() => setSelectedDuration(plan.id)}
+                className={`px-5 py-3 rounded-xl border-2 transition-colors flex justify-between items-center 
+                  w-full sm:w-72
+                  ${
+                    selectedDuration === plan.id
+                      ? "bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-300 border-green-500 shadow-md"
+                      : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-green-300 hover:bg-green-50/50 dark:hover:bg-green-500/5"
+                  }`}
+              >
+                <span className="font-medium">
+                  {plan.name}
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold">
+                    {plan.price.toLocaleString()} RWF
+                  </span>
+                  <span
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center 
+                      ${
+                        selectedDuration === plan.id
+                          ? "bg-green-500 border-green-500"
+                          : "border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-700"
+                      }`}
+                  >
+                    {selectedDuration === plan.id && (
+                      <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                    )}
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
-      </button>
-    ))}
-  </div>
-</div>
 
-{/* Months */}
-<div>
-  <h3 className="text-xl font-semibold text-gray-900 mb-4 text-center">Amezi</h3>
-  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-    {durationPlans.months.slice(0, 8).map((plan, index) => (
-      <button
-        key={plan.id}
-        onClick={() => setSelectedDuration(plan.id)}
-        className={`px-4 py-3 rounded-xl border-2 transition-colors flex justify-between items-center 
-          ${
-            selectedDuration === plan.id
-              ? "bg-green-50 text-green-700 border-green-500 shadow-md"
-              : "bg-white text-gray-700 border-gray-200 hover:border-green-300 hover:bg-green-50/50"
-          }`}
-      >
-        {/* Left: name */}
-        <span
-          className="font-medium text-sm"
-        >
-          {plan.name}
-        </span>
-
-        {/* Right: price + circle */}
-        <div className="flex items-center gap-2">
-          <span
-            className="text-xs font-semibold"
-          >
-            {plan.price.toLocaleString()} RWF
-          </span>
-          <span
-            className={`w-4 h-4 rounded-full border-2 flex items-center justify-center 
-              ${
-                selectedDuration === plan.id
-                  ? "bg-green-500 border-green-500"
-                  : "border-gray-300 bg-white"
-              }`}
-          >
-            {selectedDuration === plan.id && (
-              <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
-            )}
-          </span>
+        {/* Months */}
+        <div>
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 text-center">Amezi</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {durationPlans.months.slice(0, 8).map((plan) => (
+              <button
+                key={plan.id}
+                onClick={() => setSelectedDuration(plan.id)}
+                className={`px-4 py-3 rounded-xl border-2 transition-colors flex justify-between items-center 
+                  ${
+                    selectedDuration === plan.id
+                      ? "bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-300 border-green-500 shadow-md"
+                      : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:border-green-300 hover:bg-green-50/50 dark:hover:bg-green-500/5"
+                  }`}
+              >
+                <span className="font-medium text-sm">
+                  {plan.name}
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold">
+                    {plan.price.toLocaleString()} RWF
+                  </span>
+                  <span
+                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center 
+                      ${
+                        selectedDuration === plan.id
+                          ? "bg-green-500 border-green-500"
+                          : "border-gray-300 dark:border-gray-500 bg-white dark:bg-gray-700"
+                      }`}
+                  >
+                    {selectedDuration === plan.id && (
+                      <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+                    )}
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
-      </button>
-    ))}
-  </div>
-</div>
-</div>
+      </div>
 
-      <div className="flex justify-center gap-4">
+      <div className="flex justify-center gap-4 pt-4">
         <Button
           variant="outline"
           onClick={() => setCurrentStep("payment-method")}
+          className="px-6"
         >
           Subira Inyuma
         </Button>
         {selectedDuration && (
           <Button
             onClick={() => setCurrentStep("confirmation")}
-            className="bg-green-600 hover:bg-green-700"
+            className="bg-green-600 hover:bg-green-700 px-6 text-white"
           >
             Komeza Kwemeza
           </Button>
@@ -915,173 +1007,205 @@ export default function SubscriptionPage() {
     const isCardPayment = selectedPaymentMethod?.includes("visa");
 
     return (
-      <div className="space-y-6 max-w-4xl mx-auto">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Emeza Ifatabuguzi</h1>
-          <p className="text-gray-600 mt-2">Reba ibyo wahisemo hanyuma ukomeze kwishyura</p>
-        </div>
+    <div className="space-y-10 max-w-5xl mx-auto px-4">
+  {/* ===== HEADER ===== */}
+  <div className="text-center">
+    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+      Emeza Ifatabuguzi
+    </h1>
+    <p className="text-gray-500 mt-2 text-sm sm:text-base max-w-xl mx-auto">
+      Reba ibyo wahisemo hanyuma ukomeze kwishyura
+    </p>
+  </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Order Summary */}
-          <Card>
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Incamake</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Ifatabuguzi:</span>
-                  <span className="font-semibold">{selectedPlanData.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Igihe:</span>
-                  <span className="font-semibold">{selectedDurationData.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Uburyo bwo kwishyura:</span>
-                  <span className="font-semibold">
-                    {paymentMethods.find(m => m.id === selectedPaymentMethod)?.name}
-                  </span>
-                </div>
-                <div className="border-t pt-3">
-                  <div className="flex justify-between text-lg font-bold">
-                    <span>Igiteranyo:</span>
-                    <span className="text-green-600">
-                      {totalAmount.toLocaleString()} RWF
-                    </span>
-                  </div>
-                </div>
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    
+    {/* ===== ORDER SUMMARY ===== */}
+    <Card className="rounded-2xl shadow-md border border-gray-200 bg-white">
+      <CardContent className="p-6 sm:p-8">
+        <h3 className="text-lg font-semibold text-gray-900 mb-6">
+          Incamake
+        </h3>
+
+        <div className="space-y-4">
+          <div className="flex justify-between text-sm sm:text-base">
+            <span className="text-gray-500">Ifatabuguzi:</span>
+            <span className="font-semibold text-gray-900">
+              {selectedPlanData.name}
+            </span>
+          </div>
+
+          <div className="flex justify-between text-sm sm:text-base">
+            <span className="text-gray-500">Igihe:</span>
+            <span className="font-semibold text-gray-900">
+              {selectedDurationData.name}
+            </span>
+          </div>
+
+          <div className="flex justify-between text-sm sm:text-base">
+            <span className="text-gray-500">Uburyo bwo kwishyura:</span>
+            <span className="font-semibold text-gray-900 text-right max-w-[60%]">
+              {paymentMethods.find(m => m.id === selectedPaymentMethod)?.name}
+            </span>
+          </div>
+
+          <div className="border-t pt-5">
+            <div className="flex justify-between text-lg sm:text-xl font-bold">
+              <span className="text-gray-900">Igiteranyo:</span>
+              <span className="text-green-600">
+                {totalAmount.toLocaleString()} RWF
+              </span>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+
+    {/* ===== PAYMENT SECTION ===== */}
+    <Card className="rounded-2xl shadow-md border border-gray-200 bg-white">
+      <CardContent className="p-6 sm:p-8">
+        <h3 className="text-lg font-semibold text-gray-900 mb-6">
+          Amakuru Yo Kwishyura
+        </h3>
+
+        {isPaymentCompleted ? (
+          <div className="text-center py-10">
+            {paymentStatus === "success" ? (
+              <div className="text-green-600">
+                <Check className="h-16 w-16 mx-auto mb-4" />
+                <h4 className="text-xl font-semibold mb-2">
+                  Ubwishyu Bwakiriwe!
+                </h4>
+                <p className="text-gray-500 text-sm sm:text-base">
+                  {paymentStatusMessage}
+                </p>
+
+                <Button
+                  onClick={() => setLocation("/konte")}
+                  className="mt-6 h-12 px-10 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold shadow-lg shadow-green-200"
+                >
+                  Genda Kuri Konte
+                </Button>
               </div>
-            </CardContent>
-          </Card>
+            ) : (
+              <div className="text-red-600">
+                <X className="h-16 w-16 mx-auto mb-4" />
+                <h4 className="text-xl font-semibold mb-2">
+                  Ubwishyu Bwanzwe
+                </h4>
+                <p className="text-gray-500 text-sm sm:text-base">
+                  {paymentStatusMessage}
+                </p>
 
-          {/* Payment Section */}
-          <Card>
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Amakuru Yo Kwishyura</h3>
-              
-              {isPaymentCompleted ? (
-                <div className="text-center py-8">
-                  {paymentStatus === 'success' ? (
-                    <div className="text-green-600">
-                      <Check className="h-16 w-16 mx-auto mb-4" />
-                      <h4 className="text-xl font-semibold mb-2">Ubwishyu Bwakiriwe!</h4>
-                      <p className="text-gray-600">{paymentStatusMessage}</p>
-                      <Button
-                        onClick={() => setLocation("/konte")}
-                        className="mt-4 bg-green-600 hover:bg-green-700"
-                      >
-                        Genda Kuri Konte
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="text-red-600">
-                      <X className="h-16 w-16 mx-auto mb-4" />
-                      <h4 className="text-xl font-semibold mb-2">Ubwishyu Bwanzwe</h4>
-                      <p className="text-gray-600">{paymentStatusMessage}</p>
-                      <Button
-                        onClick={() => setPaymentStatus('pending')}
-                        className="mt-4"
-                        variant="outline"
-                      >
-                        Ongera Ugerageze
-                      </Button>
-                    </div>
+                <Button
+                  onClick={() => setPaymentStatus("pending")}
+                  className="mt-6 h-12 px-10 rounded-xl font-semibold"
+                  variant="outline"
+                >
+                  Ongera Ugerageze
+                </Button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <>
+            {isCardPayment ? (
+              <div className="text-center py-6">
+                <FaCreditCard className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+
+                <Button
+                  onClick={handleSubmitPayment}
+                  disabled={isLoading}
+                  className="w-full h-12 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold shadow-md"
+                >
+                  {isLoading && (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
                   )}
-                </div>
-              ) : (
-                <>
-                  {isCardPayment ? (
-                    <div className="text-center py-4">
-                      <FaCreditCard className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                      <Button
-                        onClick={handleSubmitPayment}
-                        disabled={isLoading}
-                        className="w-full bg-green-600 hover:bg-green-700"
-                      >
-                        {isLoading ? (
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        ) : null}
-                        Ishura Ukoresheje Ikarita
-                      </Button>
+                  Ishura Ukoresheje Ikarita
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-5">
+                {!isInOtpPhase ? (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Nimero ya Telefone
+                      </label>
+                      <input
+                        type="tel"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        placeholder="Shyiramo numero yawe ya telefone"
+                        className="w-full h-11 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
                     </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {!isInOtpPhase ? (
-                        <>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Nimero ya Telefone
-                            </label>
-                            <input
-                              type="tel"
-                              value={phoneNumber}
-                              onChange={(e) => setPhoneNumber(e.target.value)}
-                              placeholder="Shyiramo numero yawe ya telefone"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                            />
-                          </div>
-                          <Button
-                            onClick={handleSubmitPayment}
-                            disabled={!phoneNumber || isLoading}
-                            className="w-full bg-green-600 hover:bg-green-700"
-                          >
-                            {isLoading ? (
-                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                            ) : null}
-                            Ohereza Ubwishyu
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Shyiramo OTP
-                            </label>
-                            <input
-                              type="text"
-                              value={otp}
-                              onChange={(e) => setOtp(e.target.value)}
-                              placeholder="Shyiramo OTP wakiriye kuri telefone"
-                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 text-center text-lg"
-                            />
-                          </div>
-                          <Button
-                            onClick={handleSubmitPayment}
-                            disabled={!otp || isLoading}
-                            className="w-full bg-green-600 hover:bg-green-700"
-                          >
-                            {isLoading ? (
-                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                            ) : null}
-                            Emeza Ubwishyu
-                          </Button>
-                        </>
+
+                    <Button
+                      onClick={handleSubmitPayment}
+                      disabled={!phoneNumber || isLoading}
+                      className="w-full h-12 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold shadow-md"
+                    >
+                      {isLoading && (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
                       )}
+                      Ohereza Ubwishyu
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Shyiramo OTP
+                      </label>
+                      <input
+                        type="text"
+                        value={otp}
+                        onChange={(e) => setOtp(e.target.value)}
+                        placeholder="Shyiramo OTP wakiriye kuri telefone"
+                        className="w-full h-11 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-center text-lg"
+                      />
                     </div>
-                  )}
 
-                  {error && (
-                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-                      <p className="text-red-700 text-sm">{error}</p>
-                    </div>
-                  )}
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                    <Button
+                      onClick={handleSubmitPayment}
+                      disabled={!otp || isLoading}
+                      className="w-full h-12 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold shadow-md"
+                    >
+                      {isLoading && (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      )}
+                      Emeza Ubwishyu
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
 
-        <div className="flex justify-center gap-4">
-          <Button
-            variant="outline"
-            onClick={() => setCurrentStep("duration")}
-          >
-            Subira Inyuma
-          </Button>
-        </div>
-      </div>
+            {error && (
+              <div className="mt-5 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-700 text-sm">{error}</p>
+              </div>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  </div>
+
+  {/* ===== BACK BUTTON ===== */}
+  <div className="flex justify-center">
+    <Button
+      variant="outline"
+      onClick={() => setCurrentStep("duration")}
+      className="h-11 px-10 rounded-xl font-semibold"
+    >
+      Subira Inyuma
+    </Button>
+  </div>
+</div>
     );
   };
-
   // Progress indicator
   const steps = [
     { id: "plans", name: "Hitamo Ifatabuguzi" },
@@ -1091,23 +1215,33 @@ export default function SubscriptionPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <Button
-            variant="ghost"
-            onClick={() => setLocation("/konte")}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Subira Kuri Konte
-          </Button>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Top Navigation Bar - Fixed for Mobile */}
+      <div className="sticky top-0 z-40 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sm:relative sm:bg-transparent sm:border-0">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-14 sm:h-auto sm:py-8">
+            <Button
+              variant="ghost"
+              onClick={() => setLocation("/konte")}
+              className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white -ml-2 sm:ml-0"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="text-sm sm:text-base">Subira Kuri Konte</span>
+            </Button>
+            
+            {/* Mobile step indicator */}
+            <div className="sm:hidden flex items-center gap-2">
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                Inzira {steps.findIndex(s => s.id === currentStep) + 1} ya {steps.length}
+              </span>
+            </div>
+          </div>
         </div>
+      </div>
 
-        {/* Progress Steps */}
-        <div className="mb-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        {/* Progress Steps - Hidden on mobile, shown on desktop */}
+        <div className="hidden sm:block mb-8">
           <div className="flex items-center justify-between max-w-4xl mx-auto">
             {steps.map((step, index) => (
               <div key={step.id} className="flex items-center">
@@ -1119,17 +1253,17 @@ export default function SubscriptionPage() {
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
                     steps.findIndex(s => s.id === currentStep) >= index
                       ? 'bg-green-600 border-green-600 text-white'
-                      : 'border-gray-300'
+                      : 'border-gray-300 dark:border-gray-600'
                   }`}>
                     {index + 1}
                   </div>
-                  <span className="text-xs mt-1 hidden sm:block">{step.name}</span>
+                  <span className="text-xs mt-1">{step.name}</span>
                 </div>
                 {index < steps.length - 1 && (
                   <div className={`w-16 h-0.5 mx-2 ${
                     steps.findIndex(s => s.id === currentStep) > index 
                       ? 'bg-green-600' 
-                      : 'bg-gray-300'
+                      : 'bg-gray-300 dark:bg-gray-600'
                   }`} />
                 )}
               </div>
@@ -1138,7 +1272,7 @@ export default function SubscriptionPage() {
         </div>
 
         {/* Current Step Content */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 sm:p-6">
           {currentStep === "plans" && renderPlanSelection()}
           {currentStep === "payment-method" && renderPaymentMethod()}
           {currentStep === "duration" && renderDurationSelection()}
