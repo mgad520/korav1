@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Clock, Flag, ChevronLeft, ChevronRight, Check, Languages, AlertCircle, Play, BookOpen, Lock } from "lucide-react";
+import { ArrowLeft, Clock, Flag, ChevronLeft, ChevronRight, Check, Languages, AlertCircle, Play, BookOpen, Lock, CheckCircle, XCircle } from "lucide-react";
 import { Link, useLocation } from "wouter"; 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQuestions, type QuestionSet, type UserPlan } from "./useQuestions";
+
 
 // Skeleton Components
 const QuizListSkeleton = () => (
@@ -270,7 +271,6 @@ const ExamInterfaceSkeleton = () => (
     </div>
   </div>
 );
-
 // Transform API questions to match your app's format with plan-based logic
 const transformQuestions = (questionSets: QuestionSet[] | null | undefined, userPlan: UserPlan | null) => {
   // Handle cases where questionSets is not an array
@@ -332,6 +332,7 @@ const transformQuestions = (questionSets: QuestionSet[] | null | undefined, user
         id: qIndex + 1,
         text: q.title || `Isuzuma rya ${qIndex + 1}`,
         imageUrl: q.image || undefined,
+        explanation: q.explanation || "", // Add explanation field if available
         choices: (q.choice || []).map((choiceText, choiceIndex) => ({
           id: String.fromCharCode(65 + choiceIndex), // A, B, C, D
           text: choiceText || `Choice ${String.fromCharCode(65 + choiceIndex)}`,
@@ -341,13 +342,15 @@ const transformQuestions = (questionSets: QuestionSet[] | null | undefined, user
     };
   });
 };
-export const lessonQuizzes = []
+
+export const lessonQuizzes = [];
+
 export default function ExamPage() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [timeRemaining, setTimeRemaining] = useState(0);
   const [mobilePage, setMobilePage] = useState(0);
-  const [answers, setAnswers] = useState<{ [key: number]: string }>({});
+  const [answers, setAnswers] = useState<{ [key: number]: { answer: string, isCorrect: boolean } }>({});
   const [location, setLocation] = useLocation();
   const [examStarted, setExamStarted] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("english");
@@ -357,6 +360,7 @@ export default function ExamPage() {
   const [isGuest, setIsGuest] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState("");
+  const [showImmediateFeedback, setShowImmediateFeedback] = useState(true); // Default to showing feedback
 
   // Check if user is guest on component mount
   useEffect(() => {
@@ -408,6 +412,15 @@ export default function ExamPage() {
   // Get current quiz data
   const currentQuiz = selectedQuiz ? lessonQuizzes.find(quiz => quiz.id === selectedQuiz) : null;
 
+  // Check if current quiz is Set 1 to enable immediate feedback
+  useEffect(() => {
+    if (currentQuiz && currentQuiz.id === "1") {
+      setShowImmediateFeedback(true);
+    } else {
+      setShowImmediateFeedback(false);
+    }
+  }, [currentQuiz]);
+
   // Initialize exam data from selected quiz
   const examData = currentQuiz ? {
     title: currentQuiz.title,
@@ -416,6 +429,7 @@ export default function ExamPage() {
     timeRemaining: timeRemaining,
     duration: currentQuiz.duration,
     questions: currentQuiz.questions,
+    isSet1: currentQuiz.id === "1" // Flag to check if it's Set 1
   } : null;
 
   // Initialize timer once
@@ -447,6 +461,18 @@ export default function ExamPage() {
   const currentQ = examData?.questions[currentQuestion];
   const progress = examData ? (examData.currentQuestion / examData.totalQuestions) * 100 : 0;
 
+  // Get the correct answer for the current question
+  const getCorrectAnswer = () => {
+    if (!currentQ) return null;
+    return currentQ.choices.find(choice => choice.isCorrect)?.id || null;
+  };
+
+  const isAnswerCorrect = (choiceId: string) => {
+    if (!currentQ) return false;
+    const correctAnswer = getCorrectAnswer();
+    return choiceId === correctAnswer;
+  };
+
   // Mobile pagination
   const questionsPerPage = 10;
   const totalMobilePages = examData ? Math.ceil(examData.totalQuestions / questionsPerPage) : 0;
@@ -460,11 +486,21 @@ export default function ExamPage() {
   };
 
   const handleAnswerSelect = (choiceId: string) => {
+    if (!currentQ || (showImmediateFeedback && answers[currentQuestion])) {
+      // Don't allow changing answer if immediate feedback is shown and answer is already selected
+      return;
+    }
+
+    const correct = isAnswerCorrect(choiceId);
     setSelectedAnswer(choiceId);
     setAnswers(prev => ({
       ...prev,
-      [currentQuestion]: choiceId
+      [currentQuestion]: { 
+        answer: choiceId, 
+        isCorrect: correct 
+      }
     }));
+
   };
 
   const handleTimeUp = () => {
@@ -499,7 +535,8 @@ export default function ExamPage() {
     
     if (currentQuestion < examData.questions.length - 1) {
       setCurrentQuestion(prev => prev + 1);
-      setSelectedAnswer(answers[currentQuestion + 1] || null);
+      const nextAnswer = answers[currentQuestion + 1];
+      setSelectedAnswer(nextAnswer?.answer || null);
       
       const newQuestionIndex = currentQuestion + 1;
       const newPage = Math.floor(newQuestionIndex / questionsPerPage);
@@ -514,7 +551,8 @@ export default function ExamPage() {
   const handlePrevious = () => {
     if (currentQuestion > 0) {
       setCurrentQuestion(prev => prev - 1);
-      setSelectedAnswer(answers[currentQuestion - 1] || null);
+      const prevAnswer = answers[currentQuestion - 1];
+      setSelectedAnswer(prevAnswer?.answer || null);
       
       const newQuestionIndex = currentQuestion - 1;
       const newPage = Math.floor(newQuestionIndex / questionsPerPage);
@@ -528,7 +566,8 @@ export default function ExamPage() {
     const targetIndex = questionNumber - 1;
     if (examData && targetIndex >= 0 && targetIndex < examData.questions.length) {
       setCurrentQuestion(targetIndex);
-      setSelectedAnswer(answers[targetIndex] || null);
+      const answer = answers[targetIndex];
+      setSelectedAnswer(answer?.answer || null);
       
       const newPage = Math.floor(targetIndex / questionsPerPage);
       setMobilePage(newPage);
@@ -540,6 +579,9 @@ export default function ExamPage() {
       console.log("Starting exam for quiz:", currentQuiz.title);
       setExamStarted(true);
       setCurrentView("exam");
+      // Reset answers when starting exam
+      setAnswers({});
+      setSelectedAnswer(null);
     }
   };
 
@@ -581,6 +623,8 @@ export default function ExamPage() {
     setCurrentView("quiz-list");
     setExamStarted(false);
     setTimeRemaining(0);
+    setAnswers({});
+    setSelectedAnswer(null);
   };
 
   const handleLoginRedirect = () => {
@@ -591,7 +635,7 @@ export default function ExamPage() {
     setLocation("/login");
   };
 
-  // Question number grid component
+  // Question number grid component with immediate feedback indicators
   const QuestionGrid = ({ showAll = false }) => {
     if (!examData) return null;
     
@@ -631,21 +675,32 @@ export default function ExamPage() {
         )}
 
         <div className={`flex flex-wrap gap-1 md:gap-2 ${showAll ? '' : ''}`}>
-          {questionsToShow.map((questionNumber) => (
-            <button
-              key={questionNumber}
-              className={`w-8 h-8 md:w-12 md:h-12 rounded border text-xs md:text-sm font-medium transition-all flex-shrink-0 ${
-                questionNumber === examData.currentQuestion
-                  ? "bg-green-200 text-primary-foreground border-2 border-green-500"
-                  : answers[questionNumber - 1]
-                  ? "bg-green-500 text-white border-green-500"
-                  : "bg-muted border-border hover:bg-muted/80"
-              }`}
-              onClick={() => handleQuestionSelect(questionNumber)}
-            >
-              {questionNumber}
-            </button>
-          ))}
+          {questionsToShow.map((questionNumber) => {
+            const answer = answers[questionNumber - 1];
+            const isCurrent = questionNumber === examData.currentQuestion;
+            
+            return (
+              <button
+                key={questionNumber}
+                className={`w-8 h-8 md:w-12 md:h-12 rounded border text-xs md:text-sm font-medium transition-all flex-shrink-0 flex items-center justify-center relative ${
+                  isCurrent
+                    ? "bg-green-200 text-black border-2 border-green-500"
+                    : answer
+                    ? answer.isCorrect
+                      ? "bg-green-500 text-white border-green-600"
+                      : "bg-green-500 text-white border-green-600"
+                    : "bg-muted border-border hover:bg-muted/80"
+                }`}
+                onClick={() => handleQuestionSelect(questionNumber)}
+              >
+                {questionNumber}
+                {answer && (
+                  <span className="">
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
     );
@@ -853,6 +908,14 @@ export default function ExamPage() {
                         </div>
                       )}
 
+                      {/* Feature indicator for Set 1 */}
+                      {quiz.id === "1" && (
+                        <div className="flex items-center gap-2 text-xs bg-blue-50 px-3 py-2 rounded-lg">
+                          <CheckCircle className="h-3 w-3 text-blue-600" />
+                          <span className="text-blue-700 font-medium">Immediate feedback on answers</span>
+                        </div>
+                      )}
+
                       {/* Start Button */}
                       <Button 
                         className={`w-full gap-2 h-9 text-sm ${
@@ -995,6 +1058,13 @@ export default function ExamPage() {
                             <div className="flex items-center gap-1 text-green-600">
                               <Check className="h-4 w-4" />
                               <span>Score: {quiz.score}%</span>
+                            </div>
+                          )}
+                          {/* Feature indicator for Set 1 */}
+                          {quiz.id === "1" && (
+                            <div className="flex items-center gap-1 text-blue-600">
+                              <CheckCircle className="h-4 w-4" />
+                              <span>Immediate feedback</span>
                             </div>
                           )}
                         </div>
@@ -1169,6 +1239,16 @@ export default function ExamPage() {
                           <span className="font-medium text-green-600">{currentQuiz.score}%</span>
                         </div>
                       )}
+                      {/* Feature indicator for Set 1 */}
+                      {currentQuiz.id === "1" && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Mode:</span>
+                          <span className="font-medium text-blue-600 flex items-center gap-1">
+                            <CheckCircle className="h-4 w-4" />
+                            Practice with immediate feedback
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -1218,6 +1298,9 @@ export default function ExamPage() {
                             <li>• I cannot pause or restart the quiz once started</li>
                             <li>• My answers will be automatically submitted when time expires</li>
                             <li>• This is a practice quiz for learning purposes</li>
+                            {currentQuiz.id === "1" && (
+                              <li className="text-blue-600">• You will see immediate feedback after each answer</li>
+                            )}
                           </ul>
                         </label>
                       </div>
@@ -1273,6 +1356,12 @@ export default function ExamPage() {
                   <p className="text-muted-foreground">
                     {currentQuiz.description}
                   </p>
+                  {currentQuiz.id === "1" && (
+                    <div className="inline-flex items-center gap-1 mt-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                      <CheckCircle className="h-3 w-3" />
+                      Practice mode with immediate feedback
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-6 mb-6">
@@ -1434,29 +1523,74 @@ export default function ExamPage() {
                         </h3>
                       </div>
 
+        
+
                       <div className="space-y-3">
-                        {currentQ.choices.map((choice) => (
-                          <button
-                            key={choice.id}
-                            className={`w-full text-left p-4 rounded-lg border-2 transition-all group ${
-                              selectedAnswer === choice.id
-                                ? "border-primary bg-primary/5 shadow-sm"
-                                : "border-border bg-background hover:bg-muted/50 hover:border-muted-foreground/20"
-                            }`}
-                            onClick={() => handleAnswerSelect(choice.id)}
-                          >
-                            <div className="flex items-start gap-3">
-                              <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center text-sm font-medium transition-colors ${
-                                selectedAnswer === choice.id
-                                  ? "border-primary bg-primary text-primary-foreground"
-                                  : "border-border group-hover:border-primary/50"
-                              }`}>
-                                {choice.id}
+                        {currentQ.choices.map((choice) => {
+                          const currentAnswer = answers[currentQuestion];
+                          const isSelected = selectedAnswer === choice.id;
+                          const showCorrect = showImmediateFeedback && currentAnswer;
+                          const isCorrectChoice = choice.isCorrect;
+                          const isWrongSelected = showCorrect && isSelected && !choice.isCorrect;
+                          const isCorrectSelected = showCorrect && isSelected && choice.isCorrect;
+                          
+                          return (
+                            <button
+                              key={choice.id}
+                              className={`w-full text-left p-4 rounded-lg border-2 transition-all group ${
+                                isSelected
+                                  ? showImmediateFeedback
+                                    ? isCorrectSelected
+                                      ? "border-green-500 bg-green-50 shadow-sm"
+                                      : isWrongSelected
+                                      ? "border-red-500 bg-red-50 shadow-sm"
+                                      : "border-primary bg-primary/5 shadow-sm"
+                                    : "border-primary bg-primary/5 shadow-sm"
+                                  : showCorrect && isCorrectChoice
+                                  ? "border-green-500 bg-green-50 shadow-sm"
+                                  : "border-border bg-background hover:bg-muted/50 hover:border-muted-foreground/20"
+                              }`}
+                              onClick={() => handleAnswerSelect(choice.id)}
+                              disabled={showImmediateFeedback && currentAnswer !== undefined}
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className={`flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center text-sm font-medium transition-colors ${
+                                  isSelected
+                                    ? showImmediateFeedback
+                                      ? isCorrectSelected
+                                        ? "border-green-500 bg-green-500 text-white"
+                                        : isWrongSelected
+                                        ? "border-red-500 bg-red-500 text-white"
+                                        : "border-primary bg-primary text-primary-foreground"
+                                      : "border-primary bg-primary text-primary-foreground"
+                                    : showCorrect && isCorrectChoice
+                                    ? "border-green-500 bg-green-500 text-white"
+                                    : "border-border group-hover:border-primary/50"
+                                }`}>
+                                  {choice.id}
+                                </div>
+                                <div className="flex-1">
+                                  <span className="text-sm md:text-base leading-relaxed">{choice.text}</span>
+                                  {showCorrect && isCorrectChoice && !isSelected && (
+                                    <div className="mt-0 flex items-center gap-1 text-green-600 text-xs">
+    
+                                    </div>
+                                  )}
+                                </div>
+                                {showImmediateFeedback && currentAnswer && (
+                                  <div className="flex-shrink-0">
+                                    {isCorrectSelected && (
+                                      <CheckCircle className="h-5 w-5 text-green-500" />
+                                    )}
+                                    {isWrongSelected && (
+                                      <XCircle className="h-5 w-5 text-red-500" />
+                                    )}
+                                  </div>
+                                )}
                               </div>
-                              <span className="text-sm md:text-base leading-relaxed">{choice.text}</span>
-                            </div>
-                          </button>
-                        ))}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
@@ -1488,8 +1622,12 @@ export default function ExamPage() {
                 <Button
                   size="sm"
                   onClick={currentQuestion === examData.questions.length - 1 ? handleFinish : handleNext}
-                  disabled={!selectedAnswer}
-                  className="flex-1 max-w-[120px] bg-primary hover:bg-primary/90"
+                  disabled={showImmediateFeedback && examData.isSet1 && !answers[currentQuestion]}
+                  className={`flex-1 max-w-[120px] ${
+                    showImmediateFeedback && examData.isSet1 && !answers[currentQuestion]
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-primary hover:bg-primary/90"
+                  }`}
                 >
                   {currentQuestion === examData.questions.length - 1 ? "Finish" : "Next"}
                 </Button>

@@ -71,8 +71,9 @@ export default function SubscriptionPage() {
       period: "/ Icyumweru",
       description: "Iki nibyiza ubabona mugishe muganze iri fatabuguzi",
       features: [
-        { name: "Ibizamini Byose", included: true },
-        { name: "Amasomo Yose", included: false },
+        { name: "Ibizamini 3", included: true },
+        { name: "Amasomo Yose", included: true },
+        { name: "Ikizamini Cy'isuzuma", included: false },
         { name: "Kureba Video", included: false },
       ],
     },
@@ -86,6 +87,7 @@ export default function SubscriptionPage() {
       features: [
         { name: "Ibizamini Byose", included: true },
         { name: "Amasomo Yose", included: true },
+        { name: "Ikizamini Cy'isuzuma", included: true },
         { name: "Kureba Video", included: false },
       ],
     },
@@ -99,6 +101,7 @@ export default function SubscriptionPage() {
       features: [
         { name: "Ibizamini Byose", included: true },
         { name: "Amasomo Yose", included: true },
+        { name: "Ikizamini Cy'isuzuma", included: true },
         { name: "Kureba Video", included: true },
       ],
     },
@@ -664,7 +667,7 @@ export default function SubscriptionPage() {
         <CardContent className="p-8 flex flex-col flex-1">
 
           {/* ===== HEADER ===== */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-2">
             <h3 className="text-2xl font-bold text-gray-900 mb-2">
               {plan.name}
             </h3>
@@ -682,19 +685,19 @@ export default function SubscriptionPage() {
               {plan.period}
             </div>
 
-            <p className="text-sm text-gray-500 leading-relaxed max-w-xs mx-auto">
+            <p className="text-sm text-gray-400 leading-relaxed max-w-xs mx-auto mb-0">
               Ibi nibyo uzahabwa nugura iri fatabuguzi 
             </p>
           </div>
 
           {/* ===== FEATURES ===== */}
-          <div className="border-t border-gray-100 my-4" />
+          <div className="border-t border-gray-100 my-2" />
 
           <ul className="space-y-4 mb-8 flex-1">
             {plan.features.map((feature, index) => (
               <li key={index} className="flex items-center gap-4">
                 <div
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold ${
+                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                     feature.included
                       ? "bg-green-100 text-green-600"
                       : "bg-gray-100 text-gray-400"
@@ -704,7 +707,7 @@ export default function SubscriptionPage() {
                 </div>
 
                 <span
-                  className={`text-sm ${
+                  className={`text-xs ${
                     feature.included
                       ? "text-gray-800 font-medium"
                       : "text-gray-400 line-through"
