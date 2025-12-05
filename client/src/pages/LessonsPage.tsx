@@ -33,27 +33,15 @@ interface LessonData {
   data: Lesson[];
 }
 
-// Skeleton Components
-const ChapterSkeleton = () => (
-  <div className="space-y-3">
-    {Array.from({ length: 4 }).map((_, index) => (
-      <div key={index} className="space-y-2">
-        <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 animate-pulse">
-          <div className="flex items-start gap-3 flex-1 min-w-0">
-            <div className="w-12 h-12 bg-muted rounded-lg flex-shrink-0"></div>
-            <div className="flex-1 min-w-0 space-y-2">
-              <div className="h-4 bg-muted rounded w-3/4"></div>
-              <div className="h-3 bg-muted rounded w-1/2"></div>
-            </div>
-          </div>
-          <div className="w-4 h-4 bg-muted rounded ml-2 flex-shrink-0"></div>
-        </div>
-        <div className="border-t-2 border-muted/30 mx-3"></div>
-      </div>
-    ))}
-  </div>
-);
+// Cache for chapters data
+let chaptersCache: Chapter[] | null = null;
+let cacheTimestamp: number | null = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
+// Cache for lessons by section
+const lessonsCache: Record<string, { data: any[], timestamp: number }> = {};
+
+// Skeleton Components
 const LessonContentSkeleton = () => (
   <div className="space-y-6 animate-pulse">
     {/* Header Skeleton */}
@@ -91,12 +79,6 @@ const LessonContentSkeleton = () => (
       </CardContent>
     </Card>
 
-    {/* Button Skeletons */}
-    <div className="flex flex-col sm:flex-row gap-3">
-      <div className="flex-1 h-12 bg-muted rounded"></div>
-      <div className="flex-1 h-12 bg-muted rounded"></div>
-    </div>
-
     {/* Navigation Skeletons */}
     <div className="flex justify-between items-center gap-4">
       <div className="flex-1 h-10 bg-muted rounded"></div>
@@ -106,64 +88,49 @@ const LessonContentSkeleton = () => (
   </div>
 );
 
-const MobileSectionSkeleton = () => (
-  <div className="space-y-4 pb-4">
-    {/* Expand/Collapse Buttons Skeleton */}
-    <div className="flex gap-2">
-      <div className="flex-1 h-8 bg-muted rounded animate-pulse"></div>
-      <div className="flex-1 h-8 bg-muted rounded animate-pulse"></div>
-    </div>
-
-    {/* Chapters Skeletons */}
-    {Array.from({ length: 3 }).map((_, index) => (
-      <Card key={index}>
-        <CardContent className="p-4 space-y-3">
-          <div className="flex justify-between items-center">
-            <div className="space-y-2 flex-1">
-              <div className="h-5 bg-muted rounded w-4/5"></div>
-              <div className="h-4 bg-muted rounded w-3/5"></div>
-            </div>
-            <div className="w-5 h-5 bg-muted rounded"></div>
-          </div>
-          
-          {/* Sections Skeletons */}
-          <div className="space-y-2">
-            {Array.from({ length: 2 }).map((_, sectionIndex) => (
-              <div key={sectionIndex} className="h-12 bg-muted/50 rounded animate-pulse"></div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    ))}
-  </div>
-);
-
 export default function LessonsPage() {
   const [selectedLessonIndex, setSelectedLessonIndex] = useState<number>(0);
-  const [completedLessons, setCompletedLessons] = useState<number[]>([1]);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [lessons, setLessons] = useState<any[]>([]);
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
   const [loadingLessons, setLoadingLessons] = useState<boolean>(false);
-  const [currentLessons, setCurrentLessons] = useState<Lesson[]>([]);
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
 
   // Get section ID from URL parameters
   const [match, params] = useRoute("/inyigisho/:sectionId?");
   const urlSectionId = params?.sectionId;
 
-  // Fetch chapters and sections on component mount
+  // Fetch chapters on component mount with caching
   useEffect(() => {
     const fetchChapters = async () => {
+      // Check cache first
+      const now = Date.now();
+      if (chaptersCache && cacheTimestamp && (now - cacheTimestamp) < CACHE_DURATION) {
+        console.log('Using cached chapters');
+        setChapters(chaptersCache);
+        
+        // If URL has a section ID, load that section
+        if (urlSectionId) {
+          handleSectionSelect(urlSectionId);
+        }
+        return;
+      }
+
       try {
         setLoading(true);
         const response = await fetch('https://dataapis.wixsite.com/kora/_functions/ChaptersWithSections');
         const data: Chapter[] = await response.json();
+        
+        // Update cache
+        chaptersCache = data;
+        cacheTimestamp = Date.now();
+        
         setChapters(data);
+        
         // If URL has a section ID, load that section
         if (urlSectionId) {
-          handleSectionClick(urlSectionId);
+          handleSectionSelect(urlSectionId);
         }
       } catch (error) {
         console.error('Error fetching chapters:', error);
@@ -175,8 +142,19 @@ export default function LessonsPage() {
     fetchChapters();
   }, [urlSectionId]);
 
-  // Fetch lessons for a specific section
+  // Fetch lessons for a specific section with caching
   const fetchLessonsBySection = async (sectionId: string) => {
+    // Check cache first
+    const now = Date.now();
+    const cachedLesson = lessonsCache[sectionId];
+    if (cachedLesson && (now - cachedLesson.timestamp) < CACHE_DURATION) {
+      console.log('Using cached lessons for section:', sectionId);
+      setLessons(cachedLesson.data);
+      setSelectedSection(sectionId);
+      setSelectedLessonIndex(0);
+      return;
+    }
+
     try {
       setLoadingLessons(true);
       const response = await fetch('https://dataapis.wixsite.com/kora/_functions/LessonsBySection/', {
@@ -221,14 +199,14 @@ export default function LessonsPage() {
           `
         }));
 
-        setCurrentLessons(data.data);
+        // Update cache
+        lessonsCache[sectionId] = {
+          data: transformedLessons,
+          timestamp: Date.now()
+        };
+
         setLessons(transformedLessons);
         setSelectedSection(sectionId);
-        
-        // Update URL to reflect selected section
-        window.history.replaceState(null, "", `/inyigisho/${sectionId}`);
-        
-        // Start with first lesson when section changes
         setSelectedLessonIndex(0);
       }
     } catch (error) {
@@ -238,13 +216,17 @@ export default function LessonsPage() {
     }
   };
 
-  const handleSectionClick = (sectionId: string) => {
-    fetchLessonsBySection(sectionId);
-  };
-
   const handleSectionSelect = (sectionId: string) => {
-    // Navigate to the section URL
-    window.location.href = `/inyigisho/${sectionId}`;
+    // Update URL to reflect selected section
+    window.history.pushState(null, "", `/inyigisho/${sectionId}`);
+    
+    // Expand the chapter containing this section
+    const chapter = chapters.find(ch => ch.sections.some(s => s.id === sectionId));
+    if (chapter) {
+      setExpandedChapters(prev => new Set(prev).add(chapter.id));
+    }
+    
+    fetchLessonsBySection(sectionId);
   };
 
   const toggleChapter = (chapterId: string) => {
@@ -260,8 +242,8 @@ export default function LessonsPage() {
   };
 
   const expandAllChapters = () => {
-   
-    setExpandedChapters(new Set());
+    const allChapterIds = chapters.map(chapter => chapter.id);
+    setExpandedChapters(new Set(allChapterIds));
   };
 
   const collapseAllChapters = () => {
@@ -270,518 +252,376 @@ export default function LessonsPage() {
 
   const currentLesson = lessons[selectedLessonIndex];
 
-  const handleMarkComplete = (lessonId: number) => {
-    setCompletedLessons(prev => 
-      prev.includes(lessonId) 
-        ? prev.filter(id => id !== lessonId)
-        : [...prev, lessonId]
-    );
-  };
-
-  const handleTryQuiz = (lessonId: number) => {
-    alert(`Starting quiz for lesson ${lessonId}`);
-  };
-
-const getLessonProgress = (lessonId: number) => {
-  const lesson = lessons.find(l => l.id === lessonId);
-  return lesson ? Math.round(lesson.progressValue) : 0;
-};
-
-  // Function to get section title by ID
-  const getSectionTitle = (sectionId: string) => {
-    for (const chapter of chapters) {
-      const section = chapter.sections.find(s => s.id === sectionId);
-      if (section) return section.title;
+  const handlePreviousLesson = () => {
+    if (selectedLessonIndex > 0) {
+      setSelectedLessonIndex(selectedLessonIndex - 1);
     }
-    return "Unknown Section";
   };
 
-  // Function to get chapter title for a section
-  const getChapterTitleForSection = (sectionId: string) => {
-    for (const chapter of chapters) {
-      const section = chapter.sections.find(s => s.id === sectionId);
-      if (section) return chapter.title;
+  const handleNextLesson = () => {
+    if (selectedLessonIndex < lessons.length - 1) {
+      setSelectedLessonIndex(selectedLessonIndex + 1);
     }
-    return "Unknown Chapter";
   };
-
-  // Lesson Viewer Component
-  const LessonViewer = () => {
-    const hasPreviousLesson = selectedLessonIndex > 0;
-    const hasNextLesson = selectedLessonIndex < lessons.length - 1;
-
-    const handlePreviousLesson = () => {
-      if (hasPreviousLesson) {
-        setSelectedLessonIndex(selectedLessonIndex - 1);
-      }
-    };
-
-    const handleNextLesson = () => {
-      if (hasNextLesson) {
-        setSelectedLessonIndex(selectedLessonIndex + 1);
-      }
-    };
-
-    const handleBackToSections = () => {
-      // Clear the selected section and lessons
-      setSelectedSection(null);
-      setLessons([]);
-      setCurrentLessons([]);
-      // Update URL to remove section ID
-      window.history.replaceState(null, "", "/inyigisho");
-    };
-
-    if (!currentLesson) {
-      return (
-        <Card>
-          <CardContent className="p-12 text-center">
-            <BookOpen className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-xl font-semibold mb-2">No Lessons Available</h3>
-            <p className="text-muted-foreground mb-6">
-              Select a section from the chapters list to load lessons
-            </p>
-          </CardContent>
-        </Card>
-      );
-    }
-
-    const isCompleted = completedLessons.includes(currentLesson.id);
-
-    return (
-      <div className="min-h-screen bg-background">
-        {/* Desktop Back Button */}
-        <div className="flex max-w-4xl mx-auto px-6 pt-6">
-          <Button
-            variant="ghost"
-            className="gap-2 mb-4"
-            onClick={handleBackToSections}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Subira Inyuma
-          </Button>
-        </div>
-
-        {/* Lesson Content */}
-        <div className="max-w-4xl mx-auto px-4 md:px-6 pb-20 md:pb-6">
-          {loadingLessons ? (
-            <LessonContentSkeleton />
-          ) : (
-            <div className="space-y-6">
-              {/* Lesson Header */}
-              <div className="text-center md:text-left">
-                <h1 className="text-2xl md:text-3xl text-primary font-bold mb-3">Ibisobanuro birambuye</h1>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="bg-muted/50 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Progress</span>
-                  <span className="text-sm text-muted-foreground">
-                    {currentLesson.progressValue}% Complete
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-primary h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${currentLesson.progressValue}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Lesson Content */}
-              <Card className="overflow-hidden">
-                <CardContent className="p-4 md:p-6">
-                  <div 
-                    className="prose prose-sm md:prose-base max-w-none"
-                    dangerouslySetInnerHTML={{ __html: currentLesson.content }}
-                  />
-                </CardContent>
-              </Card>
-
-              {/* Navigation - Fixed Bottom for Both Mobile and Desktop */}
-              <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4 md:relative md:bg-transparent md:border-t-0 md:p-0">
-                <div className="flex justify-between items-center gap-4 max-w-4xl mx-auto">
-                  <Button
-                    variant="outline"
-                    className="flex-1 gap-2 h-10 md:flex-initial md:px-4"
-                    onClick={handlePreviousLesson}
-                    disabled={!hasPreviousLesson}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                    <span className="md:hidden">Previous</span>
-                    <span className="hidden md:inline">Previous Lesson</span>
-                  </Button>
-                  
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-12 justify-center">
-                    <span>{selectedLessonIndex + 1}</span>
-                    <span>/</span>
-                    <span>{lessons.length}</span>
-                  </div>
-                  
-                  <Button
-                    variant="outline"
-                    className="flex-1 gap-2 h-10 md:flex-initial md:px-4"
-                    onClick={handleNextLesson}
-                    disabled={!hasNextLesson}
-                  >
-                    <span className="md:hidden">Next</span>
-                    <span className="hidden md:inline">Next Lesson</span>
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Add some padding at the bottom for mobile to account for fixed navigation */}
-        <div className="md:hidden h-16"></div>
-      </div>
-    );
-  };
-
-  // Loading state
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
-          {/* Mobile Skeleton */}
-          <div className="md:hidden">
-            <MobileSectionSkeleton />
-          </div>
-
-          {/* Desktop Skeleton */}
-          <div className="hidden md:grid lg:grid-cols-4 gap-6">
-            {/* Chapters Sidebar Skeleton */}
-            <div className="lg:col-span-1">
-              <Card className="sticky top-4">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-5 h-5 bg-muted rounded animate-pulse"></div>
-                    <div className="space-y-2 flex-1">
-                      <div className="h-5 bg-muted rounded w-3/4"></div>
-                      <div className="h-3 bg-muted rounded w-1/2"></div>
-                    </div>
-                  </div>
-
-                  {/* Expand/Collapse Buttons Skeleton */}
-                  <div className="flex gap-2 mb-3">
-                    <div className="flex-1 h-8 bg-muted rounded animate-pulse"></div>
-                    <div className="flex-1 h-8 bg-muted rounded animate-pulse"></div>
-                  </div>
-
-                  <ChapterSkeleton />
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Content Area Skeleton */}
-            <div className="lg:col-span-3">
-              <LessonContentSkeleton />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // Expandable Chapter Component for Desktop Sidebar
   const ChapterItem = ({ chapter }: { chapter: Chapter }) => {
     const isExpanded = expandedChapters.has(chapter.id);
     
     return (
-     <div className="space-y-2">
-  <Button
-    variant="ghost"
-    className="w-full justify-between h-auto p-3 hover:bg-accent"
-    onClick={() => toggleChapter(chapter.id)}
-  >
-    <div className="flex items-start gap-3 text-left flex-1 min-w-0">
-      {/* Image preview for chapter from backend */}
-      <div className="flex-shrink-0">
-        <img 
-          src={chapter.image} 
-          alt={chapter.title}
-          className="w-12 h-12 object-cover rounded-lg"
-        />
-      </div>
-      
-      <div className="flex-1 min-w-0 overflow-hidden">
-        <div className="font-medium text-sm truncate">
-          Chapter {chapter.chapterNumber}
-        </div>
-        <div className="text-xs text-muted-foreground truncate">
-          {chapter.title}
-        </div>
-        
-      </div>
-    </div>
-    {isExpanded ? (
-      <ChevronUp className="h-4 w-4 flex-shrink-0 ml-2" />
-    ) : (
-      <ChevronDown className="h-4 w-4 flex-shrink-0 ml-2" />
-    )}
-  </Button>
-  
-  {/* Line separator added below */}
-  <div className="border-t-2 border-muted mx-3"></div>
-  
-  {isExpanded && (
-    <div className="ml-4 space-y-1 border-l-2 border-muted pl-3">
-      {chapter.sections.map((section) => (
+      <div className="space-y-2">
         <Button
-          key={section.id}
-          variant={selectedSection === section.id ? "secondary" : "ghost"}
-          className="w-full justify-start h-auto py-2 px-3 text-left min-w-0"
-          onClick={() => handleSectionSelect(section.id)}
+          variant="ghost"
+          className="w-full justify-between h-auto p-3 hover:bg-accent"
+          onClick={() => toggleChapter(chapter.id)}
         >
-          <div className="flex items-center gap-2 w-full min-w-0">
-            <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
+          <div className="flex items-start gap-3 text-left flex-1 min-w-0">
+            {/* Image preview for chapter from backend */}
+            <div className="flex-shrink-0">
+              <img 
+                src={chapter.image} 
+                alt={chapter.title}
+                className="w-12 h-12 object-cover rounded-lg"
+              />
+            </div>
+            
             <div className="flex-1 min-w-0 overflow-hidden">
-              <div className="text-xs font-medium truncate">
-                Section {section.sectionNumber}
+              <div className="font-medium text-sm truncate">
+                Chapter {chapter.chapterNumber}
               </div>
               <div className="text-xs text-muted-foreground truncate">
-                {section.title}
+                {chapter.title}
               </div>
             </div>
           </div>
+          {isExpanded ? (
+            <ChevronUp className="h-4 w-4 flex-shrink-0 ml-2" />
+          ) : (
+            <ChevronDown className="h-4 w-4 flex-shrink-0 ml-2" />
+          )}
         </Button>
-      ))}
-    </div>
-  )}
-</div>
+        
+        {/* Line separator added below */}
+        <div className="border-t-2 border-muted mx-3"></div>
+        
+        {isExpanded && (
+          <div className="ml-4 space-y-1 border-l-2 border-muted pl-3">
+            {chapter.sections.map((section) => (
+              <Button
+                key={section.id}
+                variant={selectedSection === section.id ? "secondary" : "ghost"}
+                className="w-full justify-start h-auto py-2 px-3 text-left min-w-0"
+                onClick={() => handleSectionSelect(section.id)}
+              >
+                <div className="flex items-center gap-2 w-full min-w-0">
+                  <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    <div className="text-xs font-medium truncate">
+                      Section {section.sectionNumber}
+                    </div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      {section.title}
+                    </div>
+                  </div>
+                </div>
+              </Button>
+            ))}
+          </div>
+        )}
+      </div>
     );
   };
 
   // Mobile Section List Component
   const MobileSectionList = () => (
     <div className="space-y-4 pb-4">
-      {/* Expand/Collapse All Buttons */}
-      <div className="flex gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={expandAllChapters}
-          className="flex-1"
-        >
-          Expand All
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={collapseAllChapters}
-          className="flex-1"
-        >
-          Collapse All
-        </Button>
-      </div>
 
       {/* Chapters and Sections */}
-      <div className="space-y-4">
-        {chapters.map((chapter) => (
-          <Card key={chapter.id}>
-            <CardContent className="p-4">
-              <Button
-                variant="ghost"
-                className="w-full justify-between h-auto p-0 mb-3 hover:bg-transparent min-w-0"
-                onClick={() => toggleChapter(chapter.id)}
-              >
-                <div className="flex-1 min-w-0 overflow-hidden text-left">
-                  <h3 className="font-semibold text-lg truncate">
-                    Chapter {chapter.chapterNumber}: {chapter.title}
-                  </h3>
-                </div>
-                {expandedChapters.has(chapter.id) ? (
-                  <ChevronUp className="h-5 w-5 flex-shrink-0 ml-2" />
-                ) : (
-                  <ChevronDown className="h-5 w-5 flex-shrink-0 ml-2" />
-                )}
-              </Button>
-              
-              {expandedChapters.has(chapter.id) && (
-                <div className="space-y-2">
-                  {chapter.sections.map((section) => (
-                    <Button
-                      key={section.id}
-                      variant={selectedSection === section.id ? "secondary" : "outline"}
-                      className="w-full justify-start h-auto py-3 text-left min-w-0"
-                      onClick={() => handleSectionSelect(section.id)}
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <BookOpen className="h-4 w-4 flex-shrink-0" />
-                        <div className="flex-1 min-w-0 overflow-hidden">
-                          <div className="font-medium text-sm truncate">
-                            Section {section.sectionNumber}: {section.title}
-                          </div>
-                          <div className="text-xs text-muted-foreground truncate">
-                            Click to start learning
-                          </div>
-                        </div>
-                      </div>
-                    </Button>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {loadingLessons && (
-        <Card>
-          <CardContent className="p-6">
-            <div className="space-y-3">
-              <div className="h-4 bg-muted rounded w-3/4 mx-auto"></div>
-              <div className="h-3 bg-muted rounded w-1/2 mx-auto"></div>
+<div className="space-y-4">
+  {chapters.map((chapter) => (
+    <Card key={chapter.id}>
+      <CardContent className="p-4">
+        <Button
+          variant="ghost"
+          className="w-full justify-between h-auto p-0 mb-3 hover:bg-transparent min-w-0"
+          onClick={() => toggleChapter(chapter.id)}
+        >
+          <div className="flex items-start gap-3 text-left flex-1 min-w-0">
+            {/* Image preview for chapter from backend */}
+            <div className="flex-shrink-0">
+              <img 
+                src={chapter.image} 
+                alt={chapter.title}
+                className="w-12 h-12 object-cover rounded-lg"
+              />
             </div>
-          </CardContent>
-        </Card>
+            
+            <div className="flex-1 min-w-0 overflow-hidden">
+              <div className="font-medium text-sm truncate">
+                Chapter {chapter.chapterNumber}
+              </div>
+              <div className="text-xs text-muted-foreground truncate">
+                {chapter.title}
+              </div>
+            </div>
+          </div>
+          
+          {expandedChapters.has(chapter.id) ? (
+            <ChevronUp className="h-5 w-5 flex-shrink-0 ml-2" />
+          ) : (
+            <ChevronDown className="h-5 w-5 flex-shrink-0 ml-2" />
+          )}
+        </Button>
+        
+        {/* Line separator added below */}
+        <div className="border-t-2 border-muted mb-3"></div>
+        
+        {expandedChapters.has(chapter.id) && (
+          <div className="space-y-2">
+            {chapter.sections.map((section) => (
+              <Button
+                key={section.id}
+                variant={selectedSection === section.id ? "secondary" : "outline"}
+                className="w-full justify-start h-auto py-3 text-left min-w-0"
+                onClick={() => handleSectionSelect(section.id)}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <BookOpen className="h-4 w-4 flex-shrink-0" />
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    <div className="font-medium text-sm truncate">
+                      Section {section.sectionNumber}: {section.title}
+                    </div>
+                    <div className="text-xs text-muted-foreground truncate">
+                      Click to start learning
+                    </div>
+                  </div>
+                </div>
+              </Button>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  ))}
+</div>
+
+      {loadingLessons && lessons.length === 0 && (
+        <div className="text-center py-6">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+          <p className="text-sm text-muted-foreground">Loading lessons...</p>
+        </div>
       )}
     </div>
   );
 
-  // If lessons are loaded and we have a current lesson, show the lesson viewer
-  if (lessons.length > 0 && currentLesson && selectedSection) {
+  // Lesson Content Component
+  const LessonContent = () => {
+    const hasPreviousLesson = selectedLessonIndex > 0;
+    const hasNextLesson = selectedLessonIndex < lessons.length - 1;
+
+    return (
+      <div className="space-y-6">
+        {/* Lesson Header */}
+        <div className="text-center md:text-left">
+          <h1 className="text-2xl md:text-3xl text-primary font-bold mb-3">Ibisobanuro birambuye</h1>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="bg-muted/50 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium">Progress</span>
+            <span className="text-sm text-muted-foreground">
+              {currentLesson.progressValue}% Complete
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className="bg-primary h-2 rounded-full transition-all duration-300"
+              style={{ width: `${currentLesson.progressValue}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Lesson Content */}
+        <Card className="overflow-hidden">
+          <CardContent className="p-4 md:p-6">
+            <div 
+              className="prose prose-sm md:prose-base max-w-none"
+              dangerouslySetInnerHTML={{ __html: currentLesson.content }}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Navigation */}
+        <div className="flex justify-between items-center gap-4">
+          <Button
+            variant="outline"
+            className="flex-1 gap-2 h-10 md:flex-initial md:px-4"
+            onClick={handlePreviousLesson}
+            disabled={!hasPreviousLesson}
+          >
+            <ChevronLeft className="h-4 w-4" />
+            <span className="md:hidden">Previous</span>
+            <span className="hidden md:inline">Previous Lesson</span>
+          </Button>
+          
+          <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-12 justify-center">
+            <span>{selectedLessonIndex + 1}</span>
+            <span>/</span>
+            <span>{lessons.length}</span>
+          </div>
+          
+          <Button
+            variant="outline"
+            className="flex-1 gap-2 h-10 md:flex-initial md:px-4"
+            onClick={handleNextLesson}
+            disabled={!hasNextLesson}
+          >
+            <span className="md:hidden">Next</span>
+            <span className="hidden md:inline">Next Lesson</span>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  // Loading state for initial chapters
+  if (loading && chapters.length === 0) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-4">
-          {/* Mobile Layout */}
-          <div className="md:hidden">
-            
-            <LessonViewer />
-          </div>
-
-          {/* Desktop Layout */}
-          <div className="hidden md:grid lg:grid-cols-4 gap-6">
-            {/* Chapters and Sections Sidebar */}
-            <div className="lg:col-span-1">
-              <Card className="sticky top-4 max-h-[calc(100vh-2rem)] overflow-hidden">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3 mb-4">
-                    <BookOpen className="h-5 w-5 text-primary" />
-                    <div className="min-w-0 flex-1">
-                      <h3 className="font-semibold text-base truncate">Chapters & Sections</h3>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {chapters.length} chapters available
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Expand/Collapse All Buttons */}
-                  <div className="flex gap-2 mb-3">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={expandAllChapters}
-                      className="flex-1 text-xs h-8"
-                    >
-                      Expand All
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={collapseAllChapters}
-                      className="flex-1 text-xs h-8"
-                    >
-                      Collapse All
-                    </Button>
-                  </div>
-
-                  <div className="space-y-3 max-h-[500px] overflow-y-auto">
-                    {chapters.map((chapter) => (
-                      <ChapterItem key={chapter.id} chapter={chapter} />
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Lesson Content */}
-            <div className="lg:col-span-3">
-              <LessonViewer />
-            </div>
+        
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
+          <div className="text-center py-12">
+            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading chapters...</p>
           </div>
         </div>
       </div>
     );
   }
 
-  // Show chapters and sections when no lessons are loaded
+  // Mobile Layout
+  const MobileLayout = () => (
+    <div className="md:hidden">
+      {selectedSection && lessons.length > 0 ? (
+        <div className="space-y-6 pb-20">
+          {/* Mobile Back Button */}
+          <Button
+            variant="ghost"
+            className="gap-2 mb-4"
+            onClick={() => {
+              setSelectedSection(null);
+              setLessons([]);
+              setSelectedLessonIndex(0);
+              window.history.replaceState(null, "", "/inyigisho");
+            }}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Sections
+          </Button>
+
+          {/* Lesson Content */}
+          {loadingLessons ? (
+            <LessonContentSkeleton />
+          ) : (
+            <LessonContent />
+          )}
+        </div>
+      ) : (
+        <MobileSectionList />
+      )}
+    </div>
+  );
+
+  // Desktop Layout
+  const DesktopLayout = () => (
+    <div className="hidden md:grid lg:grid-cols-4 gap-6">
+      {/* Chapters and Sections Sidebar */}
+      <div className="lg:col-span-1">
+        <Card className="sticky top-4 max-h-[calc(100vh-2rem)] overflow-hidden">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3 mb-4">
+              <BookOpen className="h-5 w-5 text-primary" />
+              <div className="min-w-0 flex-1">
+                <h3 className="font-semibold text-base truncate">Chapters & Sections</h3>
+                <p className="text-xs text-muted-foreground truncate">
+                  {chapters.length} chapters available
+                </p>
+              </div>
+            </div>
+
+            {/* Expand/Collapse All Buttons */}
+            <div className="flex gap-2 mb-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={expandAllChapters}
+                className="flex-1 text-xs h-8"
+              >
+                Expand All
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={collapseAllChapters}
+                className="flex-1 text-xs h-8"
+              >
+                Collapse All
+              </Button>
+            </div>
+
+            <div className="space-y-3 max-h-[500px] overflow-y-auto">
+              {chapters.map((chapter) => (
+                <ChapterItem key={chapter.id} chapter={chapter} />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Content Area */}
+      <div className="lg:col-span-3">
+        {selectedSection && lessons.length > 0 ? (
+          <div className="space-y-6">
+            {loadingLessons ? (
+              <LessonContentSkeleton />
+            ) : (
+              <LessonContent />
+            )}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="p-12 text-center">
+              <BookOpen className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Choose a Section</h3>
+              <p className="text-muted-foreground mb-6">
+                Select a section from the chapters list to start learning
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background">
-      <Navbar/>
+        <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+            <div className="max-w-6xl mx-auto px-4 md:px-6 py-4">
+              <div className="flex items-center justify-between">
+                <Link href="/ahabanza">
+                  <Button variant="ghost" size="sm" className="gap-2">
+                    <ArrowLeft className="h-4 w-4" />
+                    <span className="inline">Subira Ahabanza</span>
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-4">
-        {/* Mobile Layout */}
-        <div className="md:hidden">
-          <MobileSectionList />
-        </div>
-
-        {/* Desktop Layout */}
-        <div className="hidden md:grid lg:grid-cols-4 gap-6">
-          {/* Chapters and Sections Sidebar */}
-          <div className="lg:col-span-1">
-            <Card className="sticky top-4 max-h-[calc(100vh-2rem)] overflow-hidden">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3 mb-4">
-                  <BookOpen className="h-5 w-5 text-primary" />
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-semibold text-base truncate">Chapters & Sections</h3>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {chapters.length} chapters available
-                    </p>
-                  </div>
-                </div>
-
-                {/* Expand/Collapse All Buttons */}
-                <div className="flex gap-2 mb-3">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={expandAllChapters}
-                    className="flex-1 text-xs h-8"
-                  >
-                    Expand All
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={collapseAllChapters}
-                    className="flex-1 text-xs h-8"
-                  >
-                    Collapse All
-                  </Button>
-                </div>
-
-                <div className="space-y-3 max-h-[500px] overflow-y-auto">
-                  {chapters.map((chapter) => (
-                    <ChapterItem key={chapter.id} chapter={chapter} />
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Empty State */}
-          <div className="lg:col-span-3">
-            <Card>
-              <CardContent className="p-12 text-center">
-                <BookOpen className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-xl font-semibold mb-2">Choose a Section</h3>
-                <p className="text-muted-foreground mb-6">
-                  Select a section from the chapters list to start learning
-                </p>
-                {loadingLessons && (
-                  <div className="space-y-3 max-w-md mx-auto">
-                    <div className="h-4 bg-muted rounded w-3/4 mx-auto"></div>
-                    <div className="h-3 bg-muted rounded w-1/2 mx-auto"></div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+        <MobileLayout />
+        <DesktopLayout />
       </div>
     </div>
   );

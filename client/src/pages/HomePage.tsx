@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { lessonQuizzes } from "./QuizzesPage";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 
 // Types for API responses
@@ -50,6 +50,20 @@ interface LessonData {
   data: Lesson[];
 }
 
+interface Exam {
+  id: string;
+  title: string;
+  description: string;
+  difficulty: string;
+  questionCount: number;
+  duration: number;
+}
+
+// Cache for chapters data
+let chaptersCache: Chapter[] | null = null;
+let cacheTimestamp: number | null = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 export default function HomePage() {
   const [selectedQuiz, setSelectedQuiz] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<
@@ -63,15 +77,25 @@ export default function HomePage() {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [practiceProgress, setPracticeProgress] = useState(0);
+  // Add state to your homepage component
+const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+const [upgradeMessage, setUpgradeMessage] = useState("");
 
   // User authentication state
   const [user, setUser] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Real data states
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [featuredModules, setFeaturedModules] = useState<any[]>([]);
-  const [loadingModules, setLoadingModules] = useState(true);
+  const [loadingModules, setLoadingModules] = useState(false);
+  
+  // Exam state
+  const [randomExam, setRandomExam] = useState<Exam | null>(null);
+  const [loadingExam, setLoadingExam] = useState(false);
+
+  // Use refs to prevent re-fetching
+  const hasFetchedRef = useRef(false);
 
   // Mock user progress data - will be replaced with real data from backend
   const [userProgress, setUserProgress] = useState({
@@ -81,86 +105,177 @@ export default function HomePage() {
     practiceTests: 85,
   });
 
-  // Check if user is logged in and fetch data on component mount
+  // Check if user is logged in on component mount
   useEffect(() => {
     checkUserAuth();
-    fetchChaptersAndModules();
   }, []);
 
-  const checkUserAuth = () => {
+  // Fetch chapters when component mounts (only once)
+  useEffect(() => {
+    if (!hasFetchedRef.current) {
+      fetchChaptersAndModules();
+      fetchRandomExam();
+      hasFetchedRef.current = true;
+    }
+  }, []);
+
+  const checkUserAuth = async () => {
     try {
       const userData = localStorage.getItem("user");
       if (userData) {
         const parsedUser = JSON.parse(userData);
         setUser(parsedUser);
-        // Fetch user progress from backend
-        fetchUserProgress(parsedUser._id);
       }
     } catch (error) {
       console.error("Error checking user auth:", error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  const fetchUserProgress = async (userId: string) => {
-    try {
-      // This would be replaced with your actual backend endpoint
-      const response = await fetch(
-        `https://blaise0781.wixstudio.com/house-rent/_functions/getUserProgress?userId=${userId}`
-      );
-      if (response.ok) {
-        const progressData = await response.json();
-        setUserProgress(progressData);
-      }
-    } catch (error) {
-      console.error("Error fetching user progress:", error);
+
+// Fetch random exam from endpoint using POST method
+const fetchRandomExam = async () => {
+  try {
+    setLoadingExam(true);
+    const response = await fetch('https://dataapis.wixsite.com/kora/_functions/randomSetsByPlans', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      // Add any required body data if needed by the API
+      body: JSON.stringify({
+        // Add any required parameters here if the API needs them
+        // For example:
+        // userId: user?._id,
+        // planType: "free",
+        // limit: 1
+      }),
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-  };
+    
+    const data = await response.json();
+    
+    // Log the response to understand the structure
+    console.log('Exam API response:', data);
+    
+    // Handle different response structures
+    if (data) {
+      let examData;
+      
+      // Check if data is an array
+      if (Array.isArray(data)) {
+        examData = data[0];
+      } 
+      // Check if data has a results/items property
+      else if (data.results && Array.isArray(data.results)) {
+        examData = data.results[0];
+      }
+      else if (data.items && Array.isArray(data.items)) {
+        examData = data.items[0];
+      }
+      // Check if data is already an object
+      else if (typeof data === 'object' && data !== null) {
+        examData = data;
+      }
+      
+      if (examData) {
+        setRandomExam({
+          id: examData.id || examData._id || "1",
+          title: examData.title || examData.name || "Ikizamini cy'isuzuma",
+          description: examData.description || examData.desc || "Isuzuma ry'ibiganiro by'imodoka",
+          difficulty: examData.difficulty || examData.level || "Medium",
+          questionCount: examData.questionCount || examData.totalQuestions || examData.questions || 20,
+          duration: examData.duration || examData.timeLimit || 30,
+        });
+      } else {
+        // If no exam data found, use fallback
+        setFallbackExam();
+      }
+    } else {
+      setFallbackExam();
+    }
+  } catch (error) {
+    console.error('Error fetching random exam:', error);
+    setFallbackExam();
+  } finally {
+    setLoadingExam(false);
+  }
+};
+
+// Helper function for fallback exam data
+const setFallbackExam = () => {
+  setRandomExam({
+    id: "fallback-exam",
+    title: "Ikizamini cy'isuzuma",
+    description: "Isuzuma ry'ibiganiro by'imodoka",
+    difficulty: "Medium",
+    questionCount: 20,
+    duration: 30,
+  });
+};
 
   // Fetch real chapters and create featured modules
   const fetchChaptersAndModules = async () => {
+    const now = Date.now();
+    if (chaptersCache && cacheTimestamp && (now - cacheTimestamp) < CACHE_DURATION) {
+      setChapters(chaptersCache);
+      createFeaturedModules(chaptersCache);
+      return;
+    }
+
     try {
       setLoadingModules(true);
       const response = await fetch('https://dataapis.wixsite.com/kora/_functions/ChaptersWithSections');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data: Chapter[] = await response.json();
+      
+      chaptersCache = data;
+      cacheTimestamp = Date.now();
+      
       setChapters(data);
-      
-      // Transform chapters into featured modules for homepage
-      const modules = data.slice(0, 3).map((chapter, index) => {
-        const icons = [Target, Zap, TrendingUp];
-        const colors = [
-          "from-blue-500 to-cyan-500",
-          "from-green-500 to-emerald-500", 
-          "from-orange-500 to-red-500"
-        ];
-        
-        return {
-          id: chapter.id,
-          title: chapter.title,
-          description: `Learn essential concepts from Chapter ${chapter.chapterNumber}`,
-          level: `CHAPTER ${chapter.chapterNumber}`,
-          progress: `${chapter.sections.length} sections`,
-          imageUrl: chapter.image,
-          lessonsCount: chapter.sections.length,
-          progressValue: Math.round(Math.min((index / 3) * 100, 75)),// Mock progress based on position
-          icon: icons[index] || BookOpen,
-          color: colors[index] || "from-blue-500 to-cyan-500",
-          chapterNumber: chapter.chapterNumber
-        };
-      });
-      
-      setFeaturedModules(modules);
+      createFeaturedModules(data);
     } catch (error) {
       console.error('Error fetching chapters:', error);
-      // Fallback to dummy data if API fails
-      setFeaturedModules(getFallbackModules());
+      const fallbackModules = getFallbackModules();
+      setFeaturedModules(fallbackModules);
     } finally {
       setLoadingModules(false);
     }
   };
 
-  // Fallback modules in case API fails
+  const createFeaturedModules = (chaptersData: Chapter[]) => {
+    const modules = chaptersData.slice(0, 3).map((chapter, index) => {
+      const icons = [Target, Zap, TrendingUp];
+      const colors = [
+        "from-blue-500 to-cyan-500",
+        "from-green-500 to-emerald-500", 
+        "from-orange-500 to-red-500"
+      ];
+      
+      return {
+        id: chapter.id,
+        title: chapter.title,
+        description: `Learn essential concepts from Chapter ${chapter.chapterNumber}`,
+        level: `CHAPTER ${chapter.chapterNumber}`,
+        progress: `${chapter.sections.length} sections`,
+        imageUrl: chapter.image,
+        lessonsCount: chapter.sections.length,
+        progressValue: Math.round(Math.min((index / 3) * 100, 75)),
+        icon: icons[index] || BookOpen,
+        color: colors[index] || "from-blue-500 to-cyan-500",
+        chapterNumber: chapter.chapterNumber
+      };
+    });
+    
+    setFeaturedModules(modules);
+  };
+
   const getFallbackModules = () => [
     {
       id: "1",
@@ -240,10 +355,9 @@ export default function HomePage() {
     { title: "Avg. Completion", value: "86%", icon: TrendingUp, change: "+8%" },
   ];
 
-  const weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const mobileWeekDays = ["Mon", "Tue", "Wed", "Th", "Fr"];
+  const weekDays = [,"Sun","Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const mobileWeekDays = ["S","M", "T", "W", "T", "F","S"];
 
-  // Mobile modules data - use real data
   const mobileModules = featuredModules.slice(0, 2).map(module => ({
     id: module.id,
     title: module.title,
@@ -299,6 +413,99 @@ export default function HomePage() {
     }
   };
 
+// Modified startExam function for homepage
+const startExam = () => {
+  requireAuth(async () => {
+    console.log("Starting exam...");
+    
+    try {
+      // Get user ID
+      const userData = localStorage.getItem("user");
+      let userId = '';
+      
+      if (userData) {
+        try {
+          const parsedUser = JSON.parse(userData);
+          userId = parsedUser?._id || '';
+        } catch (e) {
+          console.error("Error parsing user data:", e);
+        }
+      }
+      
+      // Call API
+      const response = await fetch('https://dataapis.wixsite.com/kora/_functions/randomSetsByPlans', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: userId })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch exam: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Check user plan
+      const userPlan = data.userPlan;
+      const planName = userPlan?.planName?.toLowerCase() || '';
+      const allowedPlans = ["classic", "unique"];
+      
+      if (!allowedPlans.includes(planName)) {
+        // Show upgrade modal on homepage
+        const currentPlan = userPlan?.planName || "Nta fatabuguzi";
+        const message = `Iki kizamini cyemerewe ifatabuguzi rya Classic cyangwa Unique. Ubu ufite "${currentPlan}"`;
+        
+        setUpgradeMessage(message);
+        setShowUpgradeModal(true);
+        return;
+      }
+      
+      // User has valid plan, save data and navigate
+      const randomSetData = data.randomSet;
+      const examQuestions = randomSetData?.questions || [];
+      
+      if (examQuestions.length === 0) {
+        throw new Error("No questions received");
+      }
+      
+      // Transform and save questions
+      const transformedQuestions = examQuestions.map((q: any, index: number) => ({
+        id: index + 1,
+        text: q.title || `Question ${index + 1}`,
+        imageUrl: q.image || undefined,
+        explanation: "Iki kizamini gikorwa mugihe waba urangije kwiga no kwisuzuma neza",
+        choices: (q.choice || []).map((choiceText: string, choiceIndex: number) => ({
+          id: String.fromCharCode(65 + choiceIndex),
+          text: choiceText || `Choice ${String.fromCharCode(65 + choiceIndex)}`,
+          isCorrect: choiceIndex === (q.choiceAnswer || 0)
+        }))
+      }));
+      
+      const examData = {
+        randomSet: {
+          questions: examQuestions,
+          title: randomSetData?.setNumber ? `Set ${randomSetData.setNumber}` : "Ikizamini cy'isuzuma",
+          imageCount: randomSetData?.imageCount || 0,
+          totalQuestions: randomSetData?.totalQuestions || examQuestions.length,
+          setNumber: randomSetData?.setNumber,
+          apiResponse: data
+        },
+        transformedQuestions: transformedQuestions,
+        userPlan: userPlan
+      };
+      
+      localStorage.setItem('exam-questions', JSON.stringify(examData));
+      setLocation(`/ibibazo?exam=direct&source=homepage`);
+      
+    } catch (error) {
+      console.error("Error:", error);
+      alert("Ntibyakunze gukura ikizamini. Ongera ugerageze.");
+    }
+  }, "take practice exams");
+};
+
   // Actions that require authentication
   const startQuiz = (quizId: string) => {
     requireAuth(() => {
@@ -316,10 +523,8 @@ export default function HomePage() {
 
   const continueModule = (moduleId: string) => {
     requireAuth(() => {
-      // Navigate to lessons page and automatically select the first section of this chapter
       const chapter = chapters.find(ch => ch.id === moduleId);
       if (chapter && chapter.sections.length > 0) {
-        // You can pass state to the lessons page to auto-select this section
         setLocation(`/inyigisho`);
       } else {
         setLocation(`/inyigisho`);
@@ -387,28 +592,14 @@ export default function HomePage() {
     setLocation("/login?mode=signup");
   };
 
-  // Show loading state
-  if (isLoading || loadingModules) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading learning content...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      {/* Main Content - Always visible for all users */}
       <div className="max-w-7xl mx-auto">
-        {/* Mobile Layout - Always visible */}
+        {/* Mobile Layout */}
         <div className="md:hidden">
           <div className="px-4 py-6">
-            {/* For You Section */}
             <section className="mb-8">
               <h2 className="text-black text-2xl font-bold mb-4 px-2">Ahabanza</h2>
               {/* Practice Card */}
@@ -438,12 +629,12 @@ export default function HomePage() {
               </Card>
 
               {/* Week Days - Mobile Only */}
-              <div className="flex gap-2 mb-6 overflow-x-auto pb-2 px-2 scrollbar-hide">
+              <div className="flex gap-1 mb-6 overflow-x-auto pb-2 px-1 scrollbar-hide">
                 {mobileWeekDays.map((day, index) => (
                   <button
                     key={day}
                     onClick={() => handleDaySelect(index)}
-                    className={`flex-shrink-0 px-4 py-2 rounded-lg border text-sm font-medium transition-colors flex flex-col items-center gap-1 ${
+                    className={`flex-shrink-0 px-3.5 py-2 rounded-lg border text-sm font-medium transition-colors flex flex-col items-center gap-1 ${
                       index === selectedDay && user
                         ? "bg-green-500 text-primary-foreground"
                         : "bg-background text-foreground border-border"
@@ -470,57 +661,131 @@ export default function HomePage() {
                 ))}
               </div>
 
-              {/* Divider */}
               <div className="border-t border-border my-6 mx-2"></div>
-
+              {/* New: Ikizamini cy'isuzuma Card - Mobile */}
+              <Card className="mb-4 mx-2 bg-green-100 text-black">
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Target className="h-5 w-5 text-green-500" />
+                      <span className="text-xs font-semibold">
+                        Ikizamini cy'isuzuma
+                      </span>
+                    </div>
+                    {loadingExam ? (
+                      <div className="space-y-2">
+                        <div className="h-4 bg-white/30 rounded animate-pulse"></div>
+                        <div className="h-3 bg-white/30 rounded animate-pulse w-3/4"></div>
+                      </div>
+                    ) : randomExam ? (
+                      <>
+                        <h3 className="text-sm font-semibold leading-tight">
+                          {randomExam.title}
+                        </h3>
+                        <p className="text-xs opacity-90">
+                          {randomExam.description}
+                        </p>
+                        <div className="flex items-center justify-between text-xs pt-2">
+                          <div className="flex items-center gap-2">
+                            <BookOpen className="h-3 w-3" />
+                            <span>{randomExam.questionCount} Questions</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-3 w-3" />
+                            <span>{randomExam.duration} min</span>
+                          </div>
+                        </div>
+                      </>
+                    ) : null}
+                    
+                    <Button
+                      className="w-full gap-2 bg-green-500 hover:bg-white/90 text-white h-10 text-sm font-semibold mt-3"
+                      onClick={startExam}
+                      disabled={loadingExam}
+                    >
+                      {loadingExam ? (
+                        "Loading..."
+                      ) : user ? (
+                        <>
+                          Tangira ikizamini
+                          <Play className="h-3 w-3" />
+                        </>
+                      ) : (
+                        "Injira ubone kwisuzuma"
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+              
               {/* Jump Back In Section */}
               <div className="mb-6 px-2">
                 <h3 className="text-lg font-semibold mb-3">Komeza Kwiga</h3>
 
-                {/* Progress Cards */}
                 <div className="space-y-3 mb-4">
-                  {mobileModules.map((module) => (
-                    <Card
-                      key={module.id}
-                      className="hover:shadow-md transition-shadow bg-green-100 cursor-pointer"
-                      onClick={() => continueModule(module.id)}
-                    >
-                      <CardContent className="p-3">
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-sm mb-1">
-                              {module.title}
-                            </h4>
-                            <p className="text-xs text-muted-foreground mb-1">
-                              {module.level}
-                            </p>
-                            <p className="text-sm font-medium">
-                              {module.progress}
-                            </p>
+                  {loadingModules ? (
+                    [1, 2].map((i) => (
+                      <Card key={i} className="bg-green-100">
+                        <CardContent className="p-3">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex-1">
+                              <div className="h-4 bg-gray-300 rounded animate-pulse w-3/4 mb-1"></div>
+                              <div className="h-3 bg-gray-300 rounded animate-pulse w-1/2 mb-1"></div>
+                              <div className="h-3 bg-gray-300 rounded animate-pulse w-1/3"></div>
+                            </div>
+                            <div className="h-7 w-7 bg-gray-300 rounded-full animate-pulse"></div>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0 flex-shrink-0 ml-2"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              continueModule(module.id);
-                            }}
-                          >
-                            <Play className="h-3 w-3" />
-                          </Button>
-                        </div>
-                        <Progress value={module.progressValue} className="h-1 mb-1" />
-                        <div className="flex justify-between items-center text-xs text-muted-foreground">
-                          <span>{module.progressValue}% complete</span>
-                          <span>{user ? "Continue" : "Login to Start"}</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                          <div className="h-1 bg-gray-300 rounded animate-pulse mb-1"></div>
+                          <div className="flex justify-between items-center text-xs">
+                            <div className="h-3 bg-gray-300 rounded animate-pulse w-16"></div>
+                            <div className="h-3 bg-gray-300 rounded animate-pulse w-20"></div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  ) : (
+                    mobileModules.map((module) => (
+                      <Card
+                        key={module.id}
+                        className="hover:shadow-md transition-shadow bg-green-100 cursor-pointer"
+                        onClick={() => continueModule(module.id)}
+                      >
+                        <CardContent className="p-3">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-sm mb-1">
+                                {module.title}
+                              </h4>
+                              <p className="text-xs text-muted-foreground mb-1">
+                                {module.level}
+                              </p>
+                              <p className="text-sm font-medium">
+                                {module.progress}
+                              </p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 flex-shrink-0 ml-2"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                continueModule(module.id);
+                              }}
+                            >
+                              <Play className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          <Progress value={module.progressValue} className="h-1 mb-1" />
+                          <div className="flex justify-between items-center text-xs text-muted-foreground">
+                            <span>{module.progressValue}% complete</span>
+                            <span>{user ? "Continue" : "Login to Start"}</span>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
                 </div>
 
-                {/* All Lessons Button */}
                 <Button
                   variant="outline"
                   className="w-full gap-2 h-10 text-sm"
@@ -531,68 +796,83 @@ export default function HomePage() {
                 </Button>
               </div>
 
-              {/* Lesson Cards Grid */}
-              <div className="space-y-3 px-2">
-                {mobileModules.map((module) => (
-                  <Card
-                    key={module.id}
-                    className="hover:shadow-md transition-shadow bg-green-100 cursor-pointer"
-                    onClick={() => continueModule(module.id)}
-                  >
-                    <CardContent className="p-3">
-                      <div className="flex gap-3">
-                        {/* Image Section */}
-                        <div className="flex-shrink-0">
-                          <img
-                            src={module.imageUrl || "/placeholder-image.jpg"}
-                            alt={module.title}
-                            className="w-16 h-16 object-cover rounded-lg"
-                          />
-                        </div>
-
-                        {/* Content Section */}
-                        <div className="flex-1 space-y-2">
-                          <h4 className="font-semibold text-sm">
-                            {module.title}
-                          </h4>
-                          <p className="text-xs text-muted-foreground leading-relaxed">
-                            {module.description}
-                          </p>
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="text-muted-foreground">
-                              {module.lessonsCount} sections
-                            </span>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 px-2 text-xs gap-1"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                continueModule(module.id);
-                              }}
-                            >
-                              {user ? "Start" : "Login"}
-                              <ArrowRight className="h-3 w-3" />
-                            </Button>
+              {loadingModules ? (
+                <div className="space-y-3 px-2">
+                  {[1, 2, 3].map((i) => (
+                    <Card key={i} className="bg-green-100">
+                      <CardContent className="p-3">
+                        <div className="flex gap-3">
+                          <div className="flex-shrink-0">
+                            <div className="w-16 h-16 bg-gray-300 rounded-lg animate-pulse"></div>
+                          </div>
+                          <div className="flex-1 space-y-2">
+                            <div className="h-4 bg-gray-300 rounded animate-pulse w-3/4"></div>
+                            <div className="h-3 bg-gray-300 rounded animate-pulse w-1/2"></div>
+                            <div className="h-3 bg-gray-300 rounded animate-pulse w-full"></div>
                           </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-3 px-2">
+                  {mobileModules.map((module) => (
+                    <Card
+                      key={module.id}
+                      className="hover:shadow-md transition-shadow bg-green-100 cursor-pointer"
+                      onClick={() => continueModule(module.id)}
+                    >
+                      <CardContent className="p-3">
+                        <div className="flex gap-3">
+                          <div className="flex-shrink-0">
+                            <img
+                              src={module.imageUrl || "/placeholder-image.jpg"}
+                              alt={module.title}
+                              className="w-16 h-16 object-cover rounded-lg"
+                            />
+                          </div>
+
+                          <div className="flex-1 space-y-2">
+                            <h4 className="font-semibold text-sm">
+                              {module.title}
+                            </h4>
+                            <p className="text-xs text-muted-foreground leading-relaxed">
+                              {module.description}
+                            </p>
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="text-muted-foreground">
+                                {module.lessonsCount} sections
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-2 text-xs gap-1"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  continueModule(module.id);
+                                }}
+                              >
+                                {user ? "Start" : "Login"}
+                                <ArrowRight className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
             </section>
           </div>
         </div>
 
-        {/* Desktop Layout - Always visible */}
+        {/* Desktop Layout */}
         <div className="hidden md:block">
           <div className="py-12">
-            {/* Main Content Grid */}
             <div className="grid lg:grid-cols-3 gap-12">
-              {/* Left Column - Learning Content */}
               <div className="lg:col-span-2 space-y-12">
-                {/* Daily Practice */}
                 <section>
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
@@ -603,6 +883,8 @@ export default function HomePage() {
                       <span>Ibyagezweho uyu munsi</span>
                     </div>
                   </div>
+
+                
                   {/* Quick Practice Card */}
                   <Card className="bg-green-100 text-black mb-4">
                     <CardContent className="p-4">
@@ -644,6 +926,7 @@ export default function HomePage() {
                       </Button>
                     </CardContent>
                   </Card>
+
                   {/* Week Navigation */}
                   <Card className="mb-2 border-0 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 backdrop-blur-sm shadow-sm">
                     <CardContent className="p-6">
@@ -698,7 +981,6 @@ export default function HomePage() {
                         ))}
                       </div>
 
-                      {/* Week Progress Bar */}
                       <div className="mt-4 flex items-center gap-3">
                         <div className="flex-1 bg-white/50 rounded-full h-2 overflow-hidden">
                           <div
@@ -714,6 +996,77 @@ export default function HomePage() {
                     </CardContent>
                   </Card>
                 </section>
+  {/* New: Ikizamini cy'isuzuma Card - Desktop */}
+                  <Card className="mb-4 bg-blue-100 text-black shadow-lg shadow-purple-500/25">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-xl bg-white/20 backdrop-blur-sm">
+                              <Target className="h-5 w-5 text-green-500" />
+                            </div>
+                            <div>
+                              <span className="text-sm font-semibold tracking-wide">
+                                Ikizamini cy'isuzuma
+                              </span>
+                              {loadingExam ? (
+                                <div className="space-y-2 mt-2">
+                                  <div className="h-5 bg-white/30 rounded animate-pulse w-48"></div>
+                                  <div className="h-4 bg-white/30 rounded animate-pulse w-64"></div>
+                                </div>
+                              ) : randomExam ? (
+                                <>
+                                  <h3 className="text-xl font-bold mt-1">
+                                    {randomExam.title}
+                                  </h3>
+                                  <p className="text-sm opacity-90 max-w-xl">
+                                    {randomExam.description}
+                                  </p>
+                                </>
+                              ) : null}
+                            </div>
+                          </div>
+                          
+                          {randomExam && (
+                            <div className="flex items-center gap-6 text-sm">
+                              <div className="flex items-center gap-2">
+                                <BookOpen className="h-4 w-4 opacity-80" />
+                                <span>{randomExam.questionCount} Questions</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Clock className="h-4 w-4 opacity-80" />
+                                <span>{randomExam.duration} Minutes</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <TrendingUp className="h-4 w-4 opacity-80" />
+                                <span>{randomExam.difficulty}</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <Button
+                        className="w-full mt-6 h-12 text-sm font-semibold bg-green-500 hover:bg-green-300 text-black"
+                        onClick={startExam}
+                        disabled={loadingExam}
+                      >
+                        {loadingExam ? (
+                          <div className="flex items-center gap-2">
+                            <div className="h-4 w-4 text-black rounded-full animate-spin"></div>
+                            Loading Exam...
+                          </div>
+                        ) : user ? (
+                          <>
+                            Tangira ikizamini
+                            <Play className="h-4 w-4 ml-2" />
+                          </>
+                        ) : (
+                          "Injira ubone kwisuzuma"
+                        )}
+                      </Button>
+                    </CardContent>
+                  </Card>
 
                 {/* Continue Learning */}
                 <section>
@@ -731,140 +1084,181 @@ export default function HomePage() {
                     </Button>
                   </div>
 
-                  <div className="space-y-4">
-                    {featuredModules.map((module) => {
-                      const Icon = module.icon;
-                      return (
-                        <Card
-                          key={module.id}
-                          className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/70 backdrop-blur-sm overflow-hidden cursor-pointer"
-                          onClick={() => continueModule(module.id)}
-                        >
-                          <CardContent className="p-0">
-                            <div className="p-6">
+                  {loadingModules ? (
+                    <div className="space-y-4">
+                      {[1, 2, 3].map((i) => (
+                        <Card key={i} className="border-0 bg-white/70 backdrop-blur-sm">
+                          <CardContent className="p-6">
+                            <div className="animate-pulse">
                               <div className="flex items-start justify-between mb-4">
-                                <div className="space-y-2 flex-1">
+                                <div className="space-y-3 flex-1">
                                   <div className="flex items-center gap-3">
-                                    <div
-                                      className={`p-2 rounded-xl bg-gradient-to-r ${module.color}`}
-                                    >
-                                      <Icon className="h-5 w-5 text-white" />
-                                    </div>
-                                    <div>
-                                      <h3 className="font-semibold text-foreground">
-                                        {module.title}
-                                      </h3>
-                                      <p className="text-xs text-muted-foreground">
-                                        {module.level}
-                                      </p>
+                                    <div className="w-10 h-10 bg-gray-300 rounded-xl"></div>
+                                    <div className="space-y-2">
+                                      <div className="h-4 bg-gray-300 rounded w-32"></div>
+                                      <div className="h-3 bg-gray-300 rounded w-20"></div>
                                     </div>
                                   </div>
-                                  <p className="text-sm text-muted-foreground leading-relaxed">
-                                    {module.description}
-                                  </p>
+                                  <div className="h-3 bg-gray-300 rounded w-3/4"></div>
                                 </div>
-                                <Button
-                                  size="sm"
-                                  className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    continueModule(module.id);
-                                  }}
-                                >
-                                  <Play className="h-4 w-4" />
-                                </Button>
+                                <div className="w-9 h-9 bg-gray-300 rounded-full"></div>
                               </div>
-
                               <div className="space-y-3">
-                                <div className="flex justify-between items-center text-sm">
-                                  <span className="font-medium text-foreground">
-                                    {module.progress}
-                                  </span>
-                                  <span className="text-muted-foreground">
-                                    {module.progressValue}%
-                                  </span>
-                                </div>
-                                <Progress
-                                  value={module.progressValue}
-                                  className="h-2 bg-slate-200"
-                                />
-                                <div className="flex justify-between items-center text-xs text-muted-foreground">
-                                  <span>{module.lessonsCount} sections</span>
-                                  <span>{user ? "Continue learning" : "Login to start"}</span>
-                                </div>
+                                <div className="h-2 bg-gray-300 rounded w-full"></div>
+                                <div className="h-2 bg-gray-300 rounded w-2/3"></div>
                               </div>
                             </div>
                           </CardContent>
                         </Card>
-                      );
-                    })}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {featuredModules.map((module) => {
+                        const Icon = module.icon;
+                        return (
+                          <Card
+                            key={module.id}
+                            className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/70 backdrop-blur-sm overflow-hidden cursor-pointer"
+                            onClick={() => continueModule(module.id)}
+                          >
+                            <CardContent className="p-0">
+                              <div className="p-6">
+                                <div className="flex items-start justify-between mb-4">
+                                  <div className="space-y-2 flex-1">
+                                    <div className="flex items-center gap-3">
+                                      <div
+                                        className={`p-2 rounded-xl bg-gradient-to-r ${module.color}`}
+                                      >
+                                        <Icon className="h-5 w-5 text-white" />
+                                      </div>
+                                      <div>
+                                        <h3 className="font-semibold text-foreground">
+                                          {module.title}
+                                        </h3>
+                                        <p className="text-xs text-muted-foreground">
+                                          {module.level}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground leading-relaxed">
+                                      {module.description}
+                                    </p>
+                                  </div>
+                                  <Button
+                                    size="sm"
+                                    className="bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      continueModule(module.id);
+                                    }}
+                                  >
+                                    <Play className="h-4 w-4" />
+                                  </Button>
+                                </div>
+
+                                <div className="space-y-3">
+                                  <div className="flex justify-between items-center text-sm">
+                                    <span className="font-medium text-foreground">
+                                      {module.progress}
+                                    </span>
+                                    <span className="text-muted-foreground">
+                                      {module.progressValue}%
+                                    </span>
+                                  </div>
+                                  <Progress
+                                    value={module.progressValue}
+                                    className="h-2 bg-slate-200"
+                                  />
+                                  <div className="flex justify-between items-center text-xs text-muted-foreground">
+                                    <span>{module.lessonsCount} sections</span>
+                                    <span>{user ? "Continue learning" : "Login to start"}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  )}
                 </section>
 
                 {/* Learning Paths */}
-    {/* Learning Paths */}
-<section>
-  <h2 className="text-3xl w-full font-bold mb-6 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-    Amasomo
-  </h2>
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-    {chapters.slice(0, 3).map((chapter, index) => {
-      const icons = [BookOpen, Trophy, Users];
-      const Icon = icons[index] || BookOpen;
-      
-      return (
-        <Card
-          key={chapter.id}
-          className="group hover:shadow-xl transition-all duration-300 border-0 bg-gradient-to-br from-white to-slate-50/50 backdrop-blur-sm overflow-hidden cursor-pointer h-full flex flex-col"
-          onClick={() => continueModule(chapter.id)}
-        >
-          <CardContent className="p-0 flex flex-col h-full">
-            {/* Image Section - Fixed Height */}
-            <div className="h-32 relative overflow-hidden flex-shrink-0">
-              <img
-                src={chapter.image || "/placeholder-path.jpg"}
-                alt={chapter.title}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-black/20"></div>
-              {/* Icon overlay */}
-              <div className="absolute top-3 left-3 p-2 rounded-xl bg-white/20 backdrop-blur-sm">
-                <Icon className="h-4 w-4 text-white" />
-              </div>
-              {/* Chapter badge */}
-              <div className="absolute top-3 right-3 px-2 py-1 rounded-lg bg-primary text-primary-foreground text-xs font-medium">
-                Chapter {chapter.chapterNumber}
-              </div>
-            </div>
+                <section>
+                  <h2 className="text-3xl w-full font-bold mb-6 bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
+                    Amasomo
+                  </h2>
+                  {loadingModules ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {[1, 2, 3].map((i) => (
+                        <Card key={i} className="border-0 bg-gradient-to-br from-white to-slate-50/50 backdrop-blur-sm h-full">
+                          <CardContent className="p-0 h-full">
+                            <div className="h-32 bg-gray-300 animate-pulse"></div>
+                            <div className="p-4 space-y-3">
+                              <div className="h-4 bg-gray-300 rounded animate-pulse"></div>
+                              <div className="h-3 bg-gray-300 rounded animate-pulse w-3/4"></div>
+                              <div className="h-9 bg-gray-300 rounded animate-pulse mt-4"></div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {chapters.slice(0, 3).map((chapter, index) => {
+                        const icons = [BookOpen, Trophy, Users];
+                        const Icon = icons[index] || BookOpen;
+                        
+                        return (
+                          <Card
+                            key={chapter.id}
+                            className="group hover:shadow-xl transition-all duration-300 border-0 bg-gradient-to-br from-white to-slate-50/50 backdrop-blur-sm overflow-hidden cursor-pointer h-full flex flex-col"
+                            onClick={() => continueModule(chapter.id)}
+                          >
+                            <CardContent className="p-0 flex flex-col h-full">
+                              <div className="h-32 relative overflow-hidden flex-shrink-0">
+                                <img
+                                  src={chapter.image || "/placeholder-path.jpg"}
+                                  alt={chapter.title}
+                                  className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-black/20"></div>
+                                <div className="absolute top-3 left-3 p-2 rounded-xl bg-white/20 backdrop-blur-sm">
+                                  <Icon className="h-4 w-4 text-white" />
+                                </div>
+                                <div className="absolute top-3 right-3 px-2 py-1 rounded-lg bg-primary text-primary-foreground text-xs font-medium">
+                                  Chapter {chapter.chapterNumber}
+                                </div>
+                              </div>
 
-            {/* Content Section - Flexible */}
-            <div className="p-4 flex-1 flex flex-col">
-              <div className="flex-1 space-y-2 mb-4">
-                <h3 className="font-semibold text-foreground text-base leading-tight line-clamp-2">
-                  {chapter.title}
-                </h3>
-                <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
-                  Tangira kwiga isomo  {chapter.title}
-                </p>
-              </div>
-              {/* Button - Fixed at Bottom */}
-              <Button
-                className="w-full bg-primary hover:bg-primary/90 h-9 text-sm font-semibold"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  continueModule(chapter.id);
-                }}
-              >
-                {user ? "Start" : "Get Started"}
-                <ArrowRight className="h-3 w-3 ml-1" />
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      );
-    })}
-  </div>
-</section>
+                              <div className="p-4 flex-1 flex flex-col">
+                                <div className="flex-1 space-y-2 mb-4">
+                                  <h3 className="font-semibold text-foreground text-base leading-tight line-clamp-2">
+                                    {chapter.title}
+                                  </h3>
+                                  <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
+                                    Tangira kwiga isomo  {chapter.title}
+                                  </p>
+                                </div>
+                                <Button
+                                  className="w-full bg-primary hover:bg-primary/90 h-9 text-sm font-semibold"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    continueModule(chapter.id);
+                                  }}
+                                >
+                                  {user ? "Start" : "Get Started"}
+                                  <ArrowRight className="h-3 w-3 ml-1" />
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
               </div>
 
               {/* Right Column - Calendar & Progress */}
@@ -887,7 +1281,6 @@ export default function HomePage() {
                         </div>
                       </div>
 
-                      {/* Calendar Header */}
                       <div className="flex items-center justify-between mb-4">
                         <Button
                           variant="ghost"
@@ -910,7 +1303,6 @@ export default function HomePage() {
                         </Button>
                       </div>
 
-                      {/* Calendar Grid */}
                       <div className="grid grid-cols-7 gap-1 mb-3">
                         {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(
                           (day) => (
@@ -948,7 +1340,6 @@ export default function HomePage() {
                         ))}
                       </div>
 
-                      {/* Calendar Legend */}
                       <div className="mt-6 space-y-3 pt-4 border-t border-slate-200">
                         <div className="flex items-center gap-3 text-xs">
                           <div className="w-3 h-3 bg-green-500 rounded-full shadow-sm"></div>
@@ -1051,6 +1442,42 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+          
+    {/* Upgrade Modal */}
+    {showUpgradeModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div
+          onClick={() => setShowUpgradeModal(false)}
+          className="absolute inset-0 bg-black/40 backdrop-blur-xs"
+        />
+        <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 animate-in fade-in zoom-in">
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white text-center mb-3">
+            Ntago Wemerewe
+          </h3>
+          <p className="text-gray-600 dark:text-gray-300 text-center text-sm mb-6">
+            {upgradeMessage}
+          </p>
+          <div className="flex gap-4">
+            <Button
+              variant="outline"
+              onClick={() => setShowUpgradeModal(false)}
+              className="flex-1 rounded-xl"
+            >
+              Gufunga
+            </Button>
+            <Button
+              onClick={() => {
+                setShowUpgradeModal(false);
+                setLocation("/subscribe");
+              }}
+              className="flex-1 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold shadow-md"
+            >
+              Gura Classic
+            </Button>
+          </div>
+        </div>
+      </div>
+    )}
     </div>
   );
 }

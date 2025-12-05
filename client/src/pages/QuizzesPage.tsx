@@ -8,7 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useQuestions, type QuestionSet, type UserPlan } from "./useQuestions";
+import Navbar from "@/components/Navbar";
 
+// Cache for transformed quizzes
+let quizzesCache: any[] | null = null;
+let cacheTimestamp: number | null = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 // Skeleton Components
 const QuizListSkeleton = () => (
@@ -271,6 +276,7 @@ const ExamInterfaceSkeleton = () => (
     </div>
   </div>
 );
+
 // Transform API questions to match your app's format with plan-based logic
 const transformQuestions = (questionSets: QuestionSet[] | null | undefined, userPlan: UserPlan | null) => {
   // Handle cases where questionSets is not an array
@@ -336,11 +342,26 @@ const transformQuestions = (questionSets: QuestionSet[] | null | undefined, user
         choices: (q.choice || []).map((choiceText, choiceIndex) => ({
           id: String.fromCharCode(65 + choiceIndex), // A, B, C, D
           text: choiceText || `Choice ${String.fromCharCode(65 + choiceIndex)}`,
-          isCorrect: choiceIndex === q.choiceAnswer
+          isCorrect: choiceIndex === (q.choiceAnswer || 0) // FIX: Use 0 as default if choiceAnswer is undefined
         }))
       }))
     };
   });
+};
+
+// Function to transform API questions from homepage to quiz format
+const transformApiQuestionsToQuizFormat = (apiQuestions: any[]) => {
+  return apiQuestions.map((q, index) => ({
+    id: index + 1,
+    text: q.title || `Question ${index + 1}`,
+    imageUrl: q.image || undefined,
+    explanation: "", // API doesn't provide explanations
+    choices: (q.choice || []).map((choiceText: string, choiceIndex: number) => ({
+      id: String.fromCharCode(65 + choiceIndex), // A, B, C, D
+      text: choiceText || `Choice ${String.fromCharCode(65 + choiceIndex)}`,
+      isCorrect: choiceIndex === (q.choiceAnswer || 0)
+    }))
+  }));
 };
 
 export const lessonQuizzes = [];
@@ -361,15 +382,135 @@ export default function ExamPage() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState("");
   const [showImmediateFeedback, setShowImmediateFeedback] = useState(true); // Default to showing feedback
+  
+  // NEW STATE: Track if we're loading from homepage exam
+  const [loadingHomepageExam, setLoadingHomepageExam] = useState(false);
+  const [homepageExamData, setHomepageExamData] = useState<any>(null);
+  const [homepageExamQuestions, setHomepageExamQuestions] = useState<any[]>([]);
 
-  // Check if user is guest on component mount
-  useEffect(() => {
-    const userData = localStorage.getItem("user");
-    setIsGuest(!userData);
-  }, []);
+ // Update this useEffect in ExamPage
+useEffect(() => {
+  const userData = localStorage.getItem("user");
+  setIsGuest(!userData);
+  
+  // Check if coming from homepage with exam intent
+  const searchParams = new URLSearchParams(window.location.search);
+  const examFromHomepage = searchParams.get("exam");
+  const examSource = searchParams.get("source");
+  
+  // Handle both old and new parameters
+  if (examFromHomepage === "full-exam" || (examFromHomepage === "direct" && examSource === "homepage")) {
+    console.log("Coming from homepage with direct exam intent");
+    setLoadingHomepageExam(true);
+    
+    // Try to get exam data from localStorage
+    const savedQuestions = localStorage.getItem('exam-questions');
+    
+    if (savedQuestions) {
+      try {
+        const questionsData = JSON.parse(savedQuestions);
+        
+        // Extract questions from the API response
+        if (questionsData.randomSet && questionsData.randomSet.questions) {
+          const examQuestions = transformApiQuestionsToQuizFormat(questionsData.randomSet.questions);
+          setHomepageExamQuestions(examQuestions);
+          
+          console.log("Loaded homepage exam questions:", examQuestions.length);
+          
+          // Create a unique quiz for homepage exam
+          const homepageQuiz = {
+            id: "homepage-exam",
+            title: questionsData.randomSet.title || "Ikizamini cy'isuzuma",
+            description: "Isuzuma ry'ibiganiro by'imodoka",
+            questionsCount: examQuestions.length,
+            isPremium: true,
+            requiresLogin: true,
+            duration: Math.ceil(examQuestions.length * 0.2),
+            difficulty: "Medium",
+            category: "Driving Theory",
+            completed: false,
+            score: null,
+            questions: examQuestions,
+            isHomepageExam: true // Flag to identify homepage exam
+          };
+          
+          setHomepageExamData(homepageQuiz);
+          
+          // Set the quiz and go directly to exam prep
+          setSelectedQuiz("homepage-exam");
+          setCurrentView("exam-prep");
+          setLoadingHomepageExam(false);
+          
+          // Clear the URL parameters
+          const url = new URL(window.location.href);
+          url.searchParams.delete("exam");
+          url.searchParams.delete("source");
+          url.searchParams.delete("type");
+          window.history.replaceState({}, '', url.toString());
+        }
+      } catch (error) {
+        console.error("Error parsing exam data:", error);
+        setLoadingHomepageExam(false);
+      }
+    } else {
+      setLoadingHomepageExam(false);
+    }
+  }
+}, []);
 
   // Use the custom hook - now including userPlan
   const { questions: questionSets, userPlan, loading, error, refetch } = useQuestions();
+
+  // State for transformed quizzes with caching
+  const [transformedQuizzes, setTransformedQuizzes] = useState<any[]>([]);
+  const [isTransforming, setIsTransforming] = useState(false);
+
+  // Check cache first, then transform if needed
+  useEffect(() => {
+    const now = Date.now();
+    
+    // Check if we have cached data
+    if (quizzesCache && cacheTimestamp && (now - cacheTimestamp) < CACHE_DURATION) {
+      console.log('Using cached quizzes');
+      setTransformedQuizzes(quizzesCache);
+      return;
+    }
+
+    // Only transform if we have data and it's not already loading
+    if (questionSets && !loading && !isTransforming) {
+      setIsTransforming(true);
+      
+      // Use setTimeout to prevent blocking the UI
+      setTimeout(() => {
+        const transformed = transformQuestions(questionSets, userPlan);
+        setTransformedQuizzes(transformed);
+        
+        // Update cache
+        quizzesCache = transformed;
+        cacheTimestamp = Date.now();
+        
+        setIsTransforming(false);
+      }, 0);
+    }
+  }, [questionSets, userPlan, loading]);
+
+  // NEW EFFECT: Handle homepage exam after data is loaded
+  useEffect(() => {
+    if (loadingHomepageExam && homepageExamData && homepageExamQuestions.length > 0) {
+      console.log("Processing homepage exam...");
+      
+      // Set the quiz and go to exam prep
+      setSelectedQuiz("homepage-exam");
+      setCurrentView("exam-prep");
+      setLoadingHomepageExam(false);
+      
+      // Clear the URL parameters
+      const url = new URL(window.location.href);
+      url.searchParams.delete("exam");
+      url.searchParams.delete("type");
+      window.history.replaceState({}, '', url.toString());
+    }
+  }, [loadingHomepageExam, homepageExamData, homepageExamQuestions]);
 
   // Debug logs to track data flow
   useEffect(() => {
@@ -379,42 +520,36 @@ export default function ExamPage() {
     console.log('Number of sets:', questionSets?.length);
     console.log('Loading state:', loading);
     console.log('Error state:', error);
-  }, [questionSets, userPlan, loading, error]);
-
-  // Transform API data with plan-based logic
-  const lessonQuizzes = transformQuestions(questionSets, userPlan);
-  
-  useEffect(() => {
-    console.log('Transformed quizzes:', lessonQuizzes);
-    console.log('Number of transformed quizzes:', lessonQuizzes.length);
-    console.log('Available sets breakdown:');
-    lessonQuizzes.forEach(quiz => {
-      console.log(`Set ${quiz.id}: Premium=${quiz.isPremium}, RequiresLogin=${quiz.requiresLogin}`);
-    });
-  }, [lessonQuizzes]);
+    console.log('Transformed quizzes:', transformedQuizzes.length);
+    console.log('Is transforming:', isTransforming);
+    console.log('Homepage exam data:', homepageExamData);
+    console.log('Homepage exam questions:', homepageExamQuestions.length);
+  }, [questionSets, userPlan, loading, error, transformedQuizzes, isTransforming, homepageExamData, homepageExamQuestions]);
 
   // Filter quizzes based on user status and plan
   const getAvailableQuizzes = () => {
     if (isGuest) {
       // Guest users only see non-premium, no-login-required sets
-      const guestQuizzes = lessonQuizzes.filter(quiz => !quiz.isPremium && !quiz.requiresLogin);
+      const guestQuizzes = transformedQuizzes.filter(quiz => !quiz.isPremium && !quiz.requiresLogin);
       console.log('Guest available quizzes:', guestQuizzes.length);
       return guestQuizzes;
     } else {
       // Logged-in users see all sets based on their plan
-      console.log('Logged-in user available quizzes:', lessonQuizzes.length);
-      return lessonQuizzes;
+      console.log('Logged-in user available quizzes:', transformedQuizzes.length);
+      return transformedQuizzes;
     }
   };
 
   const availableQuizzes = getAvailableQuizzes();
 
-  // Get current quiz data
-  const currentQuiz = selectedQuiz ? lessonQuizzes.find(quiz => quiz.id === selectedQuiz) : null;
+  // Get current quiz data (handles both regular and homepage exams)
+  const currentQuiz = selectedQuiz ? 
+    (selectedQuiz === "homepage-exam" ? homepageExamData : transformedQuizzes.find(quiz => quiz.id === selectedQuiz)) 
+    : null;
 
   // Check if current quiz is Set 1 to enable immediate feedback
   useEffect(() => {
-    if (currentQuiz && currentQuiz.id === "1") {
+    if (currentQuiz && (currentQuiz.id === "1")) {
       setShowImmediateFeedback(true);
     } else {
       setShowImmediateFeedback(false);
@@ -429,7 +564,8 @@ export default function ExamPage() {
     timeRemaining: timeRemaining,
     duration: currentQuiz.duration,
     questions: currentQuiz.questions,
-    isSet1: currentQuiz.id === "1" // Flag to check if it's Set 1
+    isSet1: currentQuiz.id === "1",
+    isHomepageExam: currentQuiz.id === "homepage-exam" // Add flag
   } : null;
 
   // Initialize timer once
@@ -461,15 +597,17 @@ export default function ExamPage() {
   const currentQ = examData?.questions[currentQuestion];
   const progress = examData ? (examData.currentQuestion / examData.totalQuestions) * 100 : 0;
 
-  // Get the correct answer for the current question
+  // Get the correct answer for the current question - FIXED
   const getCorrectAnswer = () => {
     if (!currentQ) return null;
-    return currentQ.choices.find(choice => choice.isCorrect)?.id || null;
+    const correctChoice = currentQ.choices.find(choice => choice.isCorrect === true);
+    return correctChoice ? correctChoice.id : null;
   };
 
   const isAnswerCorrect = (choiceId: string) => {
     if (!currentQ) return false;
     const correctAnswer = getCorrectAnswer();
+    console.log(`Checking answer: choiceId=${choiceId}, correctAnswer=${correctAnswer}, isCorrect=${choiceId === correctAnswer}`);
     return choiceId === correctAnswer;
   };
 
@@ -492,6 +630,7 @@ export default function ExamPage() {
     }
 
     const correct = isAnswerCorrect(choiceId);
+    console.log(`Answer selected: ${choiceId}, correct=${correct}`);
     setSelectedAnswer(choiceId);
     setAnswers(prev => ({
       ...prev,
@@ -500,33 +639,49 @@ export default function ExamPage() {
         isCorrect: correct 
       }
     }));
-
   };
 
   const handleTimeUp = () => {
     if (!examData) return;
+    
+    // Calculate score before navigating
+    const totalQuestions = examData.totalQuestions;
+    const correctAnswers = Object.values(answers).filter(answer => answer.isCorrect).length;
+    const score = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
     
     const resultsData = {
       questions: examData.questions,
       userAnswers: answers,
       totalQuestions: examData.totalQuestions,
       timeSpent: (examData.duration * 60) - timeRemaining,
-      quizTitle: examData.title
+      quizTitle: examData.title,
+      score: score,
+      correctAnswers: correctAnswers
     };
-    console.log("Time's up! Navigating to results...");
+    
+    console.log("Time's up! Navigating to results...", resultsData);
     setLocation(`/results?data=${encodeURIComponent(JSON.stringify(resultsData))}`);
   };
 
   const handleFinish = () => {
     if (!examData) return;
     
+    // Calculate score before navigating
+    const totalQuestions = examData.totalQuestions;
+    const correctAnswers = Object.values(answers).filter(answer => answer.isCorrect).length;
+    const score = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
+    
     const resultsData = {
       questions: examData.questions,
       userAnswers: answers,
       totalQuestions: examData.totalQuestions,
       timeSpent: (examData.duration * 60) - timeRemaining,
-      quizTitle: examData.title
+      quizTitle: examData.title,
+      score: score,
+      correctAnswers: correctAnswers
     };
+    
+    console.log("Finishing exam...", resultsData);
     setLocation(`/results?data=${encodeURIComponent(JSON.stringify(resultsData))}`);
   };
 
@@ -586,7 +741,16 @@ export default function ExamPage() {
   };
 
   const handleQuizSelect = (quizId: string) => {
-    const quiz = lessonQuizzes.find(q => q.id === quizId);
+    if (quizId === "homepage-exam" && homepageExamData) {
+      // Handle homepage exam selection
+      setSelectedQuiz(quizId);
+      setCurrentView("exam-prep");
+      setExamStarted(false);
+      return;
+    }
+
+    // Original logic for regular quizzes
+    const quiz = transformedQuizzes.find(q => q.id === quizId);
     if (!quiz) return;
 
     // Requires login
@@ -625,6 +789,11 @@ export default function ExamPage() {
     setTimeRemaining(0);
     setAnswers({});
     setSelectedAnswer(null);
+    
+    // Clear homepage exam data if it exists
+    if (homepageExamData) {
+      localStorage.removeItem('exam-questions');
+    }
   };
 
   const handleLoginRedirect = () => {
@@ -645,6 +814,7 @@ export default function ExamPage() {
 
     return (
       <div className="w-full">
+        
         {/* Mobile Pagination Controls */}
         {!showAll && totalMobilePages > 1 && (
           <div className="flex items-center justify-between mb-3">
@@ -688,15 +858,14 @@ export default function ExamPage() {
                     : answer
                     ? answer.isCorrect
                       ? "bg-green-500 text-white border-green-600"
-                      : "bg-green-500 text-white border-green-600"
+                      : "bg-red-500 text-white border-red-600"
                     : "bg-muted border-border hover:bg-muted/80"
                 }`}
                 onClick={() => handleQuestionSelect(questionNumber)}
               >
                 {questionNumber}
                 {answer && (
-                  <span className="">
-                  </span>
+                  <span className=""></span>
                 )}
               </button>
             );
@@ -721,8 +890,11 @@ export default function ExamPage() {
     return "bg-purple-100 text-purple-800 border-purple-200";
   };
 
-  // Loading state
-  if (loading && currentView === "quiz-list") {
+  // Combined loading state - show skeleton only for initial load
+  const showInitialLoading = loading && currentView === "quiz-list" && transformedQuizzes.length === 0;
+  const showDataLoading = (loading || isTransforming) && transformedQuizzes.length === 0 && currentView === "quiz-list";
+
+  if (showInitialLoading || showDataLoading) {
     return <QuizListSkeleton />;
   }
 
@@ -740,48 +912,26 @@ export default function ExamPage() {
     );
   }
 
-  // Empty state after loading
-  if (!loading && !error && availableQuizzes.length === 0 && currentView === "quiz-list") {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Nta bizamini biboneka</h3>
-          <p className="text-muted-foreground mb-4">No quiz sets available at the moment.</p>
-          <Button onClick={refetch}>Refresh</Button>
-        </div>
-      </div>
-    );
-  }
-
+  // Show content based on current view
   return (
     <>
-      {/* Quiz List View */}
-      {currentView === "quiz-list" && (
-        <div className="min-h-screen bg-background">
-          {/* Header */}
-          <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-            <div className="max-w-6xl mx-auto px-4 md:px-6 py-4">
-              <div className="flex items-center justify-between">
-                <Link href="/ahabanza">
-                  <Button variant="ghost" size="sm" className="gap-2">
-                    <ArrowLeft className="h-4 w-4" />
-                    <span className="hidden sm:inline">Subira Ahabanza</span>
-                  </Button>
-                </Link>
-                
-                <div className="text-sm text-muted-foreground">
-                  Ibizamini
-                </div>
-
-                {/* User Status Indicator */}
-                <div className={`px-3 py-1 rounded-full text-xs font-medium border ${getUserStatusColor()}`}>
-                  {getUserPlanDisplay()} Mode
-                </div>
-              </div>
-            </div>
+      {/* Show loading indicator while processing homepage exam */}
+      {loadingHomepageExam && (
+        <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="text-center bg-background p-8 rounded-2xl shadow-xl max-w-md mx-4">
+            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <h3 className="text-xl font-semibold mb-2">Kura ikizamini</h3>
+            <p className="text-muted-foreground">Twiteguye ikizamini cy'isuzuma...</p>
           </div>
+        </div>
+      )}
 
+      {/* Quiz List View */}
+      {currentView === "quiz-list" && !loadingHomepageExam && (
+        <div className="min-h-screen bg-background">
+          <div className="md:hidden">
+            <Navbar />
+          </div>
           <div className="max-w-4xl mx-auto px-4 md:px-6 py-6">
             <div className="text-center mb-6">
               <h1 className="text-2xl md:text-4xl font-bold mb-3">Ibizamini</h1>
@@ -801,28 +951,7 @@ export default function ExamPage() {
                         Limited Access - Guest Mode
                       </p>
                       <p className="text-blue-700 text-xs">
-                        Sign up to unlock {lessonQuizzes.length - availableQuizzes.length} additional quiz sets and premium features
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Plan Info for Logged-in Users */}
-              {!isGuest && userPlan && (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-4 max-w-2xl mx-auto">
-                  <div className="flex items-center gap-3">
-                    <Check className="h-5 w-5 text-green-600 flex-shrink-0" />
-                    <div className="text-left">
-                      <p className="text-green-800 font-medium text-sm">
-                        {userPlan.planName === "No Active Plan" ? "Free Plan" : userPlan.planName + " Plan"}
-                      </p>
-                      <p className="text-green-700 text-xs">
-                        {userPlan.planName === "No Active Plan" 
-                          ? "Access to Set 1. Upgrade for more sets." 
-                          : userPlan.planName === "Basic"
-                            ? "Access to Sets 1-2. Upgrade for all sets."
-                            : "Full access to all question sets."}
+                        Sign up to unlock {transformedQuizzes.length - availableQuizzes.length} additional quiz sets and premium features
                       </p>
                     </div>
                   </div>
@@ -830,8 +959,13 @@ export default function ExamPage() {
               )}
             </div>
 
-            {/* Show message if no quizzes available */}
-            {availableQuizzes.length === 0 && !loading && (
+            {/* Show loading indicator while transforming */}
+            {(loading || isTransforming) && transformedQuizzes.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading quiz sets...</p>
+              </div>
+            ) : availableQuizzes.length === 0 && !homepageExamData ? (
               <div className="text-center py-12">
                 <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-semibold mb-2">Nta bizamini biboneka</h3>
@@ -842,333 +976,461 @@ export default function ExamPage() {
                   </Button>
                 )}
               </div>
-            )}
-
-            {/* Mobile Layout */}
-            <div className="md:hidden space-y-3 px-2">
-              {availableQuizzes.map((quiz) => (
-                <Card 
-                  key={quiz.id} 
-                  className={`hover:shadow-md transition-shadow cursor-pointer border-l-4 ${
-                    quiz.isPremium 
-                      ? "border-l-yellow-500 bg-gradient-to-r from-yellow-50 to-transparent" 
-                      : "border-l-green-500"
-                  } ${quiz.requiresLogin && isGuest ? "opacity-75" : ""}`}
-                  onClick={() => handleQuizSelect(quiz.id)}
-                >
-                  <CardContent className="p-4">
-                    <div className="space-y-3">
-                      {/* Header with title and difficulty */}
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="text-base font-semibold leading-tight">{quiz.title}</h3>
-                            {quiz.isPremium && (
-                              <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
-                                <Lock className="h-3 w-3" />
-                                Premium
-                              </span>
-                            )}
-                          </div>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            quiz.difficulty === "Beginner" ? "bg-green-100 text-green-800" :
-                            quiz.difficulty === "Intermediate" ? "bg-yellow-100 text-yellow-800" :
-                            "bg-red-100 text-red-800"
-                          }`}>
-                            {quiz.difficulty}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Description */}
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {quiz.description}
-                      </p>
-
-                      {/* Quiz Details */}
-                      <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <BookOpen className="h-3 w-3" />
-                          <span>Ibibazo {quiz.questionsCount}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          <span>Iminota {quiz.duration} </span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <span>{quiz.category}</span>
-                        </div>
-                      </div>
-
-                      {/* Score if completed */}
-                      {quiz.completed && (
-                        <div className="flex items-center gap-2 text-xs bg-green-50 px-3 py-2 rounded-lg">
-                          <Check className="h-3 w-3 text-green-600" />
-                          <span className="text-green-700 font-medium">Score: {quiz.score}%</span>
-                        </div>
-                      )}
-
-                      {/* Feature indicator for Set 1 */}
-                      {quiz.id === "1" && (
-                        <div className="flex items-center gap-2 text-xs bg-blue-50 px-3 py-2 rounded-lg">
-                          <CheckCircle className="h-3 w-3 text-blue-600" />
-                          <span className="text-blue-700 font-medium">Immediate feedback on answers</span>
-                        </div>
-                      )}
-
-                      {/* Start Button */}
-                      <Button 
-                        className={`w-full gap-2 h-9 text-sm ${
-                          quiz.isPremium 
-                            ? "bg-yellow-600 hover:bg-yellow-700" 
-                            : "bg-green-600 hover:bg-green-700"
-                        }`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleQuizSelect(quiz.id);
-                        }}
+            ) : (
+              <>
+                {/* Show homepage exam card if available */}
+                {homepageExamData && (
+                  <div className="mb-8">
+                    <h3 className="text-xl font-semibold mb-4 text-center text-purple-700">Ikizamini cy'isuzuma</h3>
+                    
+                    {/* Mobile Layout */}
+                    <div className="md:hidden space-y-3 px-2">
+                      
+                      <Card 
+                        className="hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-purple-500 bg-gradient-to-r from-purple-50 to-transparent"
+                        onClick={() => handleQuizSelect("homepage-exam")}
                       >
-                        {quiz.isPremium ? (
-                          <>
-                            <Lock className="h-3 w-3" />
-                            {isGuest ? "Sign Up to Access" : "Unlock Premium"}
-                          </>
-                        ) : (
-                          <>
-                            <Play className="h-3 w-3" />
-                            {quiz.completed ? "Subiramo Isuzuma" : "Tangira Isuzuma"}
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-
-              {/* Locked Quizzes for Guests */}
-              {isGuest && lessonQuizzes.length > availableQuizzes.length && (
-                <div className="mt-8">
-                  <h3 className="text-lg font-semibold mb-4 text-center text-muted-foreground">
-                    Premium Quizzes Available
-                  </h3>
-                  <div className="space-y-3">
-                    {lessonQuizzes
-                      .filter(quiz => quiz.requiresLogin || quiz.isPremium)
-                      .map((quiz) => (
-                      <Card key={quiz.id} className="bg-gray-50 border-l-4 border-l-gray-400 opacity-75">
                         <CardContent className="p-4">
                           <div className="space-y-3">
                             <div className="flex items-start justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <h3 className="text-base font-semibold leading-tight text-gray-600">{quiz.title}</h3>
-                                  <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
-                                    <Lock className="h-3 w-3" />
-                                    Premium
+                                  <h3 className="text-base font-semibold leading-tight">{homepageExamData.title}</h3>
+                                  <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                                    <Flag className="h-3 w-3" />
+                                    Special Exam
                                   </span>
                                 </div>
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                  quiz.difficulty === "Beginner" ? "bg-gray-200 text-gray-700" :
-                                  quiz.difficulty === "Intermediate" ? "bg-gray-200 text-gray-700" :
-                                  "bg-gray-200 text-gray-700"
-                                }`}>
-                                  {quiz.difficulty}
+                                <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                  {homepageExamData.difficulty}
                                 </span>
                               </div>
                             </div>
 
-                            <p className="text-sm text-gray-500 leading-relaxed">
-                              {quiz.description}
+                            <p className="text-sm text-muted-foreground leading-relaxed">
+                              {homepageExamData.description}
                             </p>
 
-                            <div className="flex flex-wrap gap-3 text-xs text-gray-500">
+                            <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                               <div className="flex items-center gap-1">
                                 <BookOpen className="h-3 w-3" />
-                                <span>{quiz.questionsCount} questions</span>
+                                <span>Ibibazo {homepageExamData.questionsCount}</span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <Clock className="h-3 w-3" />
-                                <span>{quiz.duration} min</span>
+                                <span>Iminota {homepageExamData.duration}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span>{homepageExamData.category}</span>
                               </div>
                             </div>
 
+                            {/* Feature indicator */}
+                            <div className="flex items-center gap-2 text-xs bg-blue-50 px-3 py-2 rounded-lg">
+                              <CheckCircle className="h-3 w-3 text-blue-600" />
+                              <span className="text-blue-700 font-medium">Practice with immediate feedback</span>
+                            </div>
+
+                            {/* Start Button */}
                             <Button 
-                              variant="outline"
-                              className="w-full gap-2 h-9 text-sm bg-white text-gray-600 border-gray-300"
-                              onClick={handleSignupRedirect}
+                              className="w-full gap-2 h-9 text-sm bg-purple-600 hover:bg-purple-700"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleQuizSelect("homepage-exam");
+                              }}
                             >
-                              <Lock className="h-3 w-3" />
-                              Sign Up to Unlock
+                              <Play className="h-3 w-3" />
+                              Tangira Ikizamini
                             </Button>
                           </div>
                         </CardContent>
                       </Card>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Desktop Layout */}
-            <div className="hidden md:block space-y-4">
-              {availableQuizzes.map((quiz) => (
-                <Card 
-                  key={quiz.id} 
-                  className={`hover:shadow-md transition-shadow cursor-pointer border-l-4 ${
-                    quiz.isPremium 
-                      ? "border-l-yellow-500 bg-gradient-to-r from-yellow-50 to-transparent" 
-                      : "border-l-green-500"
-                  } ${quiz.requiresLogin && isGuest ? "opacity-75" : ""}`}
-                  onClick={() => handleQuizSelect(quiz.id)}
-                >
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-xl font-semibold">{quiz.title}</h3>
-                          {quiz.isPremium && (
-                            <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
-                              <Lock className="h-4 w-4" />
-                              Premium
-                            </span>
-                          )}
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            quiz.difficulty === "Beginner" ? "bg-green-100 text-green-800" :
-                            quiz.difficulty === "Intermediate" ? "bg-yellow-100 text-yellow-800" :
-                            "bg-red-100 text-red-800"
-                          }`}>
-                            {quiz.difficulty}
-                          </span>
-                        </div>
-                        <p className="text-muted-foreground mb-4">{quiz.description}</p>
-                        
-                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <BookOpen className="h-4 w-4" />
-                            <span>{quiz.questionsCount} questions</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
-                            <span>{quiz.duration} minutes</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <span>Category: {quiz.category}</span>
-                          </div>
-                          {quiz.completed && (
-                            <div className="flex items-center gap-1 text-green-600">
-                              <Check className="h-4 w-4" />
-                              <span>Score: {quiz.score}%</span>
-                            </div>
-                          )}
-                          {/* Feature indicator for Set 1 */}
-                          {quiz.id === "1" && (
-                            <div className="flex items-center gap-1 text-blue-600">
-                              <CheckCircle className="h-4 w-4" />
-                              <span>Immediate feedback</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <Button 
-                        className={`ml-4 ${
-                          quiz.isPremium 
-                            ? "bg-yellow-600 hover:bg-yellow-700" 
-                            : "bg-green-600 hover:bg-green-700"
-                        }`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleQuizSelect(quiz.id);
-                        }}
-                      >
-                        {quiz.isPremium ? (
-                          <>
-                            <Lock className="h-4 w-4 mr-2" />
-                            {isGuest ? "Sign Up" : "Unlock"}
-                          </>
-                        ) : (
-                          <>
-                            <Play className="h-4 w-4 mr-2" />
-                            {quiz.completed ? "Retake" : "Start"}
-                          </>
-                        )}
-                      </Button>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
 
-              {/* Locked Quizzes Section for Guests */}
-              {isGuest && lessonQuizzes.length > availableQuizzes.length && (
-                <div className="mt-8">
-                  <h3 className="text-xl font-semibold mb-6 text-center text-muted-foreground border-b pb-2">
-                    Premium Quizzes - Sign Up to Unlock
-                  </h3>
-                  <div className="grid gap-4">
-                    {lessonQuizzes
-                      .filter(quiz => quiz.requiresLogin || quiz.isPremium)
-                      .map((quiz) => (
-                      <Card key={quiz.id} className="bg-gray-50 border-l-4 border-l-gray-400 opacity-75">
+                    {/* Desktop Layout */}
+                    <div className="hidden md:block">
+                      <Card 
+                        className="hover:shadow-md transition-shadow cursor-pointer border-l-4 border-l-purple-500 bg-gradient-to-r from-purple-50 to-transparent mb-6"
+                        onClick={() => handleQuizSelect("homepage-exam")}
+                      >
                         <CardContent className="p-6">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-3 mb-2">
-                                <h3 className="text-xl font-semibold text-gray-600">{quiz.title}</h3>
-                                <span className="bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
-                                  <Lock className="h-4 w-4" />
-                                  Premium
+                                <h3 className="text-xl font-semibold">{homepageExamData.title}</h3>
+                                <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
+                                  <Flag className="h-4 w-4" />
+                                  Special Exam
                                 </span>
-                                <span className={`px-3 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-700`}>
-                                  {quiz.difficulty}
+                                <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                  {homepageExamData.difficulty}
                                 </span>
                               </div>
-                              <p className="text-gray-500 mb-4">{quiz.description}</p>
+                              <p className="text-muted-foreground mb-4">{homepageExamData.description}</p>
                               
-                              <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+                              <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                                 <div className="flex items-center gap-1">
                                   <BookOpen className="h-4 w-4" />
-                                  <span>{quiz.questionsCount} questions</span>
+                                  <span>{homepageExamData.questionsCount} questions</span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <Clock className="h-4 w-4" />
-                                  <span>{quiz.duration} minutes</span>
+                                  <span>{homepageExamData.duration} minutes</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <span>Category: {homepageExamData.category}</span>
+                                </div>
+                                <div className="flex items-center gap-1 text-blue-600">
+                                  <CheckCircle className="h-4 w-4" />
+                                  <span>Immediate feedback</span>
                                 </div>
                               </div>
                             </div>
                             
                             <Button 
-                              variant="outline"
-                              className="ml-4 bg-white text-gray-600 border-gray-300 hover:bg-gray-100"
-                              onClick={handleSignupRedirect}
+                              className="ml-4 bg-purple-600 hover:bg-purple-700"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleQuizSelect("homepage-exam");
+                              }}
                             >
-                              <Lock className="h-4 w-4 mr-2" />
-                              Sign Up to Unlock
+                              <Play className="h-4 w-4 mr-2" />
+                              Start Exam
                             </Button>
                           </div>
                         </CardContent>
                       </Card>
-                    ))}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
 
-            {/* Sign Up CTA for Guests */}
-            {isGuest && (
-              <div className="text-center mt-8 p-6 bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl border">
-                <h3 className="text-xl font-semibold mb-2">Ready for More?</h3>
-                <p className="text-muted-foreground mb-4">
-                  Sign up now to unlock all {lessonQuizzes.length} quiz sets and track your progress!
-                </p>
-                <div className="flex gap-4 justify-center">
-                  <Button onClick={handleSignupRedirect} className="bg-green-600 hover:bg-green-700">
-                    Create Free Account
-                  </Button>
-                  <Button variant="outline" onClick={handleLoginRedirect}>
-                    Already have an account?
-                  </Button>
+                {/* Mobile Layout for regular quizzes */}
+                <div className="md:hidden space-y-3 px-2">
+                  {availableQuizzes.map((quiz) => (
+                    <Card 
+                      key={quiz.id} 
+                      className={`hover:shadow-md transition-shadow cursor-pointer border-l-4 ${
+                        quiz.isPremium 
+                          ? "border-l-yellow-500 bg-gradient-to-r from-yellow-50 to-transparent" 
+                          : "border-l-green-500"
+                      } ${quiz.requiresLogin && isGuest ? "opacity-75" : ""}`}
+                      onClick={() => handleQuizSelect(quiz.id)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="space-y-3">
+                          {/* Header with title and difficulty */}
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="text-base font-semibold leading-tight">{quiz.title}</h3>
+                                {quiz.isPremium && (
+                                  <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                                    <Lock className="h-3 w-3" />
+                                    Premium
+                                  </span>
+                                )}
+                              </div>
+                              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                quiz.difficulty === "Beginner" ? "bg-green-100 text-green-800" :
+                                quiz.difficulty === "Intermediate" ? "bg-yellow-100 text-yellow-800" :
+                                "bg-red-100 text-red-800"
+                              }`}>
+                                {quiz.difficulty}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Description */}
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            {quiz.description}
+                          </p>
+
+                          {/* Quiz Details */}
+                          <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <BookOpen className="h-3 w-3" />
+                              <span>Ibibazo {quiz.questionsCount}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              <span>Iminota {quiz.duration} </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span>{quiz.category}</span>
+                            </div>
+                          </div>
+
+                          {/* Score if completed */}
+                          {quiz.completed && (
+                            <div className="flex items-center gap-2 text-xs bg-green-50 px-3 py-2 rounded-lg">
+                              <Check className="h-3 w-3 text-green-600" />
+                              <span className="text-green-700 font-medium">Score: {quiz.score}%</span>
+                            </div>
+                          )}
+
+                          {/* Feature indicator for Set 1 */}
+                          {quiz.id === "1" && (
+                            <div className="flex items-center gap-2 text-xs bg-blue-50 px-3 py-2 rounded-lg">
+                              <CheckCircle className="h-3 w-3 text-blue-600" />
+                              <span className="text-blue-700 font-medium">Immediate feedback on answers</span>
+                            </div>
+                          )}
+
+                          {/* Start Button */}
+                          <Button 
+                            className={`w-full gap-2 h-9 text-sm ${
+                              quiz.isPremium 
+                                ? "bg-yellow-600 hover:bg-yellow-700" 
+                                : "bg-green-600 hover:bg-green-700"
+                            }`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleQuizSelect(quiz.id);
+                            }}
+                          >
+                            {quiz.isPremium ? (
+                              <>
+                                <Lock className="h-3 w-3" />
+                                {isGuest ? "Sign Up to Access" : "Unlock Premium"}
+                              </>
+                            ) : (
+                              <>
+                                <Play className="h-3 w-3" />
+                                {quiz.completed ? "Subiramo Isuzuma" : "Tangira Isuzuma"}
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+
+                  {/* Locked Quizzes for Guests */}
+                  {isGuest && transformedQuizzes.length > availableQuizzes.length && (
+                    <div className="mt-8">
+                      <h3 className="text-lg font-semibold mb-4 text-center text-muted-foreground">
+                        Premium Quizzes Available
+                      </h3>
+                      <div className="space-y-3">
+                        {transformedQuizzes
+                          .filter(quiz => quiz.requiresLogin || quiz.isPremium)
+                          .map((quiz) => (
+                          <Card key={quiz.id} className="bg-gray-50 border-l-4 border-l-gray-400 opacity-75">
+                            <CardContent className="p-4">
+                              <div className="space-y-3">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <h3 className="text-base font-semibold leading-tight text-gray-600">{quiz.title}</h3>
+                                      <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
+                                        <Lock className="h-3 w-3" />
+                                        Premium
+                                      </span>
+                                    </div>
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                      quiz.difficulty === "Beginner" ? "bg-gray-200 text-gray-700" :
+                                      quiz.difficulty === "Intermediate" ? "bg-gray-200 text-gray-700" :
+                                      "bg-gray-200 text-gray-700"
+                                    }`}>
+                                      {quiz.difficulty}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <p className="text-sm text-gray-500 leading-relaxed">
+                                  {quiz.description}
+                                </p>
+
+                                <div className="flex flex-wrap gap-3 text-xs text-gray-500">
+                                  <div className="flex items-center gap-1">
+                                    <BookOpen className="h-3 w-3" />
+                                    <span>{quiz.questionsCount} questions</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    <span>{quiz.duration} min</span>
+                                  </div>
+                                </div>
+
+                                <Button 
+                                  variant="outline"
+                                  className="w-full gap-2 h-9 text-sm bg-white text-gray-600 border-gray-300"
+                                  onClick={handleSignupRedirect}
+                                >
+                                  <Lock className="h-3 w-3" />
+                                  Sign Up to Unlock
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
+
+                {/* Desktop Layout for regular quizzes */}
+                <div className="hidden md:block space-y-4">
+                  {availableQuizzes.map((quiz) => (
+                    <Card 
+                      key={quiz.id} 
+                      className={`hover:shadow-md transition-shadow cursor-pointer border-l-4 ${
+                        quiz.isPremium 
+                          ? "border-l-yellow-500 bg-gradient-to-r from-yellow-50 to-transparent" 
+                          : "border-l-green-500"
+                      } ${quiz.requiresLogin && isGuest ? "opacity-75" : ""}`}
+                      onClick={() => handleQuizSelect(quiz.id)}
+                    >
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="text-xl font-semibold">{quiz.title}</h3>
+                              {quiz.isPremium && (
+                                <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
+                                  <Lock className="h-4 w-4" />
+                                  Premium
+                                </span>
+                              )}
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                quiz.difficulty === "Beginner" ? "bg-green-100 text-green-800" :
+                                quiz.difficulty === "Intermediate" ? "bg-yellow-100 text-yellow-800" :
+                                "bg-red-100 text-red-800"
+                              }`}>
+                                {quiz.difficulty}
+                              </span>
+                            </div>
+                            <p className="text-muted-foreground mb-4">{quiz.description}</p>
+                            
+                            <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                              <div className="flex items-center gap-1">
+                                <BookOpen className="h-4 w-4" />
+                                <span>{quiz.questionsCount} questions</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-4 w-4" />
+                                <span>{quiz.duration} minutes</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <span>Category: {quiz.category}</span>
+                              </div>
+                              {quiz.completed && (
+                                <div className="flex items-center gap-1 text-green-600">
+                                  <Check className="h-4 w-4" />
+                                  <span>Score: {quiz.score}%</span>
+                                </div>
+                              )}
+                              {/* Feature indicator for Set 1 */}
+                              {quiz.id === "1" && (
+                                <div className="flex items-center gap-1 text-blue-600">
+                                  <CheckCircle className="h-4 w-4" />
+                                  <span>Immediate feedback</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <Button 
+                            className={`ml-4 ${
+                              quiz.isPremium 
+                                ? "bg-yellow-600 hover:bg-yellow-700" 
+                                : "bg-green-600 hover:bg-green-700"
+                            }`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleQuizSelect(quiz.id);
+                            }}
+                          >
+                            {quiz.isPremium ? (
+                              <>
+                                <Lock className="h-4 w-4 mr-2" />
+                                {isGuest ? "Sign Up" : "Unlock"}
+                              </>
+                            ) : (
+                              <>
+                                <Play className="h-4 w-4 mr-2" />
+                                {quiz.completed ? "Retake" : "Start"}
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+
+                  {/* Locked Quizzes Section for Guests */}
+                  {isGuest && transformedQuizzes.length > availableQuizzes.length && (
+                    <div className="mt-8">
+                      <h3 className="text-xl font-semibold mb-6 text-center text-muted-foreground border-b pb-2">
+                        Premium Quizzes - Sign Up to Unlock
+                      </h3>
+                      <div className="grid gap-4">
+                        {transformedQuizzes
+                          .filter(quiz => quiz.requiresLogin || quiz.isPremium)
+                          .map((quiz) => (
+                          <Card key={quiz.id} className="bg-gray-50 border-l-4 border-l-gray-400 opacity-75">
+                            <CardContent className="p-6">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3 mb-2">
+                                    <h3 className="text-xl font-semibold text-gray-600">{quiz.title}</h3>
+                                    <span className="bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
+                                      <Lock className="h-4 w-4" />
+                                      Premium
+                                    </span>
+                                    <span className={`px-3 py-1 rounded-full text-xs font-medium bg-gray-200 text-gray-700`}>
+                                      {quiz.difficulty}
+                                    </span>
+                                  </div>
+                                  <p className="text-gray-500 mb-4">{quiz.description}</p>
+                                  
+                                  <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+                                    <div className="flex items-center gap-1">
+                                      <BookOpen className="h-4 w-4" />
+                                      <span>{quiz.questionsCount} questions</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <Clock className="h-4 w-4" />
+                                      <span>{quiz.duration} minutes</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                <Button 
+                                  variant="outline"
+                                  className="ml-4 bg-white text-gray-600 border-gray-300 hover:bg-gray-100"
+                                  onClick={handleSignupRedirect}
+                                >
+                                  <Lock className="h-4 w-4 mr-2" />
+                                  Sign Up to Unlock
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Sign Up CTA for Guests */}
+                {isGuest && (
+                  <div className="text-center mt-8 p-6 bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl border">
+                    <h3 className="text-xl font-semibold mb-2">Ready for More?</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Sign up now to unlock all {transformedQuizzes.length} quiz sets and track your progress!
+                    </p>
+                    <div className="flex gap-4 justify-center">
+                      <Button onClick={handleSignupRedirect} className="bg-green-600 hover:bg-green-700">
+                        Create Free Account
+                      </Button>
+                      <Button variant="outline" onClick={handleLoginRedirect}>
+                        Already have an account?
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -1206,6 +1468,12 @@ export default function ExamPage() {
                 <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
                   {currentQuiz.description}
                 </p>
+                {currentQuiz.id === "homepage-exam" && (
+                  <div className="inline-flex items-center gap-1 mt-2 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm">
+                    <Flag className="h-3 w-3" />
+                    Special Exam from Homepage
+                  </div>
+                )}
               </div>
 
               <div className="grid md:grid-cols-2 gap-8 mb-8">
@@ -1239,8 +1507,8 @@ export default function ExamPage() {
                           <span className="font-medium text-green-600">{currentQuiz.score}%</span>
                         </div>
                       )}
-                      {/* Feature indicator for Set 1 */}
-                      {currentQuiz.id === "1" && (
+                      {/* Feature indicator for homepage exam */}
+                      {(currentQuiz.id === "1" || currentQuiz.id === "homepage-exam") && (
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Mode:</span>
                           <span className="font-medium text-blue-600 flex items-center gap-1">
@@ -1298,7 +1566,7 @@ export default function ExamPage() {
                             <li>• I cannot pause or restart the quiz once started</li>
                             <li>• My answers will be automatically submitted when time expires</li>
                             <li>• This is a practice quiz for learning purposes</li>
-                            {currentQuiz.id === "1" && (
+                            {(currentQuiz.id === "1" || currentQuiz.id === "homepage-exam") && (
                               <li className="text-blue-600">• You will see immediate feedback after each answer</li>
                             )}
                           </ul>
@@ -1356,10 +1624,16 @@ export default function ExamPage() {
                   <p className="text-muted-foreground">
                     {currentQuiz.description}
                   </p>
-                  {currentQuiz.id === "1" && (
+                  {(currentQuiz.id === "1" || currentQuiz.id === "homepage-exam") && (
                     <div className="inline-flex items-center gap-1 mt-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
                       <CheckCircle className="h-3 w-3" />
                       Practice mode with immediate feedback
+                    </div>
+                  )}
+                  {currentQuiz.id === "homepage-exam" && (
+                    <div className="inline-flex items-center gap-1 mt-2 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm">
+                      <Flag className="h-3 w-3" />
+                      Special Exam
                     </div>
                   )}
                 </div>
@@ -1523,16 +1797,14 @@ export default function ExamPage() {
                         </h3>
                       </div>
 
-        
-
                       <div className="space-y-3">
                         {currentQ.choices.map((choice) => {
                           const currentAnswer = answers[currentQuestion];
                           const isSelected = selectedAnswer === choice.id;
                           const showCorrect = showImmediateFeedback && currentAnswer;
-                          const isCorrectChoice = choice.isCorrect;
-                          const isWrongSelected = showCorrect && isSelected && !choice.isCorrect;
-                          const isCorrectSelected = showCorrect && isSelected && choice.isCorrect;
+                          const isCorrectChoice = choice.isCorrect === true; // FIX: Explicit check for true
+                          const isWrongSelected = showCorrect && isSelected && !isCorrectChoice;
+                          const isCorrectSelected = showCorrect && isSelected && isCorrectChoice;
                           
                           return (
                             <button
@@ -1572,9 +1844,7 @@ export default function ExamPage() {
                                 <div className="flex-1">
                                   <span className="text-sm md:text-base leading-relaxed">{choice.text}</span>
                                   {showCorrect && isCorrectChoice && !isSelected && (
-                                    <div className="mt-0 flex items-center gap-1 text-green-600 text-xs">
-    
-                                    </div>
+                                    <div className="mt-0 flex items-center gap-1 text-green-600 text-xs"></div>
                                   )}
                                 </div>
                                 {showImmediateFeedback && currentAnswer && (
@@ -1622,9 +1892,9 @@ export default function ExamPage() {
                 <Button
                   size="sm"
                   onClick={currentQuestion === examData.questions.length - 1 ? handleFinish : handleNext}
-                  disabled={showImmediateFeedback && examData.isSet1 && !answers[currentQuestion]}
+                  disabled={showImmediateFeedback && (examData.isSet1 || examData.isHomepageExam) && !answers[currentQuestion]}
                   className={`flex-1 max-w-[120px] ${
-                    showImmediateFeedback && examData.isSet1 && !answers[currentQuestion]
+                    showImmediateFeedback && (examData.isSet1 || examData.isHomepageExam) && !answers[currentQuestion]
                       ? "bg-gray-400 cursor-not-allowed"
                       : "bg-primary hover:bg-primary/90"
                   }`}
