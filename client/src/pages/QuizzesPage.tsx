@@ -1923,7 +1923,7 @@ useEffect(() => {
           {/* Blur Background */}
           <div
             onClick={() => setShowUpgradeModal(false)}
-            className="absolute inset-0 bg-black/40 backdrop-blur-md"
+            className="absolute inset-0 bg-black/40 backdrop-blur-xs"
           />
 
           {/* Modal Card */}
