@@ -898,7 +898,10 @@ const formatDate = (dateString: string) => {
           ) : (
             // Plan History Content for Mobile
             <div className="space-y-6">
-              <div className="flex items-center gap-4 mb-4">
+              <Card className="bg-green-100 text-black">
+                <CardContent className="p-6">
+                   
+              <div className="flex items-center gap-4 mb-2 ">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -910,8 +913,6 @@ const formatDate = (dateString: string) => {
                 <h2 className="text-xl font-bold text-gray-900">Plan History</h2>
               </div>
 
-              <Card className="bg-green-100 text-black">
-                <CardContent className="p-6">
                   {/* Active Plan */}
                   {userPlan && (
                     <div className="mx-auto mb-8">
