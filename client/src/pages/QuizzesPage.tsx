@@ -929,7 +929,7 @@ useEffect(() => {
       {/* Quiz List View */}
       {currentView === "quiz-list" && !loadingHomepageExam && (
         <div className="min-h-screen bg-background">
-          <div className="md:hidden">
+          <div className="w-full">
             <Navbar />
           </div>
           <div className="max-w-4xl mx-auto px-4 md:px-6 py-6">
