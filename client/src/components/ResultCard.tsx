@@ -34,20 +34,23 @@ export default function ResultsPage() {
     );
   }
 
-  const { questions, userAnswers, totalQuestions, timeSpent, quizTitle } =
-    resultsData;
+  const { questions, userAnswers, totalQuestions, timeSpent, quizTitle, score, correctAnswers: providedCorrectAnswers } = resultsData;
 
-  // Calculate score
-  const correctAnswers = questions.filter((question: any, index: number) => {
-    const userAnswer = userAnswers[index];
-    const correctChoice = question.choices.find(
-      (choice: any) => choice.isCorrect
-    );
-    return userAnswer === correctChoice?.id;
+  // Log the data structure for debugging
+  console.log("Results data:", resultsData);
+  console.log("User answers structure:", userAnswers);
+  console.log("First user answer:", userAnswers[0]);
+  
+  // Calculate correct answers - FIXED VERSION
+  // userAnswers is an object like: {0: {answer: "A", isCorrect: true}, 1: {answer: "B", isCorrect: false}, ...}
+  const correctAnswers = Object.values(userAnswers || {}).filter((answer: any) => {
+    console.log("Checking answer:", answer);
+    return answer && answer.isCorrect === true;
   }).length;
 
-  const score = Math.round((correctAnswers / totalQuestions) * 100);
-  const passed = score >= 80;
+  // Use provided score or calculate it
+  const finalScore = score || Math.round((correctAnswers / totalQuestions) * 100);
+  const passed = finalScore >= 80;
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -68,7 +71,7 @@ export default function ResultsPage() {
         {/* Results Summary */}
         <Card className="mb-8">
           <CardContent className="p-6 text-center">
-            <div className="flex flex-col  items-center justify-center mb-4 text-center">
+            <div className="flex flex-col items-center justify-center mb-4 text-center">
               <Trophy
                 className={`h-12 w-12 ${
                   passed ? "text-green-500" : "text-red-500"
@@ -84,7 +87,7 @@ export default function ResultsPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <div className="text-center">
-                <div className="text-4xl font-bold text-primary">{score}%</div>
+                <div className="text-4xl font-bold text-primary">{finalScore}%</div>
                 <p className="text-sm text-muted-foreground">Ingano</p>
               </div>
               <div className="text-center">
@@ -125,6 +128,11 @@ export default function ResultsPage() {
                 </>
               )}
             </div>
+            
+            {/* Debug info - remove in production */}
+            <div className="mt-4 text-xs text-gray-500">
+              Answered: {Object.keys(userAnswers || {}).length} questions
+            </div>
           </CardContent>
         </Card>
 
@@ -133,14 +141,21 @@ export default function ResultsPage() {
           <h2 className="text-2xl font-bold">Ibisubizo Byuzuye</h2>
 
           {questions.map((question: any, index: number) => {
-            const userAnswer = userAnswers[index];
+            const userAnswerObj = userAnswers[index];
+            const userAnswerId = userAnswerObj?.answer;
+            const isCorrectFromData = userAnswerObj?.isCorrect;
+            
             const correctChoice = question.choices.find(
               (choice: any) => choice.isCorrect
             );
             const userChoice = question.choices.find(
-              (choice: any) => choice.id === userAnswer
+              (choice: any) => choice.id === userAnswerId
             );
-            const isCorrect = userAnswer === correctChoice?.id;
+            
+            // Use the isCorrect from data if available, otherwise calculate it
+            const isCorrect = isCorrectFromData !== undefined 
+              ? isCorrectFromData 
+              : userAnswerId === correctChoice?.id;
 
             return (
               <Card
@@ -172,7 +187,7 @@ export default function ResultsPage() {
 
                       <div className="space-y-3">
                         {question.choices.map((choice: any) => {
-                          const isUserChoice = choice.id === userAnswer;
+                          const isUserChoice = choice.id === userAnswerId;
                           const isCorrectChoice = choice.isCorrect;
 
                           let bgColor = "bg-background";
