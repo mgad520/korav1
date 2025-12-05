@@ -858,7 +858,7 @@ useEffect(() => {
                     : answer
                     ? answer.isCorrect
                       ? "bg-green-500 text-white border-green-600"
-                      : "bg-red-500 text-white border-red-600"
+                      : "bg-green-500 text-white border-green-600"
                     : "bg-muted border-border hover:bg-muted/80"
                 }`}
                 onClick={() => handleQuestionSelect(questionNumber)}
