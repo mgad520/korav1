@@ -599,7 +599,7 @@ const startExam = () => {
       <div className="max-w-7xl mx-auto">
         {/* Mobile Layout */}
         <div className="md:hidden">
-          <div className="px-4 py-2">
+          <div className="px-0 py-2">
             <section className="mb-8">
               <h2 className="text-black text-2xl font-bold mb-4 px-2">Ahabanza</h2>
               {/* Practice Card */}
