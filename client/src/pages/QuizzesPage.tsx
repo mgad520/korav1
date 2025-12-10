@@ -15,7 +15,7 @@ let quizzesCache: any[] | null = null;
 let cacheTimestamp: number | null = null;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
-// Skeleton Components
+// Skeleton Components (unchanged, but translated text would be updated)
 const QuizListSkeleton = () => (
   <div className="min-h-screen bg-background">
     {/* Header Skeleton */}
@@ -330,19 +330,19 @@ const transformQuestions = (questionSets: QuestionSet[] | null | undefined, user
       isPremium,
       requiresLogin,
       duration: Math.ceil((set.questions?.length || 0) * 0.2),
-      difficulty: setNumber === 1 ? "Beginner" : setNumber === 2 ? "Intermediate" : "Advanced",
-      category: "Driving Theory",
+      difficulty: setNumber === 1 ? "Gutangira" : setNumber === 2 ? "Hagati" : "Ikizamini",
+      category: "Iby'umuhanda",
       completed: false,
       score: null,
       questions: (set.questions || []).map((q, qIndex) => ({
         id: qIndex + 1,
         text: q.title || `Isuzuma rya ${qIndex + 1}`,
         imageUrl: q.image || undefined,
-        explanation: q.explanation || "", // Add explanation field if available
+        explanation: q.explanation || "",
         choices: (q.choice || []).map((choiceText, choiceIndex) => ({
-          id: String.fromCharCode(65 + choiceIndex), // A, B, C, D
-          text: choiceText || `Choice ${String.fromCharCode(65 + choiceIndex)}`,
-          isCorrect: choiceIndex === (q.choiceAnswer || 0) // FIX: Use 0 as default if choiceAnswer is undefined
+          id: String.fromCharCode(65 + choiceIndex),
+          text: choiceText || `Amahitamo ${String.fromCharCode(65 + choiceIndex)}`,
+          isCorrect: choiceIndex === (q.choiceAnswer || 0)
         }))
       }))
     };
@@ -353,12 +353,12 @@ const transformQuestions = (questionSets: QuestionSet[] | null | undefined, user
 const transformApiQuestionsToQuizFormat = (apiQuestions: any[]) => {
   return apiQuestions.map((q, index) => ({
     id: index + 1,
-    text: q.title || `Question ${index + 1}`,
+    text: q.title || `Ikibazo ${index + 1}`,
     imageUrl: q.image || undefined,
-    explanation: "", // API doesn't provide explanations
+    explanation: "",
     choices: (q.choice || []).map((choiceText: string, choiceIndex: number) => ({
-      id: String.fromCharCode(65 + choiceIndex), // A, B, C, D
-      text: choiceText || `Choice ${String.fromCharCode(65 + choiceIndex)}`,
+      id: String.fromCharCode(65 + choiceIndex),
+      text: choiceText || `Amahitamo ${String.fromCharCode(65 + choiceIndex)}`,
       isCorrect: choiceIndex === (q.choiceAnswer || 0)
     }))
   }));
@@ -374,89 +374,90 @@ export default function ExamPage() {
   const [answers, setAnswers] = useState<{ [key: number]: { answer: string, isCorrect: boolean } }>({});
   const [location, setLocation] = useLocation();
   const [examStarted, setExamStarted] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState("english");
+  const [selectedLanguage, setSelectedLanguage] = useState("kinyarwanda");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [selectedQuiz, setSelectedQuiz] = useState<string | null>(null);
   const [currentView, setCurrentView] = useState<"quiz-list" | "exam-prep" | "exam">("quiz-list");
   const [isGuest, setIsGuest] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState("");
-  const [showImmediateFeedback, setShowImmediateFeedback] = useState(true); // Default to showing feedback
+  const [showImmediateFeedback, setShowImmediateFeedback] = useState(true);
+  const [isReady, setIsReady] = useState(false); // New state for "Uriteguye Gutangira"
   
   // NEW STATE: Track if we're loading from homepage exam
   const [loadingHomepageExam, setLoadingHomepageExam] = useState(false);
   const [homepageExamData, setHomepageExamData] = useState<any>(null);
   const [homepageExamQuestions, setHomepageExamQuestions] = useState<any[]>([]);
 
- // Update this useEffect in ExamPage
-useEffect(() => {
-  const userData = localStorage.getItem("user");
-  setIsGuest(!userData);
-  
-  // Check if coming from homepage with exam intent
-  const searchParams = new URLSearchParams(window.location.search);
-  const examFromHomepage = searchParams.get("exam");
-  const examSource = searchParams.get("source");
-  
-  // Handle both old and new parameters
-  if (examFromHomepage === "full-exam" || (examFromHomepage === "direct" && examSource === "homepage")) {
-    console.log("Coming from homepage with direct exam intent");
-    setLoadingHomepageExam(true);
+  // Update this useEffect in ExamPage
+  useEffect(() => {
+    const userData = localStorage.getItem("user");
+    setIsGuest(!userData);
     
-    // Try to get exam data from localStorage
-    const savedQuestions = localStorage.getItem('exam-questions');
+    // Check if coming from homepage with exam intent
+    const searchParams = new URLSearchParams(window.location.search);
+    const examFromHomepage = searchParams.get("exam");
+    const examSource = searchParams.get("source");
     
-    if (savedQuestions) {
-      try {
-        const questionsData = JSON.parse(savedQuestions);
-        
-        // Extract questions from the API response
-        if (questionsData.randomSet && questionsData.randomSet.questions) {
-          const examQuestions = transformApiQuestionsToQuizFormat(questionsData.randomSet.questions);
-          setHomepageExamQuestions(examQuestions);
+    // Handle both old and new parameters
+    if (examFromHomepage === "full-exam" || (examFromHomepage === "direct" && examSource === "homepage")) {
+      console.log("Coming from homepage with direct exam intent");
+      setLoadingHomepageExam(true);
+      
+      // Try to get exam data from localStorage
+      const savedQuestions = localStorage.getItem('exam-questions');
+      
+      if (savedQuestions) {
+        try {
+          const questionsData = JSON.parse(savedQuestions);
           
-          console.log("Loaded homepage exam questions:", examQuestions.length);
-          
-          // Create a unique quiz for homepage exam
-          const homepageQuiz = {
-            id: "homepage-exam",
-            title: questionsData.randomSet.title || "Ikizamini cy'isuzuma",
-            description: "Isuzuma ry'ibiganiro by'imodoka",
-            questionsCount: examQuestions.length,
-            isPremium: true,
-            requiresLogin: true,
-            duration: Math.ceil(examQuestions.length * 0.2),
-            difficulty: "Medium",
-            category: "Driving Theory",
-            completed: false,
-            score: null,
-            questions: examQuestions,
-            isHomepageExam: true // Flag to identify homepage exam
-          };
-          
-          setHomepageExamData(homepageQuiz);
-          
-          // Set the quiz and go directly to exam prep
-          setSelectedQuiz("homepage-exam");
-          setCurrentView("exam-prep");
+          // Extract questions from the API response
+          if (questionsData.randomSet && questionsData.randomSet.questions) {
+            const examQuestions = transformApiQuestionsToQuizFormat(questionsData.randomSet.questions);
+            setHomepageExamQuestions(examQuestions);
+            
+            console.log("Loaded homepage exam questions:", examQuestions.length);
+            
+            // Create a unique quiz for homepage exam
+            const homepageQuiz = {
+              id: "homepage-exam",
+              title: questionsData.randomSet.title || "Ikizamini cy'isuzuma",
+              description: "Isuzuma ry'ibiganiro by'imodoka",
+              questionsCount: examQuestions.length,
+              isPremium: true,
+              requiresLogin: true,
+              duration: Math.ceil(examQuestions.length * 0.2),
+              difficulty: "Hagati",
+              category: "Iby'umuhanda",
+              completed: false,
+              score: null,
+              questions: examQuestions,
+              isHomepageExam: true
+            };
+            
+            setHomepageExamData(homepageQuiz);
+            
+            // Set the quiz and go directly to exam prep
+            setSelectedQuiz("homepage-exam");
+            setCurrentView("exam-prep");
+            setLoadingHomepageExam(false);
+            
+            // Clear the URL parameters
+            const url = new URL(window.location.href);
+            url.searchParams.delete("exam");
+            url.searchParams.delete("source");
+            url.searchParams.delete("type");
+            window.history.replaceState({}, '', url.toString());
+          }
+        } catch (error) {
+          console.error("Error parsing exam data:", error);
           setLoadingHomepageExam(false);
-          
-          // Clear the URL parameters
-          const url = new URL(window.location.href);
-          url.searchParams.delete("exam");
-          url.searchParams.delete("source");
-          url.searchParams.delete("type");
-          window.history.replaceState({}, '', url.toString());
         }
-      } catch (error) {
-        console.error("Error parsing exam data:", error);
+      } else {
         setLoadingHomepageExam(false);
       }
-    } else {
-      setLoadingHomepageExam(false);
     }
-  }
-}, []);
+  }, []);
 
   // Use the custom hook - now including userPlan
   const { questions: questionSets, userPlan, loading, error, refetch } = useQuestions();
@@ -565,7 +566,7 @@ useEffect(() => {
     duration: currentQuiz.duration,
     questions: currentQuiz.questions,
     isSet1: currentQuiz.id === "1",
-    isHomepageExam: currentQuiz.id === "homepage-exam" // Add flag
+    isHomepageExam: currentQuiz.id === "homepage-exam"
   } : null;
 
   // Initialize timer once
@@ -625,7 +626,6 @@ useEffect(() => {
 
   const handleAnswerSelect = (choiceId: string) => {
     if (!currentQ || (showImmediateFeedback && answers[currentQuestion])) {
-      // Don't allow changing answer if immediate feedback is shown and answer is already selected
       return;
     }
 
@@ -730,7 +730,7 @@ useEffect(() => {
   };
 
   const handleStartExam = () => {
-    if (agreedToTerms && currentQuiz) {
+    if (isReady && currentQuiz) {
       console.log("Starting exam for quiz:", currentQuiz.title);
       setExamStarted(true);
       setCurrentView("exam");
@@ -829,7 +829,7 @@ useEffect(() => {
             </Button>
             
             <span className="text-sm text-muted-foreground font-medium">
-              Questions {startQuestion + 1}-{endQuestion} of {examData.totalQuestions}
+              Ikibazo {startQuestion + 1}-{endQuestion} mu {examData.totalQuestions}
             </span>
             
             <Button
@@ -877,9 +877,9 @@ useEffect(() => {
 
   // Get user plan display name
   const getUserPlanDisplay = () => {
-    if (isGuest) return "Guest";
-    if (!userPlan) return "Free";
-    return userPlan.planName === "No Active Plan" ? "Free" : userPlan.planName;
+    if (isGuest) return "Umushyitsi";
+    if (!userPlan) return "Ubuntu";
+    return userPlan.planName === "No Active Plan" ? "Ubuntu" : userPlan.planName;
   };
 
   // Get user status color
@@ -948,10 +948,10 @@ useEffect(() => {
                     <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0" />
                     <div className="text-left">
                       <p className="text-blue-800 font-medium text-sm">
-                        Limited Access - Guest Mode
+                        Uburyo Bw'umushyitsi
                       </p>
                       <p className="text-blue-700 text-xs">
-                        Sign up to unlock {transformedQuizzes.length - availableQuizzes.length} additional quiz sets and premium features
+                        Iyandikishe ufungure ibindi {transformedQuizzes.length - availableQuizzes.length} bizamini n'ibindi bikubiyemo
                       </p>
                     </div>
                   </div>
@@ -963,7 +963,7 @@ useEffect(() => {
             {(loading || isTransforming) && transformedQuizzes.length === 0 ? (
               <div className="text-center py-12">
                 <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Loading quiz sets...</p>
+                <p className="text-muted-foreground">Kurura ibizamini...</p>
               </div>
             ) : availableQuizzes.length === 0 && !homepageExamData ? (
               <div className="text-center py-12">
@@ -972,7 +972,7 @@ useEffect(() => {
                 <p className="text-muted-foreground mb-4">Garuka hanyuma urebe niba hari ibindi bibazo bishya byongewe.</p>
                 {isGuest && (
                   <Button onClick={handleSignupRedirect}>
-                   Iyandikishe kugira ngo ubone uburyo bwo gukora ibizamini.
+                    Iyandikishe kugira ngo ubone uburyo bwo gukora ibizamini.
                   </Button>
                 )}
               </div>
@@ -998,7 +998,7 @@ useEffect(() => {
                                   <h3 className="text-base font-semibold leading-tight">{homepageExamData.title}</h3>
                                   <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
                                     <Flag className="h-3 w-3" />
-                                    Special Exam
+                                    Ikizamini cy'isuzuma
                                   </span>
                                 </div>
                                 <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -1028,7 +1028,7 @@ useEffect(() => {
                             {/* Feature indicator */}
                             <div className="flex items-center gap-2 text-xs bg-blue-50 px-3 py-2 rounded-lg">
                               <CheckCircle className="h-3 w-3 text-blue-600" />
-                              <span className="text-blue-700 font-medium">Practice with immediate feedback</span>
+                              <span className="text-blue-700 font-medium">Bona ibisubizo byihuse nyuma yo guhitamo</span>
                             </div>
 
                             {/* Start Button */}
@@ -1060,7 +1060,7 @@ useEffect(() => {
                                 <h3 className="text-xl font-semibold">{homepageExamData.title}</h3>
                                 <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2">
                                   <Flag className="h-4 w-4" />
-                                  Special Exam
+                                  Ikizamini cy'isuzuma
                                 </span>
                                 <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                   {homepageExamData.difficulty}
@@ -1071,18 +1071,18 @@ useEffect(() => {
                               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                                 <div className="flex items-center gap-1">
                                   <BookOpen className="h-4 w-4" />
-                                  <span>{homepageExamData.questionsCount} questions</span>
+                                  <span>{homepageExamData.questionsCount} ibibazo</span>
                                 </div>
                                 <div className="flex items-center gap-1">
                                   <Clock className="h-4 w-4" />
-                                  <span>{homepageExamData.duration} minutes</span>
+                                  <span>{homepageExamData.duration} iminota</span>
                                 </div>
                                 <div className="flex items-center gap-1">
-                                  <span>Category: {homepageExamData.category}</span>
+                                  <span>Urwego: {homepageExamData.category}</span>
                                 </div>
                                 <div className="flex items-center gap-1 text-blue-600">
                                   <CheckCircle className="h-4 w-4" />
-                                  <span>Immediate feedback</span>
+                                  <span>Bona ibisubizo byihuse</span>
                                 </div>
                               </div>
                             </div>
@@ -1095,7 +1095,7 @@ useEffect(() => {
                               }}
                             >
                               <Play className="h-4 w-4 mr-2" />
-                              Start Exam
+                              Tangira Ikizamini
                             </Button>
                           </div>
                         </CardContent>
@@ -1131,8 +1131,8 @@ useEffect(() => {
                                 )}
                               </div>
                               <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                quiz.difficulty === "Beginner" ? "bg-green-100 text-green-800" :
-                                quiz.difficulty === "Intermediate" ? "bg-yellow-100 text-yellow-800" :
+                                quiz.difficulty === "Gutangira" ? "bg-green-100 text-green-800" :
+                                quiz.difficulty === "Hagati" ? "bg-yellow-100 text-yellow-800" :
                                 "bg-red-100 text-red-800"
                               }`}>
                                 {quiz.difficulty}
@@ -1164,7 +1164,7 @@ useEffect(() => {
                           {quiz.completed && (
                             <div className="flex items-center gap-2 text-xs bg-green-50 px-3 py-2 rounded-lg">
                               <Check className="h-3 w-3 text-green-600" />
-                              <span className="text-green-700 font-medium">Score: {quiz.score}%</span>
+                              <span className="text-green-700 font-medium">Ishusho: {quiz.score}%</span>
                             </div>
                           )}
 
@@ -1172,7 +1172,7 @@ useEffect(() => {
                           {quiz.id === "1" && (
                             <div className="flex items-center gap-2 text-xs bg-blue-50 px-3 py-2 rounded-lg">
                               <CheckCircle className="h-3 w-3 text-blue-600" />
-                              <span className="text-blue-700 font-medium">Immediate feedback on answers</span>
+                              <span className="text-blue-700 font-medium">Bona ibisubizo byihuse nyuma yo guhitamo</span>
                             </div>
                           )}
 
@@ -1191,7 +1191,7 @@ useEffect(() => {
                             {quiz.isPremium ? (
                               <>
                                 <Lock className="h-3 w-3" />
-                                {isGuest ? "Sign Up to Access" : "Unlock Premium"}
+                                {isGuest ? "Iyandikishe" : "Fungura Premium"}
                               </>
                             ) : (
                               <>
@@ -1209,7 +1209,7 @@ useEffect(() => {
                   {isGuest && transformedQuizzes.length > availableQuizzes.length && (
                     <div className="mt-8">
                       <h3 className="text-lg font-semibold mb-4 text-center text-muted-foreground">
-                        Premium Quizzes Available
+                        Ibizamini bya Premium - Iyandikishe Uzibifungure
                       </h3>
                       <div className="space-y-3">
                         {transformedQuizzes
@@ -1228,8 +1228,8 @@ useEffect(() => {
                                       </span>
                                     </div>
                                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                      quiz.difficulty === "Beginner" ? "bg-gray-200 text-gray-700" :
-                                      quiz.difficulty === "Intermediate" ? "bg-gray-200 text-gray-700" :
+                                      quiz.difficulty === "Gutangira" ? "bg-gray-200 text-gray-700" :
+                                      quiz.difficulty === "Hagati" ? "bg-gray-200 text-gray-700" :
                                       "bg-gray-200 text-gray-700"
                                     }`}>
                                       {quiz.difficulty}
@@ -1244,11 +1244,11 @@ useEffect(() => {
                                 <div className="flex flex-wrap gap-3 text-xs text-gray-500">
                                   <div className="flex items-center gap-1">
                                     <BookOpen className="h-3 w-3" />
-                                    <span>{quiz.questionsCount} questions</span>
+                                    <span>{quiz.questionsCount} ibibazo</span>
                                   </div>
                                   <div className="flex items-center gap-1">
                                     <Clock className="h-3 w-3" />
-                                    <span>{quiz.duration} min</span>
+                                    <span>{quiz.duration} iminota</span>
                                   </div>
                                 </div>
 
@@ -1258,7 +1258,7 @@ useEffect(() => {
                                   onClick={handleSignupRedirect}
                                 >
                                   <Lock className="h-3 w-3" />
-                                  Sign Up to Unlock
+                                  Iyandikishe uzifungure
                                 </Button>
                               </div>
                             </CardContent>
@@ -1293,8 +1293,8 @@ useEffect(() => {
                                 </span>
                               )}
                               <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                quiz.difficulty === "Beginner" ? "bg-green-100 text-green-800" :
-                                quiz.difficulty === "Intermediate" ? "bg-yellow-100 text-yellow-800" :
+                                quiz.difficulty === "Gutangira" ? "bg-green-100 text-green-800" :
+                                quiz.difficulty === "Hagati" ? "bg-yellow-100 text-yellow-800" :
                                 "bg-red-100 text-red-800"
                               }`}>
                                 {quiz.difficulty}
@@ -1305,26 +1305,26 @@ useEffect(() => {
                             <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                               <div className="flex items-center gap-1">
                                 <BookOpen className="h-4 w-4" />
-                                <span>{quiz.questionsCount} questions</span>
+                                <span>{quiz.questionsCount} ibibazo</span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <Clock className="h-4 w-4" />
-                                <span>{quiz.duration} minutes</span>
+                                <span>{quiz.duration} iminota</span>
                               </div>
                               <div className="flex items-center gap-1">
-                                <span>Category: {quiz.category}</span>
+                                <span>Urwego: {quiz.category}</span>
                               </div>
                               {quiz.completed && (
                                 <div className="flex items-center gap-1 text-green-600">
                                   <Check className="h-4 w-4" />
-                                  <span>Score: {quiz.score}%</span>
+                                  <span>Ishusho: {quiz.score}%</span>
                                 </div>
                               )}
                               {/* Feature indicator for Set 1 */}
                               {quiz.id === "1" && (
                                 <div className="flex items-center gap-1 text-blue-600">
                                   <CheckCircle className="h-4 w-4" />
-                                  <span>Immediate feedback</span>
+                                  <span>Bona ibisubizo byihuse</span>
                                 </div>
                               )}
                             </div>
@@ -1344,12 +1344,12 @@ useEffect(() => {
                             {quiz.isPremium ? (
                               <>
                                 <Lock className="h-4 w-4 mr-2" />
-                                {isGuest ? "Sign Up" : "Unlock"}
+                                {isGuest ? "Iyandikishe" : "Fungura"}
                               </>
                             ) : (
                               <>
                                 <Play className="h-4 w-4 mr-2" />
-                                {quiz.completed ? "Retake" : "Start"}
+                                {quiz.completed ? "Subiramo" : "Tangira"}
                               </>
                             )}
                           </Button>
@@ -1362,7 +1362,7 @@ useEffect(() => {
                   {isGuest && transformedQuizzes.length > availableQuizzes.length && (
                     <div className="mt-8">
                       <h3 className="text-xl font-semibold mb-6 text-center text-muted-foreground border-b pb-2">
-                        Premium Quizzes - Sign Up to Unlock
+                        Ibizamini bya Premium - Iyandikishe Uzibifungure
                       </h3>
                       <div className="grid gap-4">
                         {transformedQuizzes
@@ -1387,11 +1387,11 @@ useEffect(() => {
                                   <div className="flex flex-wrap gap-4 text-sm text-gray-500">
                                     <div className="flex items-center gap-1">
                                       <BookOpen className="h-4 w-4" />
-                                      <span>{quiz.questionsCount} questions</span>
+                                      <span>{quiz.questionsCount} ibibazo</span>
                                     </div>
                                     <div className="flex items-center gap-1">
                                       <Clock className="h-4 w-4" />
-                                      <span>{quiz.duration} minutes</span>
+                                      <span>{quiz.duration} iminota</span>
                                     </div>
                                   </div>
                                 </div>
@@ -1402,7 +1402,7 @@ useEffect(() => {
                                   onClick={handleSignupRedirect}
                                 >
                                   <Lock className="h-4 w-4 mr-2" />
-                                  Sign Up to Unlock
+                                  Iyandikishe uzifungure
                                 </Button>
                               </div>
                             </CardContent>
@@ -1416,16 +1416,16 @@ useEffect(() => {
                 {/* Sign Up CTA for Guests */}
                 {isGuest && (
                   <div className="text-center mt-8 p-6 bg-gradient-to-r from-green-50 to-blue-50 rounded-2xl border">
-                    <h3 className="text-xl font-semibold mb-2">Ready for More?</h3>
+                    <h3 className="text-xl font-semibold mb-2">Uriteguye kubyongera?</h3>
                     <p className="text-muted-foreground mb-4">
-                      Sign up now to unlock all {transformedQuizzes.length} quiz sets and track your progress!
+                      Iyandikishe nonaha ufungure ibizamini {transformedQuizzes.length} byose kandi ukurebe amajyo!
                     </p>
                     <div className="flex gap-4 justify-center">
                       <Button onClick={handleSignupRedirect} className="bg-green-600 hover:bg-green-700">
-                        Create Free Account
+                        Kora Konti
                       </Button>
                       <Button variant="outline" onClick={handleLoginRedirect}>
-                        Already have an account?
+                        Ufite konti?
                       </Button>
                     </div>
                   </div>
@@ -1436,301 +1436,84 @@ useEffect(() => {
         </div>
       )}
 
-      {/* Exam Preparation View */}
-      {currentView === "exam-prep" && currentQuiz && (
-        <>
-          {/* Mobile Layout - Full Screen */}
-          <div className="md:hidden min-h-screen bg-background">
-            {/* Header */}
-            <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-              <div className="max-w-6xl mx-auto px-4 md:px-6 py-4">
-                <div className="flex items-center justify-between">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="gap-2"
-                    onClick={handleBackToQuizzes}
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    <span className="hidden sm:inline">Back to Quizzes</span>
-                  </Button>
-                  
-                  <div className="text-sm text-muted-foreground">
-                    {currentQuiz.title}
-                  </div>
-                </div>
-              </div>
-            </div>
+     {/* Exam Preparation View - SIMPLIFIED TO CONFIRMATION MODAL */}
+{currentView === "exam-prep" && currentQuiz && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center">
+    {/* Blur Background */}
+    <div
+      onClick={handleBackToQuizzes}
+      className="absolute inset-0 bg-black/40 backdrop-blur-xs"
+    />
 
-            <div className="max-w-4xl mx-auto px-4 md:px-6 py-8">
-              <div className="text-center mb-8">
-                <h1 className="text-3xl md:text-4xl font-bold mb-4">{currentQuiz.title}</h1>
-                <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                  {currentQuiz.description}
-                </p>
-                {currentQuiz.id === "homepage-exam" && (
-                  <div className="inline-flex items-center gap-1 mt-2 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm">
-                    <Flag className="h-3 w-3" />
-                    Special Exam from Homepage
-                  </div>
-                )}
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-8 mb-8">
-                {/* Quiz Details */}
-                <Card>
-                  <CardContent className="p-6">
-                    <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                      <AlertCircle className="h-5 w-5 text-blue-500" />
-                      Quiz Details
-                    </h3>
-                    <div className="space-y-3 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Total Questions:</span>
-                        <span className="font-medium">{currentQuiz.questionsCount}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Time Limit:</span>
-                        <span className="font-medium">{currentQuiz.duration} minutes</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Difficulty:</span>
-                        <span className="font-medium">{currentQuiz.difficulty}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Category:</span>
-                        <span className="font-medium">{currentQuiz.category}</span>
-                      </div>
-                      {currentQuiz.completed && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Previous Score:</span>
-                          <span className="font-medium text-green-600">{currentQuiz.score}%</span>
-                        </div>
-                      )}
-                      {/* Feature indicator for homepage exam */}
-                      {(currentQuiz.id === "1" || currentQuiz.id === "homepage-exam") && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Mode:</span>
-                          <span className="font-medium text-blue-600 flex items-center gap-1">
-                            <CheckCircle className="h-4 w-4" />
-                            Practice with immediate feedback
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Configuration Section */}
-              <Card className="mb-8">
-                <CardContent className="p-6">
-                  <h3 className="text-xl font-semibold mb-6">Quiz Configuration</h3>
-                  
-                  <div className="space-y-6">
-                    {/* Language Selection */}
-                    <div className="space-y-3">
-                      <Label htmlFor="language" className="flex items-center gap-2 text-base">
-                        <Languages className="h-4 w-4" />
-                        Select Quiz Language
-                      </Label>
-                      <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Choose language" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="english">English</SelectItem>
-                          <SelectItem value="kinyarwanda">Kinyarwanda</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <p className="text-sm text-muted-foreground">
-                        The quiz questions and instructions will be displayed in {selectedLanguage}.
-                      </p>
-                    </div>
-
-                    {/* Terms and Conditions */}
-                    <div className="space-y-3">
-                      <div className="flex items-start space-x-2">
-                        <Checkbox
-                          id="terms"
-                          checked={agreedToTerms}
-                          onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
-                        />
-                        <label
-                          htmlFor="terms"
-                          className="text-sm leading-relaxed cursor-pointer"
-                        >
-                          I agree to the terms and conditions of this quiz. I understand that:
-                          <ul className="mt-2 space-y-1 text-muted-foreground">
-                            <li>• I must complete the quiz within the time limit</li>
-                            <li>• I cannot pause or restart the quiz once started</li>
-                            <li>• My answers will be automatically submitted when time expires</li>
-                            <li>• This is a practice quiz for learning purposes</li>
-                            {(currentQuiz.id === "1" || currentQuiz.id === "homepage-exam") && (
-                              <li className="text-blue-600">• You will see immediate feedback after each answer</li>
-                            )}
-                          </ul>
-                        </label>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Start Button */}
-              <div className="text-center">
-                <Button
-                  size="lg"
-                  onClick={handleStartExam}
-                  disabled={!agreedToTerms}
-                  className="px-8 py-3 text-lg bg-green-600 hover:bg-green-700"
-                >
-                  {currentQuiz.completed ? "Retake Quiz" : "Start Quiz"}
-                </Button>
-                {!agreedToTerms && (
-                  <p className="text-sm text-muted-foreground mt-3">
-                    Please agree to the terms and conditions to start the quiz
-                  </p>
-                )}
-              </div>
-            </div>
+    {/* Modal Card */}
+    <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-md mx-4 p-6 animate-in fade-in zoom-in">
+      {/* Quiz Title */}
+      <div className="text-center mb-4">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+          {currentQuiz.title}
+        </h2>
+        {currentQuiz.id === "homepage-exam" && (
+          <div className="inline-flex items-center gap-1 mt-2 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs">
+            <Flag className="h-3 w-3" />
+            Ikizamini cy'isuzuma
           </div>
+        )}
+      </div>
 
-          {/* Desktop Layout - Modal Overlay */}
-          <div className="hidden md:flex fixed inset-0 bg-black/50 backdrop-blur-sm z-50 items-center justify-center p-8">
-            <div className="bg-background rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              {/* Modal Header */}
-              <div className="sticky top-0 bg-background border-b px-6 py-4 rounded-t-2xl">
-                <div className="flex items-center justify-between">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="gap-2"
-                    onClick={handleBackToQuizzes}
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                    Back to Quizzes
-                  </Button>
-                  <div className="text-sm text-muted-foreground">
-                    Quiz Preparation
-                  </div>
-                </div>
-              </div>
-
-              {/* Modal Content */}
-              <div className="p-6">
-                <div className="text-center mb-6">
-                  <h1 className="text-2xl font-bold mb-2">{currentQuiz.title}</h1>
-                  <p className="text-muted-foreground">
-                    {currentQuiz.description}
-                  </p>
-                  {(currentQuiz.id === "1" || currentQuiz.id === "homepage-exam") && (
-                    <div className="inline-flex items-center gap-1 mt-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
-                      <CheckCircle className="h-3 w-3" />
-                      Practice mode with immediate feedback
-                    </div>
-                  )}
-                  {currentQuiz.id === "homepage-exam" && (
-                    <div className="inline-flex items-center gap-1 mt-2 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm">
-                      <Flag className="h-3 w-3" />
-                      Special Exam
-                    </div>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-2 gap-6 mb-6">
-                  {/* Quiz Details */}
-                  <Card>
-                    <CardContent className="p-4">
-                      <h3 className="font-semibold mb-3 flex items-center gap-2">
-                        <AlertCircle className="h-4 w-4 text-blue-500" />
-                        Quiz Details
-                      </h3>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Questions:</span>
-                          <span className="font-medium">{currentQuiz.questionsCount}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Time:</span>
-                          <span className="font-medium">{currentQuiz.duration} min</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Difficulty:</span>
-                          <span className="font-medium">{currentQuiz.difficulty}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Category:</span>
-                          <span className="font-medium">{currentQuiz.category}</span>
-                        </div>
-                        {currentQuiz.completed && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Previous Score:</span>
-                            <span className="font-medium text-green-600">{currentQuiz.score}%</span>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Quick Actions */}
-                  <Card>
-                    <CardContent className="p-4">
-                      <h3 className="font-semibold mb-3 flex items-center gap-2">
-                        <Languages className="h-4 w-4 text-green-500" />
-                        Quick Setup
-                      </h3>
-                      <div className="space-y-3">
-                        <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Language" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="english">English</SelectItem>
-                            <SelectItem value="kinyarwanda">Kinyarwanda</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="desktop-terms"
-                            checked={agreedToTerms}
-                            onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
-                          />
-                          <label
-                            htmlFor="desktop-terms"
-                            className="text-xs leading-relaxed cursor-pointer"
-                          >
-                            I agree to the terms
-                          </label>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Start Button */}
-                <div className="text-center">
-                  <Button
-                    size="lg"
-                    onClick={handleStartExam}
-                    disabled={!agreedToTerms}
-                    className="w-full bg-green-600 hover:bg-green-700 h-12 text-base"
-                  >
-                    {currentQuiz.completed ? "Retake Quiz" : "Start Quiz Now"}
-                  </Button>
-                  {!agreedToTerms && (
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Please agree to the terms to continue
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
+      {/* Quiz Details - Minimal */}
+      <div className="text-center mb-6 space-y-2">
+        <div className="flex items-center justify-center gap-4 text-sm text-gray-600 dark:text-gray-300">
+          <div className="flex items-center gap-1">
+            <BookOpen className="h-4 w-4" />
+            <span>{currentQuiz.questionsCount} ibibazo</span>
           </div>
-        </>
-      )}
+          <div className="flex items-center gap-1">
+            <Clock className="h-4 w-4" />
+            <span>{currentQuiz.duration} iminota</span>
+          </div>
+        </div>
+        {(currentQuiz.id === "1" || currentQuiz.id === "homepage-exam") && (
+          <div className="flex items-center justify-center gap-1 text-green-600 text-sm">
+            <CheckCircle className="h-4 w-4" />
+            <span>Bona ibisubizo ugihitamo</span>
+          </div>
+        )}
+      </div>
 
+      {/* Confirmation Message */}
+      <h3 className="text-xl font-bold text-gray-900 dark:text-white text-center mb-3">
+        Uriteguye Gutangira?
+      </h3>
+
+      <p className="text-gray-600 dark:text-gray-300 text-center text-sm mb-6">
+        {currentQuiz.id === "1" || currentQuiz.id === "homepage-exam" 
+          ? "Urabona ibisubizo uko uhisemo." 
+          : "Tangira ikizamini ubone ibisubizo nyuma yo gusoza."}
+      </p>
+
+      {/* Action Buttons */}
+      <div className="flex gap-4">
+        <Button
+          variant="outline"
+          onClick={handleBackToQuizzes}
+          className="flex-1 rounded-xl"
+        >
+          Oya
+        </Button>
+
+        <Button
+          onClick={() => {
+            setIsReady(true);
+            handleStartExam();
+          }}
+          className="flex-1 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold shadow-md"
+        >
+          Yego
+        </Button>
+      </div>
+    </div>
+  </div>
+)}
       {/* Exam Interface View */}
       {currentView === "exam" && examData && currentQ && (
         <div className="min-h-screen bg-background">
@@ -1749,7 +1532,7 @@ useEffect(() => {
 
               {/* Question Info */}
               <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-3">
-                <span>Question {examData.currentQuestion} of {examData.totalQuestions}</span>
+                <span>Ikibazo {examData.currentQuestion} mu {examData.totalQuestions}</span>
               </div>
 
               {/* Progress Bar */}
@@ -1777,12 +1560,12 @@ useEffect(() => {
                         <div className="rounded-xl overflow-hidden border-2 border-gray-200 shadow-sm">
                           <img 
                             src={currentQ.imageUrl} 
-                            alt="Question visual reference"
+                            alt="Ishusho y'ikibazo"
                             className="w-full h-48 md:h-64 object-contain"
                           />
                         </div>
                         <p className="text-sm text-muted-foreground mt-2 text-center italic">
-                          Visual reference
+                          Ishusho y'ikibazo
                         </p>
                       </div>
                     </div>
@@ -1802,7 +1585,7 @@ useEffect(() => {
                           const currentAnswer = answers[currentQuestion];
                           const isSelected = selectedAnswer === choice.id;
                           const showCorrect = showImmediateFeedback && currentAnswer;
-                          const isCorrectChoice = choice.isCorrect === true; // FIX: Explicit check for true
+                          const isCorrectChoice = choice.isCorrect === true;
                           const isWrongSelected = showCorrect && isSelected && !isCorrectChoice;
                           const isCorrectSelected = showCorrect && isSelected && isCorrectChoice;
                           
@@ -1878,7 +1661,7 @@ useEffect(() => {
                   disabled={currentQuestion === 0}
                   className="flex-1 max-w-[120px]"
                 >
-                  Previous
+                  Isubizo rya mbere
                 </Button>
                 
                 <div className="flex flex-col items-center gap-1 text-xs text-muted-foreground">
@@ -1886,7 +1669,7 @@ useEffect(() => {
                     <Clock className="h-3 w-3" />
                     <span>{formatTime(timeRemaining)}</span>
                   </div>
-                  <span>Q{examData.currentQuestion}/{examData.totalQuestions}</span>
+                  <span>K{examData.currentQuestion}/{examData.totalQuestions}</span>
                 </div>
                 
                 <Button
@@ -1899,7 +1682,7 @@ useEffect(() => {
                       : "bg-primary hover:bg-primary/90"
                   }`}
                 >
-                  {currentQuestion === examData.questions.length - 1 ? "Finish" : "Next"}
+                  {currentQuestion === examData.questions.length - 1 ? "Gusoza" : "Ibikurikira"}
                 </Button>
               </div>
             </div>
@@ -1911,13 +1694,13 @@ useEffect(() => {
       {!["quiz-list", "exam-prep", "exam"].includes(currentView) && (
         <div className="min-h-screen bg-background flex items-center justify-center">
           <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">Loading...</h1>
-            <Button onClick={handleBackToQuizzes}>Back to Quizzes</Button>
+            <h1 className="text-2xl font-bold mb-4">Kurura...</h1>
+            <Button onClick={handleBackToQuizzes}>Subira ku Bizamini</Button>
           </div>
         </div>
       )}
 
-      {/* ✅ UPGRADE MODAL - NOW AT ROOT LEVEL ✅ */}
+      {/* UPGRADE MODAL */}
       {showUpgradeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           {/* Blur Background */}

@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { ChevronRight, Settings, Bell, Languages, MessageCircle, Info, Users, LogOut, User, Crown, History } from "lucide-react";
+import { ChevronRight, Settings, Bell, Languages, MessageCircle, Info, Users, LogOut, User, Crown, History, CreditCard, FileText } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useState, useEffect, useRef } from "react";
 import Navbar from "@/components/Navbar";
@@ -30,7 +30,7 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export default function AccountPage() {
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [language, setLanguage] = useState("English");
+  const [language, setLanguage] = useState("Kinyarwanda");
   const [activeSection, setActiveSection] = useState("profile");
   const [user, setUser] = useState<any>(null);
   const [userPlan, setUserPlan] = useState<UserPlan | null>(null);
@@ -177,7 +177,7 @@ export default function AccountPage() {
   }, []); // Empty dependency array ensures this runs only once on mount
 
   const handleLogout = () => {
-    if (confirm("Are you sure you want to log out?")) {
+    if (confirm("Ushaka kumara?")) {
       // Clear caches
       userDataCache = null;
       userPlanCache = null;
@@ -200,111 +200,106 @@ export default function AccountPage() {
 
   // Get user level based on plan data
   const getUserLevel = () => {
-    if (isGuest) return "Guest";
-    if (!userPlan) return "Free Plan";
-    return userPlan.planName || "Free Plan";
+    if (isGuest) return "Umushyitsi";
+    if (!userPlan) return "Ubuntu";
+    return userPlan.planName || "Ubuntu";
   };
 
   // Get plan status
   const getPlanStatus = () => {
-    if (!userPlan) return "Inactive";
-    return userPlan.status || "Inactive";
+    if (!userPlan) return "Ntacyakorwa";
+    return userPlan.status === "ACTIVE" ? "Active" : "Canceled";
   };
 
- // Get plan end date
-const getPlanEndDate = () => {
-  if (!userPlan || !userPlan.endDate) return "---";
-  return userPlan.endDate; // Return as-is from response
-};
+  // Get plan end date
+  const getPlanEndDate = () => {
+    if (!userPlan || !userPlan.endDate) return "---";
+    return userPlan.endDate;
+  };
 
-// Format date for display - Modified to just return the string
-const formatDate = (dateString: string) => {
-  if (!dateString) return "---";
-  return dateString; // Return as-is
-};
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "---";
+    return dateString;
+  };
 
   const menuItems = [
     {
-      title: "Subscription Plans",
+      title: "Imyirondoro",
+      value: "",
+      hasArrow: true,
+      type: "profileInfo",
+      icon: User,
+    },
+    {
+      title: "Ifatabuguzi",
       value: getUserLevel(),
       hasArrow: true,
       type: "subscription",
-      icon: Crown,
+      icon: CreditCard,
     },
     {
-      title: "Plan History",
-      value: userPlansHistory.length > 0 ? `${userPlansHistory.length} plans` : "No history",
+      title: "Ifatabuguzi Ryanjye",
+      value: userPlansHistory.length > 0 ? `${userPlansHistory.length} ifatabuguzi` : "Nta mateka",
       hasArrow: true,
       type: "planHistory",
       icon: History,
     },
     {
-      title: "Language",
-      value: language,
-      hasArrow: true,
-      type: "language",
-      icon: Languages,
-    },
-    {
-      title: "Notification",
-      value: "",
-      hasArrow: false,
-      type: "notification",
-      icon: Bell,
-    },
-    {
-      title: "Whatsapp Us !",
+      title: "Whatsapp",
       value: "",
       hasArrow: true,
       type: "whatsapp",
       icon: MessageCircle,
     },
     {
-      title: "About Kora",
+      title: "Ibyerekeye Kora",
       value: "",
       hasArrow: true,
       type: "about",
       icon: Info,
     },
-    {
-      title: "Invite Friends",
-      value: "",
-      hasArrow: true,
-      type: "invite",
-      icon: Users,
-    },
   ];
 
   const handleLanguageSelect = () => {
-    setLanguage(current => current === "English" ? "Kinyarwanda" : "English");
+    setLanguage(current => current === "Icyongereza" ? "Kinyarwanda" : "Icyongereza");
   };
 
   const handleWhatsAppClick = () => {
     const whatsappNumber = "+250792356500";
-    const message = "Hello! I'd like to get in touch about Kora.";
+    const message = "Mwaramutse! Ndashaka kuvugana na Kora.";
     const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
 
   const handleInviteFriends = () => {
-    const shareText = "Check out Kora app! It's amazing for learning and practice.";
+    const shareText = "Reba Kora! Ni byiza cyane kugirango wige kandi ukore.";
     
     if (navigator.share) {
       navigator.share({
-        title: 'Invite to Kora',
+        title: 'Invitare kuri Kora',
         text: shareText,
         url: window.location.href,
       })
       .catch(console.error);
     } else {
       navigator.clipboard.writeText(shareText)
-        .then(() => alert('Invite text copied to clipboard!'))
+        .then(() => alert('Injiza umubare wakoporoye!'))
         .catch(() => alert(shareText));
     }
   };
 
   const handleMenuItemClick = (type: string) => {
     switch (type) {
+      case "profileInfo":
+        // For mobile, show profile info in a modal or different view
+        // For now, we'll show an alert with basic info
+        if (isGuest) {
+          alert("Imiterere: Umushyitsi\nEmail: guest@example.com\nTelefone: ---");
+        } else {
+          alert(`Imiterere: ${getFullName()}\nEmail: ${getEmail()}\nTelefone: ${getPhoneNumber()}\nKontiyashyizweho: ${getAccountCreatedDate()}`);
+        }
+        break;
       case "subscription":
         setLocation("/subscribe");
         break;
@@ -321,7 +316,7 @@ const formatDate = (dateString: string) => {
         handleInviteFriends();
         break;
       case "about":
-        alert("About Kora: This is a learning platform...");
+        alert("Kora: Ni urubuga rwo kwiga no kwitegura kw'ibizamini...");
         break;
       default:
         break;
@@ -330,23 +325,23 @@ const formatDate = (dateString: string) => {
 
   // Get user initials for avatar
   const getUserInitials = () => {
-    if (isGuest) return "G";
-    if (!user) return "U";
+    if (isGuest) return "M";
+    if (!user) return "K";
     const firstName = user.firstName || "";
     const lastName = user.lastName || "";
-    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || "U";
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase() || "K";
   };
 
   // Get full name
   const getFullName = () => {
-    if (isGuest) return "Guest User";
-    if (!user) return "User";
-    return `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.loginEmail || "User";
+    if (isGuest) return "Umushyitsi";
+    if (!user) return "Kontiya";
+    return `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.loginEmail || "Kontiya";
   };
 
   // Get email
   const getEmail = () => {
-    if (isGuest) return "guest@example.com";
+    if (isGuest) return "umushyitsi@example.com";
     return user?.loginEmail || "---";
   };
 
@@ -393,7 +388,7 @@ const formatDate = (dateString: string) => {
   // Get badge color based on plan
   const getPlanBadgeColor = () => {
     const level = getUserLevel();
-    if (level === "Free Plan" || level === "Guest") return "bg-gray-100 text-gray-700";
+    if (level === "Ubuntu" || level === "Umushyitsi") return "bg-gray-100 text-gray-700";
     if (level.includes("Basic")) return "bg-blue-100 text-blue-700";
     if (level.includes("Premium") || level.includes("Pro")) return "bg-yellow-100 text-yellow-700";
     return "bg-green-100 text-green-700";
@@ -408,30 +403,30 @@ const formatDate = (dateString: string) => {
       return (
         <div className="text-center py-12">
           <User className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Guest Mode</h2>
-          <p className="text-gray-600 mb-6">Sign in to access all features and save your progress</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Uburyo bwa Mushiitsi</h2>
+          <p className="text-gray-600 mb-6">Injira kugirango ugere kuri buri kintu kandi uhunze amajya</p>
           
           {/* Subscription teaser for guest users */}
           <Card className="max-w-md mx-auto mb-6 bg-gradient-to-r from-green-50 to-blue-50 border-green-200">
             <CardContent className="p-6">
               <Crown className="h-8 w-8 text-yellow-500 mx-auto mb-3" />
-              <h3 className="font-semibold text-lg text-gray-900 mb-2">Upgrade to Premium</h3>
+              <h3 className="font-semibold text-lg text-gray-900 mb-2">Hindura ugure urwego rwa Premium</h3>
               <p className="text-gray-600 text-sm mb-4">
-                Get access to exclusive features, HD streaming, and ad-free experience
+                Kubona uburyo bwa Premium, HD streaming, no kubona byose utarabona ibyo bituguza
               </p>
               <div className="flex gap-2 justify-center">
-                <span className="text-2xl font-bold text-green-600">500 RWF</span>
-                <span className="text-gray-500 self-end">/ week</span>
+                <span className="text-2xl font-bold text-green-600">500 FRW</span>
+                <span className="text-gray-500 self-end">/ icyumweru</span>
               </div>
             </CardContent>
           </Card>
           
           <div className="flex gap-4 justify-center">
             <Button onClick={handleLoginRedirect}>
-              Sign In
+              Injira
             </Button>
             <Button variant="outline" onClick={handleSignupRedirect}>
-              Create Account
+              Kora Konti
             </Button>
           </div>
         </div>
@@ -442,10 +437,10 @@ const formatDate = (dateString: string) => {
       return (
         <div className="text-center py-12">
           <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">No User Found</h2>
-          <p className="text-gray-600 mb-4">Please log in to view your profile</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Nta Konti yabonetse</h2>
+          <p className="text-gray-600 mb-4">Nyamuneka injira kugirango urebe imiterere yawe</p>
           <Button onClick={handleLoginRedirect}>
-            Go to Login
+            Injira
           </Button>
         </div>
       );
@@ -455,7 +450,7 @@ const formatDate = (dateString: string) => {
       case "profile":
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900">Profile Information</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Imiterere y'ikonti</h2>
             
             {/* Subscription Status Card */}
             <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-green-200">
@@ -467,25 +462,24 @@ const formatDate = (dateString: string) => {
                       {isPlanLoading ? (
                         <span className="inline-flex items-center gap-2">
                           <div className="w-3 h-3 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
-                          Loading plan details...
+                          Ifatabuguzi rya Ubuntu
                         </span>
                       ) : (
                         <>
-                          Status: {getPlanStatus()}
-                          {getPlanEndDate() !== "---" && ` • Expires: ${getPlanEndDate()}`}
+                          Izarangira: {getPlanEndDate()}
                         </>
                       )}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
                     <Badge className={getPlanBadgeColor()}>
-                      {isPlanLoading ? "Loading..." : getPlanStatus()}
+                      {isPlanLoading ? "Ifatabuguzi rya Ubuntu" : getPlanStatus()}
                     </Badge>
                     <Button 
                       onClick={() => setLocation("/subscribe")}
                       className="bg-green-600 hover:bg-green-700 text-white"
                     >
-                      {userPlan ? "Manage" : "Upgrade"}
+                      {userPlan ? "Gucunga" : "Hindura ugure"}
                     </Button>
                   </div>
                 </div>
@@ -496,7 +490,7 @@ const formatDate = (dateString: string) => {
               <CardContent className="p-6">
                 <div className="space-y-4">
                   <div className="flex justify-between items-center py-3 border-b">
-                    <span className="font-medium">Full Name</span>
+                    <span className="font-medium">Amazina</span>
                     <span className="text-gray-600">{getFullName()}</span>
                   </div>
                   <div className="flex justify-between items-center py-3 border-b">
@@ -504,15 +498,15 @@ const formatDate = (dateString: string) => {
                     <span className="text-gray-600">{getEmail()}</span>
                   </div>
                   <div className="flex justify-between items-center py-3 border-b">
-                    <span className="font-medium">Phone Number</span>
+                    <span className="font-medium">Numero ya Telefone</span>
                     <span className="text-gray-600">{getPhoneNumber()}</span>
                   </div>
                   <div className="flex justify-between items-center py-3 border-b">
-                    <span className="font-medium">Account Created</span>
+                    <span className="font-medium">Konti Yashyizweho</span>
                     <span className="text-gray-600">{getAccountCreatedDate()}</span>
                   </div>
                   <div className="flex justify-between items-center py-3">
-                    <span className="font-medium">Last Login</span>
+                    <span className="font-medium">Ubusanzwe winjiye</span>
                     <span className="text-gray-600">{getLastLoginDate()}</span>
                   </div>
                 </div>
@@ -524,7 +518,7 @@ const formatDate = (dateString: string) => {
       case "settings":
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900">Account Settings</h2>
+            <h2 className="text-2xl font-bold text-gray-900"> Konti Yanjye</h2>
             <Card>
               <CardContent className="p-0">
                 <div className="divide-y divide-gray-100">
@@ -546,7 +540,7 @@ const formatDate = (dateString: string) => {
                             </span>
                             {item.type === "language" && (
                               <span className="text-gray-500">
-                                Current: {language}
+                                Ibucyo: {language}
                               </span>
                             )}
                             {item.type === "subscription" && (
@@ -556,7 +550,7 @@ const formatDate = (dateString: string) => {
                             )}
                             {item.type === "planHistory" && (
                               <span className="text-gray-500">
-                                {isPlanLoading ? "Loading..." : item.value}
+                                {isPlanLoading ? "Ifatabuguzi Ryanjye" : item.value}
                               </span>
                             )}
                           </div>
@@ -587,13 +581,13 @@ const formatDate = (dateString: string) => {
         return (
           <div className="space-y-6">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-gray-900">Plan History</h2>
+              <h2 className="text-2xl font-bold text-gray-900">Ifatabuguzi Ryanje</h2>
               <Button 
                 variant="outline" 
                 onClick={() => setActiveSection("settings")}
                 className="text-sm"
               >
-                Back to Settings
+                Subira inyuma
               </Button>
             </div>
 
@@ -613,19 +607,19 @@ const formatDate = (dateString: string) => {
                             : "bg-red-500 text-white"
                         }`}
                       >
-                        {userPlan.status}
+                        {userPlan.status === "ACTIVE" ? "Active" : "Canceled"}
                       </div>
                     </div>
 
                     <div className="text-sm text-gray-600 space-y-2 mb-6">
                       <div className="flex justify-between">
-                        <span>Start Date</span>
+                        <span>Ryatangiye</span>
                         <span className="text-gray-600">
                           {formatDate(userPlan.startDate)}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span>End Date</span>
+                        <span>Rizarangira</span>
                         <span className="text-gray-600">
                           {formatDate(userPlan.endDate)}
                         </span>
@@ -637,7 +631,7 @@ const formatDate = (dateString: string) => {
                       className="w-full bg-green-700 text-black border-black text-sm font-medium py-3 hover:bg-gray-600 transition"
                       onClick={() => setLocation("/subscribe")}
                     >
-                      Manage Subscription
+                      Gucunga Ifatabuguzi
                     </Button>
 
                     <div className="border-t-2 border-green-600 mt-8"></div>
@@ -649,7 +643,7 @@ const formatDate = (dateString: string) => {
                   <div className="space-y-8">
                     {userPlansHistory && userPlansHistory.length > 0 ? (
                       userPlansHistory
-                        .filter((plan) => plan.id !== userPlan?.id) // avoid duplication
+                        .filter((plan) => plan.id !== userPlan?.id)
                         .map((plan) => (
                           <div key={plan.id} className="mx-auto">
                             <div className="flex justify-between mb-4">
@@ -665,19 +659,19 @@ const formatDate = (dateString: string) => {
                                     : "bg-red-600 text-white"
                                 }`}
                               >
-                                {plan.status}
+                                {plan.status === "ACTIVE" ? "Active" : "Canceled"}
                               </div>
                             </div>
 
                             <div className="text-sm text-gray-600 space-y-2 mb-6">
                               <div className="flex justify-between">
-                                <span>Start Date</span>
+                                <span>Ryatangiye</span>
                                 <span className="text-gray-600">
                                   {formatDate(plan.startDate)}
                                 </span>
                               </div>
                               <div className="flex justify-between">
-                                <span>End Date</span>
+                                <span>Rizarangira</span>
                                 <span className="text-gray-600">
                                   {formatDate(plan.endDate)}
                                 </span>
@@ -690,9 +684,9 @@ const formatDate = (dateString: string) => {
                     ) : (
                       <div className="text-center py-8">
                         <History className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-                        <p className="text-gray-400">No past plans found</p>
+                        <p className="text-gray-400">Nta fatabuguzi ryabonetse</p>
                         <p className="text-gray-500 text-sm mt-2">
-                          Your plan history will appear here once you subscribe
+                          Ifatabuguzi rigaragara hano
                         </p>
                       </div>
                     )}
@@ -707,14 +701,14 @@ const formatDate = (dateString: string) => {
                 className="flex-1 bg-green-600 hover:bg-green-700 text-white"
               >
                 <Crown className="h-4 w-4 mr-2" />
-                Upgrade Plan
+                Hindura ugure Ifatabuguzi
               </Button>
               <Button
                 variant="outline"
                 onClick={() => setActiveSection("settings")}
                 className="flex-1"
               >
-                Back to Settings
+                Subira inyuma
               </Button>
             </div>
           </div>
@@ -724,8 +718,8 @@ const formatDate = (dateString: string) => {
         return (
           <div className="text-center py-12">
             <Settings className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to Settings</h2>
-            <p className="text-gray-600">Select an option from the sidebar to get started</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Murakaza neza ku Igenamigambi</h2>
+            <p className="text-gray-600">Hitamo ahakurikira kugirango utangire</p>
           </div>
         );
     }
@@ -741,7 +735,7 @@ const formatDate = (dateString: string) => {
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading account...</p>
+            <p className="text-muted-foreground">Kurura ikonti...</p>
           </div>
         </div>
       </div>
@@ -767,9 +761,9 @@ const formatDate = (dateString: string) => {
           <div className="relative z-10 max-w-md mx-auto">
             {/* Profile Header */}
             <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold mb-2">My Profile</h1>
+              <h1 className="text-2xl font-bold mb-2">Imiterere Yanjye</h1>
               <p className={`${isGuest ? "text-gray-100" : "text-green-100"} opacity-90`}>
-                {isGuest ? "Guest Mode - Limited Access" : "Manage your account settings"}
+                {isGuest ? "Uburyo bwa Mushiitsi - Uburyo bukeye" : "Gucunga igenamigambi rya konti yawe"}
               </p>
             </div>
 
@@ -797,7 +791,7 @@ const formatDate = (dateString: string) => {
                       {getFullName()}
                     </h2>
                     <Badge className={`${getPlanBadgeColor()} border-0 px-3 py-1 font-semibold`}>
-                      {isPlanLoading ? "Loading..." : getUserLevel()}
+                      {isPlanLoading ? "Ifatabuguzi rya Ubuntu" : getUserLevel()}
                     </Badge>
                   </div>
                 </div>
@@ -816,10 +810,10 @@ const formatDate = (dateString: string) => {
                   <Info className="h-5 w-5 text-yellow-600" />
                   <div>
                     <p className="text-yellow-800 font-medium text-sm">
-                      You're in guest mode
+                      Urikiri mu buryo bw'umushyitsi
                     </p>
                     <p className="text-yellow-700 text-xs">
-                      Sign in to access all features and save your progress
+                      Injira kugirango ugere kuri buri kintu kandi uhunze amajya
                     </p>
                   </div>
                 </div>
@@ -834,10 +828,10 @@ const formatDate = (dateString: string) => {
                 {/* Settings Header */}
                 <div className="flex items-center gap-3 p-6 border-b border-gray-100">
                   <Settings className={`h-5 w-5 ${isGuest ? "text-gray-600" : "text-green-600"}`} />
-                  <h3 className="text-lg font-semibold text-gray-900">Settings</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">Igenamigambi</h3>
                 </div>
 
-                {/* Menu Items */}
+                {/* Menu Items - INCLUDING PROFILE INFORMATION */}
                 <div className="divide-y divide-gray-100">
                   {menuItems.map((item, index) => {
                     const Icon = item.icon;
@@ -866,12 +860,17 @@ const formatDate = (dateString: string) => {
                             )}
                             {item.type === "subscription" && (
                               <span className="text-gray-500 text-sm">
-                                {isPlanLoading ? "Loading..." : getUserLevel()}
+                                {isPlanLoading ? "Ifatabuguzi rya Ubuntu" : getUserLevel()}
                               </span>
                             )}
                             {item.type === "planHistory" && (
                               <span className="text-gray-500 text-sm">
-                                {isPlanLoading ? "Loading..." : item.value}
+                                {isPlanLoading ? "---" : item.value}
+                              </span>
+                            )}
+                            {item.type === "profileInfo" && (
+                              <span className="text-gray-500 text-sm">
+                                Reba imiterere yawe
                               </span>
                             )}
                           </div>
@@ -910,7 +909,7 @@ const formatDate = (dateString: string) => {
                 >
                   <ChevronRight className="h-5 w-5 rotate-180" />
                 </Button>
-                <h2 className="text-xl font-bold text-gray-900">Plan History</h2>
+                <h2 className="text-xl font-bold text-gray-900">Ifatabuguzi Ryanjye</h2>
               </div>
 
                   {/* Active Plan */}
@@ -927,19 +926,19 @@ const formatDate = (dateString: string) => {
                               : "bg-red-500 text-white"
                           }`}
                         >
-                          {userPlan.status}
+                          {userPlan.status === "ACTIVE" ? "Active" : "Canceled"}
                         </div>
                       </div>
 
                       <div className="text-sm text-gray-600 space-y-2 mb-6">
                         <div className="flex justify-between">
-                          <span>Start Date</span>
+                          <span>Itangiriro</span>
                           <span className="text-gray-600">
                             {formatDate(userPlan.startDate)}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span>End Date</span>
+                          <span>Iherezo</span>
                           <span className="text-gray-600">
                             {formatDate(userPlan.endDate)}
                           </span>
@@ -951,7 +950,7 @@ const formatDate = (dateString: string) => {
                         className="w-full bg-green-500 text-white border-gray-600 text-sm font-medium py-3 hover:bg-gray-600 transition"
                         onClick={() => setLocation("/subscribe")}
                       >
-                        Manage Subscription
+                        Gucunga Ifatabuguzi
                       </Button>
 
                       <div className="border-t-2 border-green-600 mt-8"></div>
@@ -979,19 +978,19 @@ const formatDate = (dateString: string) => {
                                       : "bg-red-600 text-black"
                                   }`}
                                 >
-                                  {plan.status}
+                                  {plan.status === "ACTIVE" ? "Active" : "Canceled"}
                                 </div>
                               </div>
 
                               <div className="text-xs text-gray-600 space-y-1 mb-4">
                                 <div className="flex justify-between">
-                                  <span>Start Date</span>
+                                  <span>Ryatangiye</span>
                                   <span className="text-gray-600">
                                     {formatDate(plan.startDate)}
                                   </span>
                                 </div>
                                 <div className="flex justify-between">
-                                  <span>End Date</span>
+                                  <span>Rizarangira</span>
                                   <span className="text-gray-600">
                                     {formatDate(plan.endDate)}
                                   </span>
@@ -1004,7 +1003,7 @@ const formatDate = (dateString: string) => {
                       ) : (
                         <div className="text-center py-6">
                           <History className="h-10 w-10 text-gray-600 mx-auto mb-3" />
-                          <p className="text-gray-400 text-sm">No past plans found</p>
+                          <p className="text-gray-400 text-sm">Nta mateka yabonetse</p>
                         </div>
                       )}
                     </div>
@@ -1018,14 +1017,14 @@ const formatDate = (dateString: string) => {
                   className="flex-1 bg-green-600 hover:bg-green-700 text-white text-sm"
                 >
                   <Crown className="h-4 w-4 mr-1" />
-                  Upgrade
+                  Hindura ugure
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => setActiveSection("settings")}
                   className="flex-1 text-sm"
                 >
-                  Back
+                  Subira inyuma
                 </Button>
               </div>
             </div>
@@ -1040,14 +1039,14 @@ const formatDate = (dateString: string) => {
                   onClick={handleLoginRedirect}
                 >
                   <User className="h-4 w-4 mr-2" />
-                  Sign In to Account
+                  Injira mu Konti
                 </Button>
                 <Button 
                   variant="outline"
                   className="w-full h-12 text-gray-700 hover:bg-gray-100 border border-gray-200 shadow-sm font-medium"
                   onClick={handleSignupRedirect}
                 >
-                  Create New Account
+                  Kora Konti Nshya
                 </Button>
               </>
             ) : (
@@ -1057,7 +1056,7 @@ const formatDate = (dateString: string) => {
                 onClick={handleLogout}
               >
                 <LogOut className="h-4 w-4 mr-2" />
-                Log out
+                Sohoka
               </Button>
             )}
           </div>
@@ -1100,7 +1099,7 @@ const formatDate = (dateString: string) => {
                       {getFullName()}
                     </h2>
                     <Badge className={`${getPlanBadgeColor()} border-0 px-3 py-1 font-semibold`}>
-                      {isPlanLoading ? "Loading..." : getUserLevel()}
+                      {isPlanLoading ? "Kurura..." : getUserLevel()}
                     </Badge>
                   </div>
 
@@ -1108,7 +1107,7 @@ const formatDate = (dateString: string) => {
                   {isGuest && (
                     <div className="bg-white/20 rounded-lg p-3 mb-4">
                       <p className="text-white text-sm text-center">
-                        Sign in to access all features
+                        Injira kugirango ugere kuri buri kintu
                       </p>
                     </div>
                   )}
@@ -1121,7 +1120,7 @@ const formatDate = (dateString: string) => {
                       onClick={() => setActiveSection("profile")}
                     >
                       <Users className="h-4 w-4 mr-3" />
-                      Profile Information
+                      Imiterere y'ikonti
                     </Button>
                     
                     <Button
@@ -1130,7 +1129,7 @@ const formatDate = (dateString: string) => {
                       onClick={() => setActiveSection("settings")}
                     >
                       <Settings className="h-4 w-4 mr-3" />
-                      Account Settings
+                      Konti Yange
                     </Button>
 
                     <Button
@@ -1139,17 +1138,17 @@ const formatDate = (dateString: string) => {
                       onClick={() => setActiveSection("planHistory")}
                     >
                       <History className="h-4 w-4 mr-3" />
-                      Plan History
+                      Ifatabuguzi Ryanjye
                     </Button>
 
                     {/* Subscription Button */}
                     <Button
                       variant="ghost"
-                      className="w-full justify-start h-12 text-white hover:bg-white/10"
+                      className="w-full justify-start h-12 text-black hover:bg-white/10"
                       onClick={() => setLocation("/subscribe")}
                     >
-                      <Crown className="h-4 w-4 mr-3" />
-                      {isPlanLoading ? "Loading..." : (userPlan ? "Manage Plan" : "Upgrade Plan")}
+                      <CreditCard className="h-4 w-4 mr-3" />
+                      {isPlanLoading ? "Gura Ifatabuguzi" : (userPlan ? "Gura Ifatabuguzi ryisumbuyeho" : "Gura Ifatabuguzi")}
                     </Button>
                   </div>
 
@@ -1162,14 +1161,14 @@ const formatDate = (dateString: string) => {
                           onClick={handleLoginRedirect}
                         >
                           <User className="h-4 w-4 mr-3" />
-                          Sign In
+                          Injira
                         </Button>
                         <Button 
                           variant="ghost"
                           className="w-full justify-start h-12 text-white hover:bg-white/10"
                           onClick={handleSignupRedirect}
                         >
-                          Create Account
+                          Kora Konti
                         </Button>
                       </>
                     ) : (
@@ -1179,7 +1178,7 @@ const formatDate = (dateString: string) => {
                         onClick={handleLogout}
                       >
                         <LogOut className="h-4 w-4 mr-3" />
-                        Log out
+                        Sohoka
                       </Button>
                     )}
                   </div>

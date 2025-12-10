@@ -143,11 +143,7 @@ const fetchRandomExam = async () => {
       },
       // Add any required body data if needed by the API
       body: JSON.stringify({
-        // Add any required parameters here if the API needs them
-        // For example:
-        // userId: user?._id,
-        // planType: "free",
-        // limit: 1
+
       }),
     });
     
@@ -600,33 +596,9 @@ const startExam = () => {
         {/* Mobile Layout */}
         <div className="md:hidden">
           <div className="px-2 py-2">
+            
             <section className="mb-8">
               <h2 className="text-black text-2xl font-bold mb-4 px-2">Ahabanza</h2>
-              {/* Practice Card */}
-              <Card className="mb-6 mx-2 bg-green-100">
-                <CardContent className="p-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Zap className="h-5 w-5 text-black" />
-                      <span className="text-xs font-semibold text-black-400">
-                        Igerageza ry'uy'umunsi
-                      </span>
-                    </div>
-                    <h3 className="text-sm font-semibold leading-tight">
-                     kora amagerageza wiyungure ubumenyi
-                    </h3>
-                    <Button
-                      className="w-full gap-2 bg-primary hover:bg-primary/90 h-10 text-sm"
-                      onClick={startRandomExam}
-                    >
-                      {practiceProgress > 0 && user
-                        ? `gukurura... ${practiceProgress}%`
-                        : user ? "Tangira Isuzuma" : "Injira ubone kwisuzuma"}
-                      <Play className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
 
               {/* Week Days - Mobile Only */}
               <div className="flex gap-1 mb-6 overflow-x-auto pb-2 px-1 scrollbar-hide">
@@ -660,6 +632,32 @@ const startExam = () => {
                   </button>
                 ))}
               </div>
+              {/* Practice Card */}
+              <Card className="mb-6 mx-2 bg-green-100">
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-5 w-5 text-black" />
+                      <span className="text-xs font-semibold text-black-400">
+                        Igerageza ry'uy'umunsi
+                      </span>
+                    </div>
+                    <h3 className="text-sm font-semibold leading-tight">
+                     kora amagerageza wiyungure ubumenyi
+                    </h3>
+                    <Button
+                      className="w-full gap-2 bg-primary hover:bg-primary/90 h-10 text-sm"
+                      onClick={startRandomExam}
+                    >
+                      {practiceProgress > 0 && user
+                        ? `gukurura... ${practiceProgress}%`
+                        : user ? "Tangira Isuzuma" : "Injira ubone kwisuzuma"}
+                      <Play className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
 
               <div className="border-t border-border my-6 mx-2"></div>
               {/* New: Ikizamini cy'isuzuma Card - Mobile */}
@@ -878,55 +876,12 @@ const startExam = () => {
                     <h2 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
                       Ahabanza
                     </h2>
+                    
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Clock className="h-4 w-4" />
                       <span>Ibyagezweho uyu munsi</span>
                     </div>
                   </div>
-
-                
-                  {/* Quick Practice Card */}
-                  <Card className="bg-green-100 text-black mb-4">
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-4">
-                          <div className="flex items-center gap-2">
-                            <Zap className="h-5 w-5 text-black" />
-                            <span className="text-xs font-semibold text-black-400">
-                              Igerageza ry'uy'umunsi
-                            </span>
-                          </div>
-                          <h3 className="text-xs text-black font-bold leading-tight">
-                            Kora amagerageza wiyungure ubumenyi
-                          </h3>
-                        </div>
-                        <div className="bg-white/10 p-3 rounded-2xl backdrop-blur-sm">
-                          <Star className="h-6 w-6 text-yellow-400" />
-                        </div>
-                      </div>
-                      <Button
-                        className="w-full mt-2 bg-primary text-slate-900 hover:bg-primary/90 h-4 text-sm font-semibold shadow-lg shadow-white/20"
-                        onClick={startRandomExam}
-                        disabled={practiceProgress > 0 && practiceProgress < 100 && user}
-                      >
-                        {practiceProgress > 0 && user ? (
-                          <>
-                            <Progress
-                              value={practiceProgress}
-                              className="w-20 h-2 mr-2 bg-white/30"
-                            />
-                            {practiceProgress}% Complete
-                          </>
-                        ) : (
-                          <>
-                            <Play className="h-5 w-5 mr-2" />
-                            {user ? "Start Practice Session" : "Login to Practice"}
-                          </>
-                        )}
-                      </Button>
-                    </CardContent>
-                  </Card>
-
                   {/* Week Navigation */}
                   <Card className="mb-2 border-0 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 backdrop-blur-sm shadow-sm">
                     <CardContent className="p-6">
@@ -995,6 +950,50 @@ const startExam = () => {
                       </div>
                     </CardContent>
                   </Card>
+                
+                  {/* Quick Practice Card */}
+                  <Card className="bg-green-100 text-black mb-4">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2">
+                            <Zap className="h-5 w-5 text-black" />
+                            <span className="text-xs font-semibold text-black-400">
+                              Igerageza ry'uy'umunsi
+                            </span>
+                          </div>
+                          <h3 className="text-xs text-black font-bold leading-tight">
+                            Kora amagerageza wiyungure ubumenyi
+                          </h3>
+                        </div>
+                        <div className="bg-white/10 p-3 rounded-2xl backdrop-blur-sm">
+                          <Star className="h-6 w-6 text-yellow-400" />
+                        </div>
+                      </div>
+                      <Button
+                        className="w-full mt-2 bg-primary text-slate-900 hover:bg-primary/90 h-4 text-sm font-semibold shadow-lg shadow-white/20"
+                        onClick={startRandomExam}
+                        disabled={practiceProgress > 0 && practiceProgress < 100 && user}
+                      >
+                        {practiceProgress > 0 && user ? (
+                          <>
+                            <Progress
+                              value={practiceProgress}
+                              className="w-20 h-2 mr-2 bg-white/30"
+                            />
+                            {practiceProgress}% Complete
+                          </>
+                        ) : (
+                          <>
+                            <Play className="h-5 w-5 mr-2" />
+                            {user ? "Start Practice Session" : "Login to Practice"}
+                          </>
+                        )}
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+
                 </section>
   {/* New: Ikizamini cy'isuzuma Card - Desktop */}
                   <Card className="mb-4 bg-blue-100 text-black shadow-lg shadow-purple-500/25">
@@ -1119,7 +1118,7 @@ const startExam = () => {
                         return (
                           <Card
                             key={module.id}
-                            className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/70 backdrop-blur-sm overflow-hidden cursor-pointer"
+                            className="group hover:shadow-xl transition-all duration-300 border-0 bg-green-100 backdrop-blur-sm overflow-hidden cursor-pointer"
                             onClick={() => continueModule(module.id)}
                           >
                             <CardContent className="p-0">
@@ -1192,7 +1191,7 @@ const startExam = () => {
                   {loadingModules ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {[1, 2, 3].map((i) => (
-                        <Card key={i} className="border-0 bg-gradient-to-br from-white to-slate-50/50 backdrop-blur-sm h-full">
+                        <Card key={i} className="border-0 bg-green-100 backdrop-blur-sm h-full">
                           <CardContent className="p-0 h-full">
                             <div className="h-32 bg-gray-300 animate-pulse"></div>
                             <div className="p-4 space-y-3">
@@ -1213,7 +1212,7 @@ const startExam = () => {
                         return (
                           <Card
                             key={chapter.id}
-                            className="group hover:shadow-xl transition-all duration-300 border-0 bg-gradient-to-br from-white to-slate-50/50 backdrop-blur-sm overflow-hidden cursor-pointer h-full flex flex-col"
+                            className="group hover:shadow-xl transition-all duration-300 border-0 bg-white backdrop-blur-sm overflow-hidden cursor-pointer h-full flex flex-col"
                             onClick={() => continueModule(chapter.id)}
                           >
                             <CardContent className="p-0 flex flex-col h-full">
