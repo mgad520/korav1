@@ -47,14 +47,6 @@ export default function ResultsPage() {
         const parsedData: ResultsData = JSON.parse(decodeURIComponent(dataParam));
         console.log("Amakuru y'ibisubizo yakiriwe:", parsedData);
         setResultsData(parsedData);
-        
-        // Kugenzura amakuru
-        console.log("Umutwe w'ikizamini:", parsedData.quizTitle);
-        console.log("Ingano y'amafaranga:", parsedData.score);
-        console.log("Ibyavutse neza:", parsedData.correctAnswers);
-        console.log("Ingano y'ibibazo:", parsedData.totalQuestions);
-        console.log("Umubare w'ibisubizo byakoreshejwe:", Object.keys(parsedData.userAnswers || {}).length);
-        
       } catch (error) {
         console.error("Ikosa mu gusobanura amakuru y'ibisubizo:", error);
       }
@@ -173,14 +165,14 @@ export default function ResultsPage() {
 
           {/* Ibisobanuro by'ingano y'amafaranga */}
           <div className="bg-muted rounded-xl p-6">
-            <h3 className="text-lg font-semibold mb-4">Ibisobanuro by'Ingano y'Amafaranga</h3>
+            <h3 className="text-lg font-semibold mb-4">Ibisobanuro birambuye</h3>
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-background p-4 rounded-lg">
-                <p className="text-sm text-muted-foreground">Ibyavutse Neza</p>
+                <p className="text-sm text-muted-foreground">Wagikoze</p>
                 <p className="text-2xl font-bold text-green-600">{resultsData.correctAnswers}</p>
               </div>
               <div className="bg-background p-4 rounded-lg">
-                <p className="text-sm text-muted-foreground">Ibyataye</p>
+                <p className="text-sm text-muted-foreground">Wakishe</p>
                 <p className="text-2xl font-bold text-red-600">
                   {resultsData.totalQuestions - resultsData.correctAnswers}
                 </p>
@@ -226,7 +218,7 @@ export default function ResultsPage() {
                           ? "bg-green-100 text-green-800" 
                           : "bg-red-100 text-red-800"
                       }`}>
-                        {question.isCorrect ? "Byavutse" : "Byataye"}
+                        {question.isCorrect ? "Wagikoze" : "Wakishe"}
                       </span>
                     </div>
                   </AccordionTrigger>
@@ -253,7 +245,7 @@ export default function ResultsPage() {
                       
                       {question.explanation && (
                         <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-                          <p className="text-sm font-medium text-blue-800 mb-2">Insobanuro:</p>
+                          <p className="text-sm font-medium text-blue-800 mb-2">Igisobanuro:</p>
                           <p className="text-sm text-blue-700">{question.explanation}</p>
                         </div>
                       )}
@@ -280,7 +272,7 @@ export default function ResultsPage() {
             <Link href="/" className="flex-1">
               <Button variant="outline" className="w-full gap-2">
                 <Home className="h-4 w-4" />
-                Jya mu Nzu
+                Subira Ahabanza
               </Button>
             </Link>
           </div>
