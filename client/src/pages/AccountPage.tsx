@@ -240,7 +240,7 @@ export default function AccountPage() {
     },
     {
       title: "Ifatabuguzi Ryanjye",
-      value: userPlansHistory.length > 0 ? `${userPlansHistory.length} ifatabuguzi` : "Nta mateka",
+      value: userPlansHistory.length > 0 ? `${userPlansHistory.length} ifatabuguzi` : "Nta fatabuguzi rihari",
       hasArrow: true,
       type: "planHistory",
       icon: History,
@@ -297,7 +297,7 @@ export default function AccountPage() {
         if (isGuest) {
           alert("Imiterere: Umushyitsi\nEmail: guest@example.com\nTelefone: ---");
         } else {
-          alert(`Imiterere: ${getFullName()}\nEmail: ${getEmail()}\nTelefone: ${getPhoneNumber()}\nKontiyashyizweho: ${getAccountCreatedDate()}`);
+          alert(`Amazina: ${getFullName()}\nEmail: ${getEmail()}\nTelefone: ${getPhoneNumber()}\nKontiyashyizweho: ${getAccountCreatedDate()}`);
         }
         break;
       case "subscription":
@@ -438,7 +438,7 @@ export default function AccountPage() {
         <div className="text-center py-12">
           <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Nta Konti yabonetse</h2>
-          <p className="text-gray-600 mb-4">Nyamuneka injira kugirango urebe imiterere yawe</p>
+          <p className="text-gray-600 mb-4"> injira kugirango urebe imyirondoro yawe</p>
           <Button onClick={handleLoginRedirect}>
             Injira
           </Button>
@@ -450,7 +450,7 @@ export default function AccountPage() {
       case "profile":
         return (
           <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900">Imiterere y'ikonti</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Imyirondoro</h2>
             
             {/* Subscription Status Card */}
             <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-green-200">
@@ -462,7 +462,7 @@ export default function AccountPage() {
                       {isPlanLoading ? (
                         <span className="inline-flex items-center gap-2">
                           <div className="w-3 h-3 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
-                          Ifatabuguzi rya Ubuntu
+                          Free Plan
                         </span>
                       ) : (
                         <>
@@ -473,7 +473,7 @@ export default function AccountPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <Badge className={getPlanBadgeColor()}>
-                      {isPlanLoading ? "Ifatabuguzi rya Ubuntu" : getPlanStatus()}
+                      {isPlanLoading ? "Free plan" : getPlanStatus()}
                     </Badge>
                     <Button 
                       onClick={() => setLocation("/subscribe")}
@@ -735,7 +735,7 @@ export default function AccountPage() {
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
             <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Kurura ikonti...</p>
+            <p className="text-muted-foreground">loading</p>
           </div>
         </div>
       </div>
@@ -761,7 +761,7 @@ export default function AccountPage() {
           <div className="relative z-10 max-w-md mx-auto">
             {/* Profile Header */}
             <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold mb-2">Imiterere Yanjye</h1>
+              <h1 className="text-2xl font-bold mb-2">Imyirondoro</h1>
               <p className={`${isGuest ? "text-gray-100" : "text-green-100"} opacity-90`}>
                 {isGuest ? "Uburyo bwa Mushiitsi - Uburyo bukeye" : "Gucunga igenamigambi rya konti yawe"}
               </p>
@@ -791,7 +791,7 @@ export default function AccountPage() {
                       {getFullName()}
                     </h2>
                     <Badge className={`${getPlanBadgeColor()} border-0 px-3 py-1 font-semibold`}>
-                      {isPlanLoading ? "Ifatabuguzi rya Ubuntu" : getUserLevel()}
+                      {isPlanLoading ? "Free Plan" : getUserLevel()}
                     </Badge>
                   </div>
                 </div>
@@ -860,7 +860,7 @@ export default function AccountPage() {
                             )}
                             {item.type === "subscription" && (
                               <span className="text-gray-500 text-sm">
-                                {isPlanLoading ? "Ifatabuguzi rya Ubuntu" : getUserLevel()}
+                                {isPlanLoading ? "Free Plan" : getUserLevel()}
                               </span>
                             )}
                             {item.type === "planHistory" && (
@@ -870,7 +870,7 @@ export default function AccountPage() {
                             )}
                             {item.type === "profileInfo" && (
                               <span className="text-gray-500 text-sm">
-                                Reba imiterere yawe
+                                Reba hano
                               </span>
                             )}
                           </div>
@@ -1099,7 +1099,7 @@ export default function AccountPage() {
                       {getFullName()}
                     </h2>
                     <Badge className={`${getPlanBadgeColor()} border-0 px-3 py-1 font-semibold`}>
-                      {isPlanLoading ? "Kurura..." : getUserLevel()}
+                      {isPlanLoading ? "Free Plan" : getUserLevel()}
                     </Badge>
                   </div>
 
@@ -1120,7 +1120,7 @@ export default function AccountPage() {
                       onClick={() => setActiveSection("profile")}
                     >
                       <Users className="h-4 w-4 mr-3" />
-                      Imiterere y'ikonti
+                      Imyirondoro
                     </Button>
                     
                     <Button

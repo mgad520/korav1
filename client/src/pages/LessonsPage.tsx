@@ -173,7 +173,7 @@ export default function LessonsPage() {
           id: parseInt(lesson.id.replace(/\D/g, '').slice(0, 8) || `${index + 1}`),
           title: lesson.title.split('\n')[0],
           description: lesson.title.length > 100 ? lesson.title.substring(0, 100) + '...' : lesson.title,
-          progress: "In Progress",
+          progress: "Birimo Gukora", // Translated
           lessonsCount: data.data.length,
           progressValue: Math.round(Math.min((index / data.data.length) * 100, 100)),
           imageUrl: lesson.lessonImage || "https://c8.alamy.com/comp/2GE268G/set-of-road-safety-signs-warning-road-transport-symbol-vector-collection-2GE268G.jpg",
@@ -272,7 +272,7 @@ export default function LessonsPage() {
       <div className="space-y-2">
         <Button
           variant="ghost"
-          className="w-full justify-between h-auto p-3 hover:bg-accent"
+          className="w-full bg-blue-50 justify-between h-auto p-3 hover:bg-accent"
           onClick={() => toggleChapter(chapter.id)}
         >
           <div className="flex items-start gap-3 text-left flex-1 min-w-0">
@@ -287,7 +287,7 @@ export default function LessonsPage() {
             
             <div className="flex-1 min-w-0 overflow-hidden">
               <div className="font-medium text-sm truncate">
-                Chapter {chapter.chapterNumber}
+                Isomo rya {chapter.chapterNumber} {/* Translated */}
               </div>
               <div className="text-xs text-muted-foreground truncate">
                 {chapter.title}
@@ -317,7 +317,7 @@ export default function LessonsPage() {
                   <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
                   <div className="flex-1 min-w-0 overflow-hidden">
                     <div className="text-xs font-medium truncate">
-                      Section {section.sectionNumber}
+                      Igice {section.sectionNumber} {/* Translated */}
                     </div>
                     <div className="text-xs text-muted-foreground truncate">
                       {section.title}
@@ -358,7 +358,7 @@ export default function LessonsPage() {
             
             <div className="flex-1 min-w-0 overflow-hidden">
               <div className="font-medium text-sm truncate">
-                Chapter {chapter.chapterNumber}
+                Isomo rya {chapter.chapterNumber} {/* Translated */}
               </div>
               <div className="text-xs text-muted-foreground truncate">
                 {chapter.title}
@@ -389,10 +389,10 @@ export default function LessonsPage() {
                   <BookOpen className="h-4 w-4 flex-shrink-0" />
                   <div className="flex-1 min-w-0 overflow-hidden">
                     <div className="font-medium text-sm truncate">
-                      Section {section.sectionNumber}: {section.title}
+                      Igice {section.sectionNumber}: {section.title} {/* Translated */}
                     </div>
                     <div className="text-xs text-muted-foreground truncate">
-                      Click to start learning
+                      Kanda utangire kwiga {/* Translated */}
                     </div>
                   </div>
                 </div>
@@ -408,83 +408,83 @@ export default function LessonsPage() {
       {loadingLessons && lessons.length === 0 && (
         <div className="text-center py-6">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-          <p className="text-sm text-muted-foreground">Loading lessons...</p>
+          <p className="text-sm text-muted-foreground">Birimo gushakisha amayigisho...</p> {/* Translated */}
         </div>
       )}
     </div>
   );
 
   // Lesson Content Component
-  const LessonContent = () => {
-    const hasPreviousLesson = selectedLessonIndex > 0;
-    const hasNextLesson = selectedLessonIndex < lessons.length - 1;
+const LessonContent = () => {
+  const hasPreviousLesson = selectedLessonIndex > 0;
+  const hasNextLesson = selectedLessonIndex < lessons.length - 1;
 
-    return (
-      <div className="space-y-6">
-        {/* Lesson Header */}
-        <div className="text-center md:text-left">
-          <h1 className="text-2xl md:text-3xl text-primary font-bold mb-3">Ibisobanuro birambuye</h1>
+  return (
+    <div className="space-y-6">
+      {/* Lesson Header */}
+      <div className="text-center md:text-left">
+        <h1 className="text-2xl md:text-3xl text-primary font-bold mb-3">Ibisobanuro birambuye</h1>
+      </div>
+
+      {/* Progress Bar */}
+      <div className="bg-muted/50 rounded-lg p-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium">Iterambere</span>
+          <span className="text-sm text-muted-foreground">
+            {currentLesson.progressValue}% Byarakozwe
+          </span>
         </div>
-
-        {/* Progress Bar */}
-        <div className="bg-muted/50 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Progress</span>
-            <span className="text-sm text-muted-foreground">
-              {currentLesson.progressValue}% Complete
-            </span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-primary h-2 rounded-full transition-all duration-300"
-              style={{ width: `${currentLesson.progressValue}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Lesson Content */}
-        <Card className="overflow-hidden">
-          <CardContent className="p-4 md:p-6">
-            <div 
-              className="prose prose-sm md:prose-base max-w-none"
-              dangerouslySetInnerHTML={{ __html: currentLesson.content }}
-            />
-          </CardContent>
-        </Card>
-
-        {/* Navigation */}
-        <div className="flex justify-between items-center gap-4">
-          <Button
-            variant="outline"
-            className="flex-1 gap-2 h-10 md:flex-initial md:px-4"
-            onClick={handlePreviousLesson}
-            disabled={!hasPreviousLesson}
-          >
-            <ChevronLeft className="h-4 w-4" />
-            <span className="md:hidden">Previous</span>
-            <span className="hidden md:inline">Previous Lesson</span>
-          </Button>
-          
-          <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-12 justify-center">
-            <span>{selectedLessonIndex + 1}</span>
-            <span>/</span>
-            <span>{lessons.length}</span>
-          </div>
-          
-          <Button
-            variant="outline"
-            className="flex-1 gap-2 h-10 md:flex-initial md:px-4"
-            onClick={handleNextLesson}
-            disabled={!hasNextLesson}
-          >
-            <span className="md:hidden">Next</span>
-            <span className="hidden md:inline">Next Lesson</span>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div 
+            className="bg-primary h-2 rounded-full transition-all duration-300"
+            style={{ width: `${currentLesson.progressValue}%` }}
+          />
         </div>
       </div>
-    );
-  };
+
+      {/* Lesson Content with Fixed Height */}
+      <Card className="overflow-hidden flex flex-col h-[500px] md:h-[380px]"> {/* Fixed height */}
+        <CardContent className="p-4 md:p-6 flex-1 overflow-y-auto"> {/* Scrollable content */}
+          <div 
+            className="prose prose-sm md:prose-base max-w-none"
+            dangerouslySetInnerHTML={{ __html: currentLesson.content }}
+          />
+        </CardContent>
+      </Card>
+
+      {/* Fixed Navigation - Stays at bottom */}
+      <div className="flex justify-between items-center gap-4 mt-auto"> {/* mt-auto pushes to bottom */}
+        <Button
+          variant="outline"
+          className="flex-1 gap-2 h-10 md:flex-initial md:px-4"
+          onClick={handlePreviousLesson}
+          disabled={!hasPreviousLesson}
+        >
+          <ChevronLeft className="h-4 w-4" />
+          <span className="md:hidden">Inyuma</span>
+          <span className="hidden md:inline">Inyuma</span>
+        </Button>
+        
+        <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-12 justify-center">
+          <span>{selectedLessonIndex + 1}</span>
+          <span>/</span>
+          <span>{lessons.length}</span>
+        </div>
+        
+        <Button
+          variant="outline"
+          className="flex-1 gap-2 h-10 md:flex-initial md:px-4"
+          onClick={handleNextLesson}
+          disabled={!hasNextLesson}
+        >
+          <span className="md:hidden">Imbere</span>
+          <span className="hidden md:inline">Imbere</span>
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  );
+};
 
   // Loading state for initial chapters
   if (loading && chapters.length === 0) {
@@ -494,7 +494,7 @@ export default function LessonsPage() {
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
           <div className="text-center py-12">
             <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading chapters...</p>
+            <p className="text-muted-foreground"> ...</p> {/* Translated */}
           </div>
         </div>
       </div>
@@ -518,7 +518,7 @@ export default function LessonsPage() {
             }}
           >
             <ArrowLeft className="h-4 w-4" />
-            Back to Sections
+            Subira mu Bice {/* Translated */}
           </Button>
 
           {/* Lesson Content */}
@@ -544,9 +544,9 @@ export default function LessonsPage() {
             <div className="flex items-center gap-3 mb-4">
               <BookOpen className="h-5 w-5 text-primary" />
               <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-base truncate">Chapters & Sections</h3>
+                <h3 className="font-semibold text-base truncate">Amasomo & Ibice</h3> {/* Translated */}
                 <p className="text-xs text-muted-foreground truncate">
-                  {chapters.length} chapters available
+                  {chapters.length} Amasomo araboneka {/* Translated */}
                 </p>
               </div>
             </div>
@@ -559,7 +559,7 @@ export default function LessonsPage() {
                 onClick={expandAllChapters}
                 className="flex-1 text-xs h-8"
               >
-                Expand All
+                Garagaza Byose {/* Translated */}
               </Button>
               <Button
                 variant="outline"
@@ -567,7 +567,7 @@ export default function LessonsPage() {
                 onClick={collapseAllChapters}
                 className="flex-1 text-xs h-8"
               >
-                Collapse All
+                Garagaza Bike {/* Translated */}
               </Button>
             </div>
 
@@ -591,12 +591,12 @@ export default function LessonsPage() {
             )}
           </div>
         ) : (
-          <Card>
+          <Card className="bg-blue-50">
             <CardContent className="p-12 text-center">
               <BookOpen className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Choose a Section</h3>
+              <h3 className="text-xl font-semibold mb-2">Hitamo Igice</h3> {/* Translated */}
               <p className="text-muted-foreground mb-6">
-                Select a section from the chapters list to start learning
+                Hitamo igice mu rutonde rw'ibitabo kugirango utangire kwiga {/* Translated */}
               </p>
             </CardContent>
           </Card>
@@ -607,18 +607,7 @@ export default function LessonsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-        <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-            <div className="max-w-6xl mx-auto px-4 md:px-6 py-4">
-              <div className="flex items-center justify-between">
-                <Link href="/ahabanza">
-                  <Button variant="ghost" size="sm" className="gap-2">
-                    <ArrowLeft className="h-4 w-4" />
-                    <span className="inline">Subira Ahabanza</span>
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
+       <Navbar/>
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-4">
         <MobileLayout />
         <DesktopLayout />

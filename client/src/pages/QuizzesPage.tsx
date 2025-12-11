@@ -329,7 +329,7 @@ const transformQuestions = (questionSets: QuestionSet[] | null | undefined, user
       questionsCount: set.questions?.length || 0,
       isPremium,
       requiresLogin,
-      duration: Math.ceil((set.questions?.length || 0) * 0.2),
+      duration: Math.ceil((set.questions?.length || 0) * 1),
       difficulty: setNumber === 1 ? "Gutangira" : setNumber === 2 ? "Hagati" : "Ikizamini",
       category: "Iby'umuhanda",
       completed: false,
@@ -1661,7 +1661,7 @@ export default function ExamPage() {
                   disabled={currentQuestion === 0}
                   className="flex-1 max-w-[120px]"
                 >
-                  Isubizo rya mbere
+                  Subira inyuma
                 </Button>
                 
                 <div className="flex flex-col items-center gap-1 text-xs text-muted-foreground">

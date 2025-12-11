@@ -73,7 +73,7 @@ export default function HomePage() {
   const [examStarted, setExamStarted] = useState(false);
   const [location, setLocation] = useLocation();
   const [currentWeek, setCurrentWeek] = useState(0);
-  const [selectedDay, setSelectedDay] = useState(new Date().getDay() - 1);
+  const [selectedDay, setSelectedDay] = useState(new Date().getDay()); // 0-6
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [practiceProgress, setPracticeProgress] = useState(0);
@@ -351,8 +351,8 @@ const setFallbackExam = () => {
     { title: "Avg. Completion", value: "86%", icon: TrendingUp, change: "+8%" },
   ];
 
-  const weekDays = [,"Sun","Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  const mobileWeekDays = ["S","M", "T", "W", "T", "F","S"];
+const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]; // Index: 0-6
+const mobileWeekDays = ["S", "M", "T", "W", "T", "F", "S"]; // Index: 0-6
 
   const mobileModules = featuredModules.slice(0, 2).map(module => ({
     id: module.id,
@@ -600,38 +600,109 @@ const startExam = () => {
             <section className="mb-8">
               <h2 className="text-black text-2xl font-bold mb-4 px-2">Ahabanza</h2>
 
-              {/* Week Days - Mobile Only */}
-              <div className="flex gap-1 mb-6 overflow-x-auto pb-2 px-1 scrollbar-hide">
-                {mobileWeekDays.map((day, index) => (
-                  <button
-                    key={day}
-                    onClick={() => handleDaySelect(index)}
-                    className={`flex-shrink-0 px-3.5 py-2 rounded-lg border text-sm font-medium transition-colors flex flex-col items-center gap-1 ${
-                      index === selectedDay && user
-                        ? "bg-green-500 text-primary-foreground"
-                        : "bg-background text-foreground border-border"
-                    } ${!user ? "opacity-50 cursor-not-allowed" : ""}`}
-                    disabled={!user}
-                  >
-                    <div
-                      className={`${
-                        index === selectedDay && user
-                          ? "text-primary-foreground"
-                          : "text-muted-foreground"
-                      }`}
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M7 2v11h3v9l7-12h-4l4-8z" />
-                      </svg>
-                    </div>
-                    <span>{day}</span>
-                  </button>
-                ))}
-              </div>
+             {/* Week Days - Mobile Only - Updated to match Desktop */}
+<div className="mb-6 px-1">
+  {/* Title and progress indicator */}
+  <div className="flex items-center justify-between mb-3 px-1">
+    <div className="flex items-center gap-2">
+      <Calendar className="h-4 w-4 text-primary" />
+      <span className="text-xs font-medium text-gray-600">Daily Progress</span>
+    </div>
+    <span className="text-xs font-medium text-gray-500">
+      Icyumweru {Math.ceil((selectedDay + 1) / 7)} • {Math.round(((selectedDay + 1) / 7) * 100)}%
+    </span>
+  </div>
+
+  {/* Week navigation card - matches desktop styling */}
+  <div className="relative bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 backdrop-blur-sm rounded-xl shadow-sm border border-white/50 overflow-hidden">
+    <div className="p-3">
+      {/* Weekday buttons */}
+      <div className="grid grid-cols-7 gap-1">
+        {mobileWeekDays.map((day, index) => (
+          <button
+            key={day}
+            onClick={() => handleDaySelect(index)}
+            className={`
+              flex flex-col items-center justify-center gap-1 
+              py-2 rounded-lg transition-all duration-300
+              ${index === selectedDay && user
+                ? "bg-primary text-white shadow-lg shadow-primary/30 scale-105 ring-1 ring-primary/30"
+                : "bg-white/80 text-gray-700 hover:bg-white hover:shadow-md"
+              }
+              ${!user ? "opacity-50 cursor-not-allowed hover:scale-100 hover:bg-white/80" : ""}
+              min-h-[4rem]
+            `}
+            disabled={!user}
+          >
+            {/* Icon */}
+            <div className={`
+              transition-transform duration-300
+              ${index === selectedDay && user
+                ? "text-white"
+                : "text-gray-500"
+              }
+            `}>
+              <svg
+                className="w-4 h-4"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path d="M7 2v11h3v9l7-12h-4l4-8z" />
+              </svg>
+            </div>
+
+            {/* Day letter */}
+            <span className={`
+              text-xs font-semibold transition-colors
+              ${index === selectedDay && user
+                ? "text-white"
+                : "text-gray-800"
+              }
+            `}>
+              {day}
+            </span>
+
+            {/* Progress indicator dot */}
+            <div className={`
+              w-1.5 h-1.5 rounded-full transition-colors
+              ${index === selectedDay && user
+                ? "bg-white/80"
+                : index < selectedDay && user
+                ? "bg-green-400"
+                : "bg-gray-300"
+              }
+            `} />
+          </button>
+        ))}
+      </div>
+
+      {/* Progress bar - matches desktop */}
+      <div className="mt-3 flex items-center gap-2">
+        <div className="flex-1 bg-white/50 rounded-full h-1.5 overflow-hidden">
+          <div
+            className="bg-primary h-full rounded-full transition-all duration-500 ease-out"
+            style={{ width: `${((selectedDay + 1) / 7) * 100}%` }}
+          />
+        </div>
+        <span className="text-[10px] font-medium text-gray-500 whitespace-nowrap">
+          {Math.round(((selectedDay + 1) / 7) * 100)}% complete
+        </span>
+      </div>
+
+      {/* Weekday full names (for better clarity) */}
+      <div className="mt-2 grid grid-cols-7 gap-1">
+        {weekDays.map((fullDay, index) => (
+          <div
+            key={fullDay}
+            className="text-center text-[10px] text-gray-500 font-medium truncate"
+          >
+            {fullDay}
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</div>
               {/* Practice Card */}
               <Card className="mb-6 mx-2 bg-green-100">
                 <CardContent className="p-4">
@@ -697,7 +768,7 @@ const startExam = () => {
                     ) : null}
                     
                     <Button
-                      className="w-full gap-2 bg-green-500 hover:bg-white/90 text-white h-10 text-sm font-semibold mt-3"
+                      className="w-full gap-2 bg-green-500 hover:bg-green-800 text-white h-10 text-sm font-semibold mt-3"
                       onClick={startExam}
                       disabled={loadingExam}
                     >

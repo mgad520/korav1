@@ -217,6 +217,17 @@ export default function SubscriptionPage() {
     }
   }, [selectedPlan]);
 
+  // Calculate withdrawal fee (4% of the final price)
+  const calculateWithdrawalFee = (baseAmount: number) => {
+    return Math.round(baseAmount * 0.04);
+  };
+
+  // Calculate total amount with fee
+  const calculateTotalWithFee = (baseAmount: number) => {
+    const fee = calculateWithdrawalFee(baseAmount);
+    return baseAmount + fee;
+  };
+
   // Mobile overlay management
   useEffect(() => {
     const isMobile = window.innerWidth < 640;
@@ -275,7 +286,7 @@ export default function SubscriptionPage() {
     }
   };
 
-  // Payment submission
+  // Payment submission - Updated to include fee in amount
   const handleSubmitPayment = async () => {
     setIsLoading(true);
     setError(null);
@@ -290,10 +301,17 @@ export default function SubscriptionPage() {
         return;
       }
 
+      // Calculate base amount and fee
+      const baseAmount = selectedDurationData.price;
+      const feeAmount = calculateWithdrawalFee(baseAmount);
+      const totalAmount = calculateTotalWithFee(baseAmount);
+
       const payload = {
         id: user.id,
         planId: selectedPlan,
-        amount: selectedDurationData.price,
+        baseAmount: baseAmount, // Original amount
+        feeAmount: feeAmount, // 4% fee
+        amount: totalAmount, // Total amount to pay (with fee)
         currency: selectedPlanData.currency || "RWF",
         email: user.loginEmail || "",
         languageCode: "rn",
@@ -635,113 +653,112 @@ export default function SubscriptionPage() {
         ))}
       </div>
 
-{/* Desktop Layout */}
-<div className="hidden sm:grid grid-cols-1 md:grid-cols-3 gap-10 max-w-6xl mx-auto mt-16 px-4">
-  {subscriptionPlans.map((plan) => {
-    const isSelected = selectedPlan === plan.id;
-    const isPopular = plan.isPopular; // optional flag
+      {/* Desktop Layout */}
+      <div className="hidden sm:grid grid-cols-1 md:grid-cols-3 gap-10 max-w-6xl mx-auto mt-16 px-4">
+        {subscriptionPlans.map((plan) => {
+          const isSelected = selectedPlan === plan.id;
+          const isPopular = plan.isPopular; // optional flag
 
-    return (
-      <Card
-        key={plan.id}
-        onClick={() => setSelectedPlan(plan.id)}
-        className={`
-          relative cursor-pointer rounded-3xl border transition-all duration-300 
-          flex flex-col h-[470px]
-          ${
-            isSelected
-              ? "border-green-500 shadow-green-200 shadow-xl scale-[1.02]"
-              : "border-gray-200 shadow-md hover:shadow-xl hover:-translate-y-1"
-          }
-          ${isPopular ? "ring-2 ring-green-400" : ""}
-          bg-white
-        `}
-      >
-        {/* Popular Badge */}
-        {isPopular && (
-          <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-green-500 text-white text-xs font-semibold px-4 py-1 rounded-full shadow">
-            Most Popular
-          </div>
-        )}
+          return (
+            <Card
+              key={plan.id}
+              onClick={() => setSelectedPlan(plan.id)}
+              className={`
+                relative cursor-pointer rounded-3xl border transition-all duration-300 
+                flex flex-col h-[470px]
+                ${
+                  isSelected
+                    ? "border-green-500 shadow-green-200 shadow-xl scale-[1.02]"
+                    : "border-gray-200 shadow-md hover:shadow-xl hover:-translate-y-1"
+                }
+                ${isPopular ? "ring-2 ring-green-400" : ""}
+                bg-white
+              `}
+            >
+              {/* Popular Badge */}
+              {isPopular && (
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-green-500 text-white text-xs font-semibold px-4 py-1 rounded-full shadow">
+                  Most Popular
+                </div>
+              )}
 
-        <CardContent className="p-8 flex flex-col flex-1">
+              <CardContent className="p-8 flex flex-col flex-1">
+                {/* ===== HEADER ===== */}
+                <div className="text-center mb-2">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                    {plan.name}
+                  </h3>
 
-          {/* ===== HEADER ===== */}
-          <div className="text-center mb-2">
-            <h3 className="text-2xl font-bold text-gray-900 mb-2">
-              {plan.name}
-            </h3>
+                  <div className="flex items-end justify-center gap-2 mb-3">
+                    <span className="text-5xl font-extrabold text-green-500 tracking-tight">
+                      {plan.price.toLocaleString()}
+                    </span>
+                    <span className="text-lg font-semibold text-gray-700 mb-1">
+                      RWF
+                    </span>
+                  </div>
 
-            <div className="flex items-end justify-center gap-2 mb-3">
-              <span className="text-5xl font-extrabold text-green-500 tracking-tight">
-                {plan.price.toLocaleString()}
-              </span>
-              <span className="text-lg font-semibold text-gray-700 mb-1">
-                RWF
-              </span>
-            </div>
+                  <div className="text-sm font-medium text-gray-500 mb-3">
+                    {plan.period}
+                  </div>
 
-            <div className="text-sm font-medium text-gray-500 mb-3">
-              {plan.period}
-            </div>
-
-            <p className="text-sm text-gray-400 leading-relaxed max-w-xs mx-auto mb-0">
-              Ibi nibyo uzahabwa nugura iri fatabuguzi 
-            </p>
-          </div>
-
-          {/* ===== FEATURES ===== */}
-          <div className="border-t border-gray-100 my-2" />
-
-          <ul className="space-y-4 mb-8 flex-1">
-            {plan.features.map((feature, index) => (
-              <li key={index} className="flex items-center gap-4">
-                <div
-                  className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                    feature.included
-                      ? "bg-green-100 text-green-600"
-                      : "bg-gray-100 text-gray-400"
-                  }`}
-                >
-                  {feature.included ? "✓" : "×"}
+                  <p className="text-sm text-gray-400 leading-relaxed max-w-xs mx-auto mb-0">
+                    Ibi nibyo uzahabwa nugura iri fatabuguzi 
+                  </p>
                 </div>
 
-                <span
-                  className={`text-xs ${
-                    feature.included
-                      ? "text-gray-800 font-medium"
-                      : "text-gray-400 line-through"
-                  }`}
-                >
-                  {feature.name}
-                </span>
-              </li>
-            ))}
-          </ul>
+                {/* ===== FEATURES ===== */}
+                <div className="border-t border-gray-100 my-2" />
 
-          {/* ===== CTA ===== */}
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelectedPlan(plan.id);
-              setCurrentStep("payment-method");
-            }}
-            className={`
-              w-full h-12 rounded-xl text-base font-semibold transition-all
-              ${
-                isSelected
-                  ? "bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-200"
-                  : "bg-gray-900 hover:bg-gray-800 text-white"
-              }
-            `}
-          >
-            Komeza
-          </Button>
-        </CardContent>
-      </Card>
-    );
-  })}
-</div>
+                <ul className="space-y-4 mb-8 flex-1">
+                  {plan.features.map((feature, index) => (
+                    <li key={index} className="flex items-center gap-4">
+                      <div
+                        className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                          feature.included
+                            ? "bg-green-100 text-green-600"
+                            : "bg-gray-100 text-gray-400"
+                        }`}
+                      >
+                        {feature.included ? "✓" : "×"}
+                      </div>
+
+                      <span
+                        className={`text-xs ${
+                          feature.included
+                            ? "text-gray-800 font-medium"
+                            : "text-gray-400 line-through"
+                        }`}
+                      >
+                        {feature.name}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* ===== CTA ===== */}
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedPlan(plan.id);
+                    setCurrentStep("payment-method");
+                  }}
+                  className={`
+                    w-full h-12 rounded-xl text-base font-semibold transition-all
+                    ${
+                      isSelected
+                        ? "bg-green-500 hover:bg-green-600 text-white shadow-lg shadow-green-200"
+                        : "bg-gray-900 hover:bg-gray-800 text-white"
+                    }
+                  `}
+                >
+                  Komeza
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
 
       {selectedPlan && (
         <div className="hidden justify-center">
@@ -782,92 +799,70 @@ export default function SubscriptionPage() {
         )}
       </div>
 
-     {/* Desktop Layout */}
-<div className="hidden sm:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto mt-8 px-4">
-  {paymentMethods.map((method) => {
-    const isSelected = selectedPaymentMethod === method.id;
+      {/* Desktop Layout */}
+      <div className="hidden sm:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto mt-8 px-4">
+        {paymentMethods.map((method) => {
+          const isSelected = selectedPaymentMethod === method.id;
 
-    return (
-      <Card
-        key={method.id}
-        className={`
-          relative rounded-2xl border transition-all duration-300 
-          flex flex-col h-[170px] bg-white
-          ${
-            isSelected
-              ? "border-green-500 shadow-green-200 shadow-lg scale-[1.01]"
-              : "border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5"
-          }
-        `}
-      >
-        <CardContent className="p-8 flex flex-col justify-between h-full">
+          return (
+            <Card
+              key={method.id}
+              className={`
+                relative rounded-2xl border transition-all duration-300 
+                flex flex-col h-[170px] bg-white cursor-pointer
+                ${
+                  isSelected
+                    ? "border-green-500 shadow-green-200 shadow-lg scale-[1.01]"
+                    : "border-gray-200 shadow-sm hover:shadow-md hover:-translate-y-0.5"
+                }
+              `}
+              onClick={() => setSelectedPaymentMethod(method.id)}
+            >
+              <CardContent className="p-8 flex flex-col justify-between h-full">
+                {/* ==== TOP CONTENT ==== */}
+                <div className="flex items-center gap-3">
+                  <img
+                    src={method.image}
+                    alt={method.name}
+                    className="w-10 h-7 object-contain rounded flex-shrink-0"
+                  />
 
-          {/* ==== TOP CONTENT ==== */}
-          <div className="flex items-center gap-3">
-            <img
-              src={method.image}
-              alt={method.name}
-              className="w-10 h-7 object-contain rounded flex-shrink-0"
-            />
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-gray-900 text-sm leading-tight truncate">
+                      {method.name}
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">
+                      {method.description}
+                    </p>
+                  </div>
+                </div>
 
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-gray-900 text-sm leading-tight truncate">
-                {method.name}
-              </h3>
-              <p className="text-xs text-gray-500 mt-1 line-clamp-2">
-                {method.description}
-              </p>
-            </div>
-          </div>
-
-          {/* ==== KOMEZA BUTTON INSIDE CARD ==== */}
-          <Button
-            onClick={() => setSelectedPaymentMethod(method.id)}
-            className={`
-              mt-2 h-9 w-full rounded-lg text-sm font-semibold transition-all
-              ${
-                isSelected
-                  ? "bg-green-500 hover:bg-green-600 text-white shadow shadow-green-200"
-                  : "bg-gray-900 hover:bg-gray-800 text-white"
-              }
-            `}
-          >
-            Komeza
-          </Button>
-
-        </CardContent>
-      </Card>
-    );
-  })}
-</div>
-
-{/* ==== ACTION BUTTONS ==== */}
-<div className="flex justify-center gap-6 pt-10">
-  <Button
-    variant="outline"
-    onClick={() => setCurrentStep("plans")}
-    className="h-10 px-8 rounded-lg text-sm font-semibold"
-  >
-    Subira Inyuma
-  </Button>
-
-  <Button
-    disabled={!selectedPaymentMethod}
-    onClick={() => setCurrentStep("duration")}
-    className={`
-      h-10 px-8 rounded-lg text-sm font-semibold transition-all
-      ${
-        selectedPaymentMethod
-          ? "bg-green-500 hover:bg-green-600 text-white shadow-md shadow-green-200"
-          : "bg-gray-300 text-gray-500 cursor-not-allowed"
-      }
-    `}
-  >
-    Komeza
-  </Button>
-</div>
-</div>
+                {/* ==== KOMEZA BUTTON INSIDE CARD ==== */}
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent double trigger
+                    setSelectedPaymentMethod(method.id);
+                    setCurrentStep("duration"); // Automatically go to next step
+                  }}
+                  className={`
+                    mt-2 h-9 w-full rounded-lg text-sm font-semibold transition-all
+                    ${
+                      isSelected
+                        ? "bg-green-500 hover:bg-green-600 text-white shadow shadow-green-200"
+                        : "bg-gray-900 hover:bg-gray-800 text-white"
+                    }
+                  `}
+                >
+                  Komeza
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    </div>
   );
+
   const renderDurationSelection = () => (
     <div className="space-y-8">
       <div className="text-center">
@@ -998,217 +993,259 @@ export default function SubscriptionPage() {
     </div>
   );
 
-  const renderConfirmation = () => {
-    const selectedPlanData = subscriptionPlans.find(p => p.id === selectedPlan);
-    const selectedDurationData = [...durationPlans.weeks, ...durationPlans.months].find(d => d.id === selectedDuration);
+  // Update the payment submission function - it's already correct for both
+// The issue is in the confirmation rendering for mobile
 
-    if (!selectedPlanData || !selectedDurationData) {
-      return <div>Ikosa: Hitamo ifatabuguzi n'igihe mbere yo gukomeza</div>;
-    }
+// First, let's update the renderConfirmation function to work for both mobile and desktop
+const renderConfirmation = () => {
+  const selectedPlanData = subscriptionPlans.find(p => p.id === selectedPlan);
+  const selectedDurationData = [...durationPlans.weeks, ...durationPlans.months].find(d => d.id === selectedDuration);
 
-    const totalAmount = selectedDurationData.price;
-    const isCardPayment = selectedPaymentMethod?.includes("visa");
+  if (!selectedPlanData || !selectedDurationData) {
+    return <div>Ikosa: Hitamo ifatabuguzi n'igihe mbere yo gukomeza</div>;
+  }
 
-    return (
+  const baseAmount = selectedDurationData.price;
+  const feeAmount = calculateWithdrawalFee(baseAmount);
+  const totalAmount = calculateTotalWithFee(baseAmount);
+  const isCardPayment = selectedPaymentMethod?.includes("visa");
+
+  return (
     <div className="space-y-10 max-w-5xl mx-auto px-4">
-  {/* ===== HEADER ===== */}
-  <div className="text-center">
-    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-      Emeza Ifatabuguzi
-    </h1>
-    <p className="text-gray-500 mt-2 text-sm sm:text-base max-w-xl mx-auto">
-      Reba ibyo wahisemo hanyuma ukomeze kwishyura
-    </p>
-  </div>
+      {/* ===== HEADER ===== */}
+      <div className="text-center">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Emeza Ifatabuguzi</h1>
+        <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm sm:text-base max-w-xl mx-auto">
+          Reba ibyo wahisemo hanyuma ukomeze kwishyura
+        </p>
+      </div>
 
-  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-    
-    {/* ===== ORDER SUMMARY ===== */}
-    <Card className="rounded-2xl shadow-md border border-gray-200 bg-white">
-      <CardContent className="p-6 sm:p-8">
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">
-          Incamake
-        </h3>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* ===== ORDER SUMMARY ===== */}
+        <Card className="rounded-2xl shadow-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+          <CardContent className="p-6 sm:p-8">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
+              Incamake
+            </h3>
 
-        <div className="space-y-4">
-          <div className="flex justify-between text-sm sm:text-base">
-            <span className="text-gray-500">Ifatabuguzi:</span>
-            <span className="font-semibold text-gray-900">
-              {selectedPlanData.name}
-            </span>
-          </div>
+            <div className="space-y-4">
+              <div className="flex justify-between text-sm sm:text-base">
+                <span className="text-gray-500 dark:text-gray-400">Ifatabuguzi:</span>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {selectedPlanData.name}
+                </span>
+              </div>
 
-          <div className="flex justify-between text-sm sm:text-base">
-            <span className="text-gray-500">Igihe:</span>
-            <span className="font-semibold text-gray-900">
-              {selectedDurationData.name}
-            </span>
-          </div>
+              <div className="flex justify-between text-sm sm:text-base">
+                <span className="text-gray-500 dark:text-gray-400">Igihe:</span>
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  {selectedDurationData.name}
+                </span>
+              </div>
 
-          <div className="flex justify-between text-sm sm:text-base">
-            <span className="text-gray-500">Uburyo bwo kwishyura:</span>
-            <span className="font-semibold text-gray-900 text-right max-w-[60%]">
-              {paymentMethods.find(m => m.id === selectedPaymentMethod)?.name}
-            </span>
-          </div>
+              <div className="flex justify-between text-sm sm:text-base">
+                <span className="text-gray-500 dark:text-gray-400">Uburyo bwo kwishyura:</span>
+                <span className="font-semibold text-gray-900 dark:text-white text-right max-w-[60%]">
+                  {paymentMethods.find(m => m.id === selectedPaymentMethod)?.name}
+                </span>
+              </div>
 
-          <div className="border-t pt-5">
-            <div className="flex justify-between text-lg sm:text-xl font-bold">
-              <span className="text-gray-900">Igiteranyo:</span>
-              <span className="text-green-600">
-                {totalAmount.toLocaleString()} RWF
-              </span>
+              {/* Price breakdown with fee - APPLIED FOR BOTH MOBILE AND DESKTOP */}
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-5 space-y-3">
+                <div className="flex justify-between text-sm sm:text-base">
+                  <span className="text-gray-500 dark:text-gray-400">Igiciro cy'ifatabuguzi:</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {baseAmount.toLocaleString()} RWF
+                  </span>
+                </div>
+                
+                <div className="flex justify-between text-sm sm:text-base">
+                  <span className="text-gray-500 dark:text-gray-400">Ikiguzi (4%):</span>
+                  <span className="font-semibold text-yellow-600 dark:text-yellow-500">
+                    + {feeAmount.toLocaleString()} RWF
+                  </span>
+                </div>
+                
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
+                  <div className="flex justify-between text-lg sm:text-xl font-bold">
+                    <span className="text-gray-900 dark:text-white">Igiteranyo cyo kwishyura:</span>
+                    <span className="text-green-600 dark:text-green-500">
+                      {totalAmount.toLocaleString()} RWF
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+          </CardContent>
+        </Card>
 
-    {/* ===== PAYMENT SECTION ===== */}
-    <Card className="rounded-2xl shadow-md border border-gray-200 bg-white">
-      <CardContent className="p-6 sm:p-8">
-        <h3 className="text-lg font-semibold text-gray-900 mb-6">
-          Amakuru Yo Kwishyura
-        </h3>
+        {/* ===== PAYMENT SECTION ===== */}
+        <Card className="rounded-2xl shadow-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+          <CardContent className="p-6 sm:p-8">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
+              Amakuru Yo Kwishyura
+            </h3>
 
-        {isPaymentCompleted ? (
-          <div className="text-center py-10">
-            {paymentStatus === "success" ? (
-              <div className="text-green-600">
-                <Check className="h-16 w-16 mx-auto mb-4" />
-                <h4 className="text-xl font-semibold mb-2">
-                  Ubwishyu Bwakiriwe!
-                </h4>
-                <p className="text-gray-500 text-sm sm:text-base">
-                  {paymentStatusMessage}
-                </p>
-
-                <Button
-                  onClick={() => setLocation("/konte")}
-                  className="mt-6 h-12 px-10 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold shadow-lg shadow-green-200"
-                >
-                  Genda Kuri Konte
-                </Button>
-              </div>
-            ) : (
-              <div className="text-red-600">
-                <X className="h-16 w-16 mx-auto mb-4" />
-                <h4 className="text-xl font-semibold mb-2">
-                  Ubwishyu Bwanzwe
-                </h4>
-                <p className="text-gray-500 text-sm sm:text-base">
-                  {paymentStatusMessage}
-                </p>
-
-                <Button
-                  onClick={() => setPaymentStatus("pending")}
-                  className="mt-6 h-12 px-10 rounded-xl font-semibold"
-                  variant="outline"
-                >
-                  Ongera Ugerageze
-                </Button>
-              </div>
-            )}
-          </div>
-        ) : (
-          <>
-            {isCardPayment ? (
-              <div className="text-center py-6">
-                <FaCreditCard className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-
-                <Button
-                  onClick={handleSubmitPayment}
-                  disabled={isLoading}
-                  className="w-full h-12 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold shadow-md"
-                >
-                  {isLoading && (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  )}
-                  Ishura Ukoresheje Ikarita
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-5">
-                {!isInOtpPhase ? (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Nimero ya Telefone
-                      </label>
-                      <input
-                        type="tel"
-                        value={phoneNumber}
-                        onChange={(e) => setPhoneNumber(e.target.value)}
-                        placeholder="Shyiramo numero yawe ya telefone"
-                        className="w-full h-11 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                      />
-                    </div>
+            {isPaymentCompleted ? (
+              <div className="text-center py-10">
+                {paymentStatus === "success" ? (
+                  <div className="text-green-600 dark:text-green-500">
+                    <Check className="h-16 w-16 mx-auto mb-4" />
+                    <h4 className="text-xl font-semibold mb-2">
+                      Ubwishyu Bwakiriwe!
+                    </h4>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base">
+                      {paymentStatusMessage}
+                    </p>
 
                     <Button
-                      onClick={handleSubmitPayment}
-                      disabled={!phoneNumber || isLoading}
-                      className="w-full h-12 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold shadow-md"
+                      onClick={() => setLocation("/konte")}
+                      className="mt-6 h-12 px-10 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold shadow-lg shadow-green-200"
                     >
-                      {isLoading && (
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      )}
-                      Ohereza Ubwishyu
+                      Genda Kuri Konte
                     </Button>
-                  </>
+                  </div>
                 ) : (
-                  <>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Shyiramo OTP
-                      </label>
-                      <input
-                        type="text"
-                        value={otp}
-                        onChange={(e) => setOtp(e.target.value)}
-                        placeholder="Shyiramo OTP wakiriye kuri telefone"
-                        className="w-full h-11 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-center text-lg"
-                      />
-                    </div>
+                  <div className="text-red-600 dark:text-red-500">
+                    <X className="h-16 w-16 mx-auto mb-4" />
+                    <h4 className="text-xl font-semibold mb-2">
+                      Ubwishyu Bwanzwe
+                    </h4>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm sm:text-base">
+                      {paymentStatusMessage}
+                    </p>
 
                     <Button
-                      onClick={handleSubmitPayment}
-                      disabled={!otp || isLoading}
-                      className="w-full h-12 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold shadow-md"
+                      onClick={() => setPaymentStatus("pending")}
+                      className="mt-6 h-12 px-10 rounded-xl font-semibold"
+                      variant="outline"
                     >
-                      {isLoading && (
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      )}
-                      Emeza Ubwishyu
+                      Ongera Ugerageze
                     </Button>
-                  </>
+                  </div>
                 )}
               </div>
-            )}
+            ) : (
+              <>
+                {isCardPayment ? (
+                  <div className="text-center py-6">
+                    <FaCreditCard className="h-12 w-12 mx-auto mb-4 text-gray-300 dark:text-gray-500" />
 
-            {error && (
-              <div className="mt-5 p-4 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-700 text-sm">{error}</p>
-              </div>
-            )}
-          </>
-        )}
-      </CardContent>
-    </Card>
-  </div>
+                    {/* Fee notice - SHOW ON BOTH MOBILE AND DESKTOP */}
+                    <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+                      <p className="text-sm text-yellow-800 dark:text-yellow-200 text-center">
+                        <span className="font-semibold">Icyitonderwa:</span> Iki kiguzi cya 4% kizakoreshwa kuri card yawe n'umutunzi.
+                      </p>
+                    </div>
 
-  {/* ===== BACK BUTTON ===== */}
-  <div className="flex justify-center">
-    <Button
-      variant="outline"
-      onClick={() => setCurrentStep("duration")}
-      className="h-11 px-10 rounded-xl font-semibold"
-    >
-      Subira Inyuma
-    </Button>
-  </div>
-</div>
-    );
-  };
+                    <Button
+                      onClick={handleSubmitPayment}
+                      disabled={isLoading}
+                      className="w-full h-12 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold shadow-md"
+                    >
+                      {isLoading && (
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      )}
+                      Ishura Ukoresheje Ikarita ({totalAmount.toLocaleString()} RWF)
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-5">
+                    {!isInOtpPhase ? (
+                      <>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Nimero ya Telefone
+                          </label>
+                          <input
+                            type="tel"
+                            value={phoneNumber}
+                            onChange={(e) => setPhoneNumber(e.target.value)}
+                            placeholder="Shyiramo numero yawe ya telefone"
+                            className="w-full h-11 px-4 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:text-white"
+                          />
+                        </div>
+
+                        {/* Fee notice - SHOW ON BOTH MOBILE AND DESKTOP */}
+                        <div className="p-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg">
+                          <p className="text-sm text-yellow-800 dark:text-yellow-200 text-center">
+                            <span className="font-semibold">Icyitonderwa:</span> Iki kiguzi cya 4% kizakoreshwa mu gihe wishyura.
+                          </p>
+                        </div>
+
+                        <Button
+                          onClick={handleSubmitPayment}
+                          disabled={!phoneNumber || isLoading}
+                          className="w-full h-12 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold shadow-md"
+                        >
+                          {isLoading && (
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          )}
+                          Ohereza Ubwishyu ({totalAmount.toLocaleString()} RWF)
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Shyiramo OTP
+                          </label>
+                          <input
+                            type="text"
+                            value={otp}
+                            onChange={(e) => setOtp(e.target.value)}
+                            placeholder="Shyiramo OTP wakiriye kuri telefone"
+                            className="w-full h-11 px-4 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 dark:bg-gray-700 dark:text-white text-center text-lg"
+                          />
+                        </div>
+
+                        <div className="p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg">
+                          <p className="text-sm text-blue-800 dark:text-blue-200 text-center">
+                            Ubwishyu bukenewe: <span className="font-bold">{totalAmount.toLocaleString()} RWF</span>
+                          </p>
+                        </div>
+
+                        <Button
+                          onClick={handleSubmitPayment}
+                          disabled={!otp || isLoading}
+                          className="w-full h-12 rounded-xl bg-green-500 hover:bg-green-600 text-white font-semibold shadow-md"
+                        >
+                          {isLoading && (
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          )}
+                          Emeza Ubwishyu
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {error && (
+                  <div className="mt-5 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg">
+                    <p className="text-red-700 dark:text-red-300 text-sm">{error}</p>
+                  </div>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ===== BACK BUTTON ===== */}
+      <div className="flex justify-center">
+        <Button
+          variant="outline"
+          onClick={() => setCurrentStep("duration")}
+          className="h-11 px-10 rounded-xl font-semibold"
+        >
+          Subira Inyuma
+        </Button>
+      </div>
+    </div>
+  );
+};
+
   // Progress indicator
   const steps = [
     { id: "plans", name: "Hitamo Ifatabuguzi" },
