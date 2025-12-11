@@ -50,7 +50,7 @@ export default function ResultsPage() {
 
   // Use provided score or calculate it
   const finalScore = score || Math.round((correctAnswers / totalQuestions) * 100);
-  const passed = finalScore >= 80;
+  const passed = finalScore >= 60;
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -119,7 +119,7 @@ export default function ResultsPage() {
               {passed ? (
                 <>
                   <CheckCircle className="h-4 w-4" />
-                  Watsinze - Twishimiye!
+                  Watsinze - Turakwishimiye!
                 </>
               ) : (
                 <>
@@ -131,7 +131,7 @@ export default function ResultsPage() {
             
             {/* Debug info - remove in production */}
             <div className="mt-4 text-xs text-gray-500">
-              Answered: {Object.keys(userAnswers || {}).length} questions
+              Wasubije:Ibibazo {Object.keys(userAnswers || {}).length} 
             </div>
           </CardContent>
         </Card>
@@ -247,7 +247,7 @@ export default function ResultsPage() {
                             />
                           </div>
                           <p className="text-sm text-muted-foreground mt-2 text-center italic">
-                            Ishusho y'ikibazo
+                            Ishusho ry'ikibazo
                           </p>
                         </div>
                       </div>
@@ -262,7 +262,7 @@ export default function ResultsPage() {
         <div className="mt-8 text-center">
           <Link href="/ibibazo">
             <Button size="lg" className="bg-primary hover:bg-primary/90">
-              Kora Ikindi Gikora
+              Kora irindi suzuma
             </Button>
           </Link>
         </div>
