@@ -335,7 +335,7 @@ export default function AccountPage() {
   // Get full name
   const getFullName = () => {
     if (isGuest) return "Umushyitsi";
-    if (!user) return "Kontiya";
+    if (!user) return "Konte";
     return `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.loginEmail || "Kontiya";
   };
 
@@ -461,7 +461,6 @@ export default function AccountPage() {
                     <p className="text-gray-600">
                       {isPlanLoading ? (
                         <span className="inline-flex items-center gap-2">
-                          <div className="w-3 h-3 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
                           Free Plan
                         </span>
                       ) : (
@@ -531,8 +530,8 @@ export default function AccountPage() {
                         onClick={() => item.type !== "notification" && handleMenuItemClick(item.type)}
                       >
                         <div className="flex items-center gap-4 flex-1">
-                          <div className="p-3 bg-gray-100 rounded-lg">
-                            <Icon className="h-5 w-5 text-gray-600" />
+                          <div className="p-3 bg-green-100 rounded-lg">
+                            <Icon className="h-5 w-5 text-green-600" />
                           </div>
                           <div className="flex-1">
                             <span className="text-gray-900 font-medium block text-lg">
@@ -759,14 +758,6 @@ export default function AccountPage() {
           </div>
           
           <div className="relative z-10 max-w-md mx-auto">
-            {/* Profile Header */}
-            <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold mb-2">Imyirondoro</h1>
-              <p className={`${isGuest ? "text-gray-100" : "text-green-100"} opacity-90`}>
-                {isGuest ? "Uburyo bwa Mushiitsi - Uburyo bukeye" : "Gucunga igenamigambi rya konti yawe"}
-              </p>
-            </div>
-
             {/* Profile Card on Background */}
             <Card className={`${
               isGuest 

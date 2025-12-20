@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, BookOpen, Clock, CheckCircle, Play, ArrowLeft, ChevronRight, ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronLeft, BookOpen, Clock, CheckCircle, Play, ArrowLeft, ChevronRight, ChevronDown, ChevronUp, XCircle, HelpCircle, Trophy, BarChart3, RotateCcw, Brain, Zap, X, CheckCircle2, AlertCircle } from "lucide-react";
 import { Link, useRoute } from "wouter";
 import Navbar from "@/components/Navbar";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 // Types for our API responses
 interface Section {
@@ -33,6 +34,42 @@ interface LessonData {
   data: Lesson[];
 }
 
+// Quiz Types
+interface QuizQuestion {
+  image: string;
+  _id: string;
+  _owner: string;
+  chapterId: string;
+  _createdDate: string;
+  choiceAnswer: number;
+  _updatedDate: string;
+  choice: string[];
+  title: string;
+  questionNumbers: number;
+}
+
+interface QuizResponse {
+  success: boolean;
+  chapterId: string;
+  totalSets: number;
+  totalQuestions: number;
+  sets: QuizQuestion[][];
+}
+
+interface QuestionChoice {
+  id: string;
+  text: string;
+  isCorrect: boolean;
+}
+
+interface TransformedQuestion {
+  id: string;
+  text: string;
+  choices: QuestionChoice[];
+  correctAnswer: number;
+  imageUrl?: string;
+}
+
 // Cache for chapters data
 let chaptersCache: Chapter[] | null = null;
 let cacheTimestamp: number | null = null;
@@ -40,6 +77,9 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 // Cache for lessons by section
 const lessonsCache: Record<string, { data: any[], timestamp: number }> = {};
+
+// Cache for quiz questions by chapter
+const quizCache: Record<string, { data: TransformedQuestion[], timestamp: number }> = {};
 
 // Skeleton Components
 const LessonContentSkeleton = () => (
@@ -88,14 +128,447 @@ const LessonContentSkeleton = () => (
   </div>
 );
 
+// Quiz Component - Now as a modal
+const ChapterQuizModal = ({ 
+  chapterId, 
+  chapterNumber, 
+  isOpen, 
+  onClose 
+}: { 
+  chapterId: string; 
+  chapterNumber: number;
+  isOpen: boolean;
+  onClose: () => void;
+}) => {
+  const [quizQuestions, setQuizQuestions] = useState<TransformedQuestion[]>([]);
+  const [loadingQuiz, setLoadingQuiz] = useState(false);
+  const [quizStarted, setQuizStarted] = useState(false);
+  const [quizCompleted, setQuizCompleted] = useState(false);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [showImmediateFeedback, setShowImmediateFeedback] = useState(false);
+  const [score, setScore] = useState(0);
+  
+const transformWixImage = (wixUrl: string | undefined | null) => {
+  if (!wixUrl || !wixUrl.startsWith('wix:image')) return undefined;
+
+  // Wix format: wix:image://v1/FILE_ID/FILE_NAME#originWidth=X&originHeight=Y
+  // We need the FILE_ID (the part after v1/ and before the next /)
+  const parts = wixUrl.split('/');
+  if (parts.length < 4) return undefined;
+
+  const fileId = parts[3]; 
+  return `https://static.wixstatic.com/media/${fileId}`;
+};
+  useEffect(() => {
+    const fetchQuizQuestions = async () => {
+      // Check cache first
+      const now = Date.now();
+      const cachedQuiz = quizCache[chapterId];
+      if (cachedQuiz && (now - cachedQuiz.timestamp) < CACHE_DURATION) {
+        console.log('Using cached quiz questions for chapter:', chapterId);
+        setQuizQuestions(cachedQuiz.data);
+        return;
+      }
+
+      try {
+        setLoadingQuiz(true);
+        const response = await fetch('https://dataapis.wixsite.com/kora/_functions/AllQuestionsbychapter', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ chapterId })
+        });
+        
+        const data: QuizResponse = await response.json();
+        
+        if (data.success) {
+          // Flatten all questions from all sets
+          const allQuestions: QuizQuestion[] = data.sets.flat();
+          
+          // Transform questions to our format
+          const transformedQuestions: TransformedQuestion[] = allQuestions.map((q, index) => ({
+            id: q._id,
+            text: q.title,
+            choices: q.choice.map((choiceText, idx) => ({
+              id: String.fromCharCode(65 + idx), // A, B, C, D
+              text: choiceText.trim(),
+              isCorrect: (idx + 1) === q.choiceAnswer
+            })),
+            correctAnswer: q.choiceAnswer,
+            imageUrl: transformWixImage(q.image),
+          }));
+          
+          // Shuffle and take 10 random questions
+          const shuffled = [...transformedQuestions]
+            .sort(() => Math.random() - 0.5)
+            .slice(0, 10);
+          
+          // Update cache
+          quizCache[chapterId] = {
+            data: shuffled,
+            timestamp: Date.now()
+          };
+          
+          setQuizQuestions(shuffled);
+        }
+      } catch (error) {
+        console.error('Error fetching quiz questions:', error);
+      } finally {
+        setLoadingQuiz(false);
+      }
+    };
+
+    if (chapterId && isOpen) {
+      fetchQuizQuestions();
+    }
+  }, [chapterId, isOpen]);
+
+  const handleStartQuiz = () => {
+    setQuizStarted(true);
+    setQuizCompleted(false);
+    setCurrentQuestion(0);
+    setSelectedAnswer(null);
+    setAnswers({});
+    setScore(0);
+    setShowImmediateFeedback(false);
+  };
+
+  const handleAnswerSelect = (choiceId: string) => {
+    if (showImmediateFeedback) return;
+    
+    setSelectedAnswer(choiceId);
+    setAnswers(prev => ({
+      ...prev,
+      [currentQuestion]: choiceId
+    }));
+    
+    // Show immediate feedback
+    setShowImmediateFeedback(false);
+    
+    // Check if answer is correct
+    const currentQ = quizQuestions[currentQuestion];
+    const selectedChoice = currentQ.choices.find(c => c.id === choiceId);
+    if (selectedChoice?.isCorrect) {
+      setScore(prev => prev + 1);
+    }
+    
+    // Auto-advance after 2 seconds
+    setTimeout(() => {
+      if (currentQuestion < quizQuestions.length - 1) {
+        setCurrentQuestion(prev => prev + 1);
+        setSelectedAnswer(null);
+        setShowImmediateFeedback(false);
+      } else {
+        setQuizCompleted(true);
+      }
+    }, 2000);
+  };
+
+  const handleNextQuestion = () => {
+    if (currentQuestion < quizQuestions.length - 1) {
+      setCurrentQuestion(prev => prev + 1);
+      setSelectedAnswer(null);
+      setShowImmediateFeedback(false);
+    } else {
+      setQuizCompleted(true);
+    }
+  };
+
+  const handlePreviousQuestion = () => {
+    if (currentQuestion > 0) {
+      setCurrentQuestion(prev => prev - 1);
+      setSelectedAnswer(answers[currentQuestion - 1] || null);
+      setShowImmediateFeedback(false);
+    }
+  };
+
+  const handleRetryQuiz = () => {
+    setQuizCompleted(false);
+    setCurrentQuestion(0);
+    setSelectedAnswer(null);
+    setAnswers({});
+    setScore(0);
+    setShowImmediateFeedback(false);
+  };
+
+  const handleCloseQuiz = () => {
+    onClose();
+    // Reset quiz state
+    setTimeout(() => {
+      setQuizStarted(false);
+      setQuizCompleted(false);
+      setCurrentQuestion(0);
+      setSelectedAnswer(null);
+      setAnswers({});
+      setScore(0);
+      setShowImmediateFeedback(false);
+    }, 300);
+  };
+
+  const currentQ = quizQuestions[currentQuestion];
+
+  if (!isOpen) return null;
+
+  if (!quizStarted) {
+    return (
+      <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={handleCloseQuiz} />
+        <div className="relative bg-white dark:bg-zinc-900 w-full h-[90vh] sm:h-auto sm:max-w-xl rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-10 duration-300">
+          <div className="p-8 flex-1 flex flex-col items-center text-center">
+            <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-500/20 rounded-3xl flex items-center justify-center mb-6 rotate-3">
+              <Brain className="h-10 w-10 text-emerald-600" />
+            </div>
+            <h3 className="text-3xl font-extrabold text-zinc-900 dark:text-white mb-2">
+              Isuzumanyigisho
+            </h3>
+            <p className="text-zinc-500 dark:text-zinc-400 mb-8 max-w-xs">
+              Isomo rya {chapterNumber}: Garagaza ubumenyi bwawe mu minota mike.
+            </p>
+
+            <div className="grid grid-cols-3 gap-3 w-full mb-10">
+              {[
+                { label: 'Ibibazo', val: '10', icon: '📝' },
+                { label: 'Iminota', val: '5', icon: '⏱️' },
+                { label: 'Gutsinda', val: '70%', icon: '🎯' },
+              ].map((stat, i) => (
+                <div key={i} className="bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-2xl border border-zinc-100 dark:border-zinc-800">
+                  <span className="text-lg mb-1 block">{stat.icon}</span>
+                  <div className="text-lg font-bold text-emerald-600">{stat.val}</div>
+                  <div className="text-[10px] uppercase font-bold text-zinc-400">{stat.label}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="w-full space-y-3 mt-auto sm:mt-0">
+              <button
+                onClick={handleStartQuiz}
+                className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white rounded-2xl font-bold text-lg transition-all shadow-lg shadow-emerald-200 dark:shadow-none flex items-center justify-center gap-2"
+              >
+                <Play className="h-5 w-5 fill-current" />
+                Tangira Ikizamini
+              </button>
+              <button onClick={handleCloseQuiz} className="w-full py-3 text-zinc-400 font-semibold hover:text-zinc-600 transition-colors">
+                Gufunga
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+ if (quizCompleted) {
+  const percentage = Math.round((score / quizQuestions.length) * 100);
+  const passed = percentage >= 70;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/60 backdrop-blur-md p-0 sm:p-4">
+        <div className="absolute inset-0 bg-transparent backdrop-blur-md" onClick={handleCloseQuiz} />
+      <div className="relative bg-white dark:bg-zinc-900 w-full h-full sm:h-auto sm:max-w-4xl sm:rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+        
+        <div className="flex flex-col md:flex-row">
+          
+          {/* Left Side: Score Hero */}
+          <div className={`md:w-5/12 p-8 md:p-12 text-center flex flex-col items-center justify-center ${
+            passed ? 'bg-emerald-600' : 'bg-orange-500'
+          } text-white`}>
+            <div className="w-24 h-24 bg-white/20 backdrop-blur-lg rounded-full flex items-center justify-center mb-6 shadow-xl">
+              {passed ? (
+                <Trophy className="h-12 w-12 text-white" />
+              ) : (
+                <AlertCircle className="h-12 w-12 text-white" />
+              )}
+            </div>
+            <h2 className="text-3xl font-black mb-2">
+              {passed ? 'Watsinze!' : 'Gerageza nanone'}
+            </h2>
+            <p className="text-white/80 font-medium mb-8">
+              {passed 
+                ? 'Urashoboye! Wageze ku ntego isabwa.' 
+                : 'Ukeneye gusubira mu masomo make.'}
+            </p>
+            <div className="text-7xl font-black tracking-tighter mb-2">
+              {percentage}%
+            </div>
+            <div className="text-sm uppercase font-bold tracking-widest opacity-70">
+              Amanota yose
+            </div>
+          </div>
+
+          {/* Right Side: Details & Actions */}
+          <div className="flex-1 p-8 md:p-12 bg-white dark:bg-zinc-900">
+            <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 mb-6">
+              Incamake y'igerageza
+            </h3>
+            
+            <div className="space-y-4 mb-10">
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-emerald-100 dark:bg-emerald-500/20 rounded-lg">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                  </div>
+                  <span className="font-semibold text-zinc-600 dark:text-zinc-400">Ibibazo watsinze</span>
+                </div>
+                <span className="text-xl font-bold text-zinc-900 dark:text-white">{score}</span>
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-zinc-200 dark:bg-zinc-700 rounded-lg">
+                    <X className="h-5 w-5 text-zinc-500" />
+                  </div>
+                  <span className="font-semibold text-zinc-600 dark:text-zinc-400">Ibibazo utatsinze</span>
+                </div>
+                <span className="text-xl font-bold text-zinc-900 dark:text-white">
+                  {quizQuestions.length - score}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <button
+                onClick={handleRetryQuiz}
+                className="flex items-center justify-center gap-2 py-4 px-6 rounded-2xl border-2 border-zinc-100 dark:border-zinc-800 font-bold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all"
+              >
+                <RotateCcw className="h-5 w-5" />
+                Subiramo
+              </button>
+              <button
+                onClick={handleCloseQuiz}
+                className="flex text-sm items-center justify-center gap-2 py-4 px-6 rounded-2xl bg-zinc-900 dark:bg-emerald-600 text-white font-bold hover:opacity-90 transition-all shadow-lg"
+              >
+                <BookOpen className="h-5 w-5" />
+                Garuka ku Isomo
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+}
+  // --- MAIN QUIZ INTERFACE ---
+  return (
+  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/50 backdrop-blur-sm p-0 sm:p-4">
+    <div className="relative bg-white dark:bg-zinc-900 w-full h-full sm:h-[85vh] sm:max-w-6xl sm:rounded-[2rem] shadow-2xl flex flex-col overflow-hidden">
+      
+      {/* 1. Header (Fixed) */}
+      <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center bg-white dark:bg-zinc-900 z-10">
+        <div className="flex items-center gap-4">
+          <div className="bg-emerald-600 text-white px-3 py-1 rounded-lg text-sm font-black">
+            {currentQuestion + 1} / {quizQuestions.length}
+          </div>
+          <h4 className="font-bold text-zinc-800 dark:text-zinc-200 truncate max-w-[150px] sm:max-w-none">
+            Isomo rya {chapterNumber}
+          </h4>
+        </div>
+        <button onClick={handleCloseQuiz} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full">
+          <X className="h-6 w-6 text-zinc-400" />
+        </button>
+      </div>
+
+      {/* 2. Main Content Area (Flex Row on Desktop) */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+        
+        {/* Left Side: Question & Answers (Scrolls if needed) */}
+        <div className="flex-1 overflow-y-auto p-6 sm:p-10 custom-scrollbar">
+          <div className="max-w-2xl">
+            <h2 className="text-xl sm:text-2xl font-bold text-zinc-800 dark:text-zinc-100 mb-8 leading-snug">
+              {currentQ.text}
+            </h2>
+
+            <div className="grid grid-cols-1 gap-3">
+              {currentQ.choices.map((choice) => {
+                const isSelected = selectedAnswer === choice.id;
+                const showResult = showImmediateFeedback || answers[currentQuestion];
+                const isCorrect = choice.isCorrect;
+
+                return (
+                  <button
+                    key={choice.id}
+                    disabled={!!selectedAnswer}
+                    onClick={() => handleAnswerSelect(choice.id)}
+                    className={`group w-full p-4 rounded-xl border-2 transition-all flex items-center gap-4 text-left active:scale-[0.99] ${
+                      isSelected 
+                        ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20" 
+                        : "border-zinc-100 dark:border-zinc-800 hover:border-emerald-200"
+                    } ${showResult && isCorrect ? "bg-emerald-500/10 border-emerald-500" : ""}`}
+                  >
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold shrink-0 ${
+                      isSelected ? "bg-emerald-600 text-white" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
+                    }`}>
+                      {choice.id}
+                    </div>
+                    <span className="text-zinc-700 dark:text-zinc-300 font-medium">{choice.text}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Side: Image (Pinned on Desktop, hidden or top on mobile) */}
+        {currentQ.imageUrl && (
+          <div className="hidden md:flex md:w-5/12 bg-zinc-50 dark:bg-zinc-800/50 items-center justify-center p-8 border-l border-zinc-100 dark:border-zinc-800">
+            <div className="relative w-full h-full max-h-[500px] bg-white dark:bg-zinc-900 rounded-3xl shadow-inner overflow-hidden border border-zinc-200 dark:border-zinc-700">
+              <img 
+                src={currentQ.imageUrl} 
+                alt="Quiz Context"
+                className="w-full h-full object-contain p-6"
+              />
+              <div className="absolute bottom-4 right-4 bg-black/20 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded uppercase tracking-widest font-bold">
+                Ishusho
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 3. Footer (Fixed) */}
+      <div className="p-4 sm:p-6 bg-white dark:bg-zinc-900 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+        <button
+          onClick={handlePreviousQuestion}
+          disabled={currentQuestion === 0}
+          className="px-6 py-3 font-bold text-zinc-400 hover:text-zinc-600 disabled:opacity-0 transition-all"
+        >
+          Inyuma
+        </button>
+
+        <div className="flex gap-3 items-center">
+           {/* Progress Indicator Dots for Desktop */}
+           <div className="hidden sm:flex gap-1 mr-4">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <div key={i} className={`h-1.5 w-4 rounded-full ${i <= currentQuestion ? 'bg-emerald-500' : 'bg-zinc-200 dark:bg-zinc-800'}`} />
+              ))}
+           </div>
+
+          <button
+            onClick={handleNextQuestion}
+            disabled={!selectedAnswer}
+            className="px-10 py-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-zinc-200 dark:disabled:bg-zinc-800 text-white rounded-2xl font-bold flex items-center gap-2 shadow-lg shadow-emerald-600/20"
+          >
+            {currentQuestion < 9 ? "Kibazo Gikurikira" : "Reba Igisubizo"}
+            <ChevronRight className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+};
 export default function LessonsPage() {
   const [selectedLessonIndex, setSelectedLessonIndex] = useState<number>(0);
   const [chapters, setChapters] = useState<Chapter[]>([]);
   const [lessons, setLessons] = useState<any[]>([]);
   const [selectedSection, setSelectedSection] = useState<string | null>(null);
+  const [selectedChapter, setSelectedChapter] = useState<Chapter | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [loadingLessons, setLoadingLessons] = useState<boolean>(false);
   const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
+  const [showQuizModal, setShowQuizModal] = useState<boolean>(false);
 
   // Get section ID from URL parameters
   const [match, params] = useRoute("/inyigisho/:sectionId?");
@@ -173,29 +646,27 @@ export default function LessonsPage() {
           id: parseInt(lesson.id.replace(/\D/g, '').slice(0, 8) || `${index + 1}`),
           title: lesson.title.split('\n')[0],
           description: lesson.title.length > 100 ? lesson.title.substring(0, 100) + '...' : lesson.title,
-          progress: "Birimo Gukora", // Translated
+          progress: "Birimo Gukora",
           lessonsCount: data.data.length,
           progressValue: Math.round(Math.min((index / data.data.length) * 100, 100)),
           imageUrl: lesson.lessonImage || "https://c8.alamy.com/comp/2GE268G/set-of-road-safety-signs-warning-road-transport-symbol-vector-collection-2GE268G.jpg",
           content: `
   <div class="flex flex-col md:flex-row gap-6 items-start">
-    <!-- Text content on the left -->
     <div class="flex-1 min-w-0">
-      <h2>${lesson.title.split('\n')[0]}</h2>
-      <p class="lead mt-4">${lesson.title.replace(/\n/g, '<br/>')}</p>
+      <h2 class="text-2xl font-bold text-gray-900 mb-4">${lesson.title.split('\n')[0]}</h2>
+      <p class="text-gray-600 leading-relaxed">${lesson.title.replace(/\n/g, '<br/>')}</p>
     </div>
-              <!-- Image on the right corner -->
-              ${lesson.lessonImage ? `
-                <div class="flex-shrink-0 md:w-48">
-                  <img 
-                    src="${lesson.lessonImage}" 
-                    alt="${lesson.title.split('\n')[0]}" 
-                    class="rounded-lg w-full h-auto max-w-[200px] md:max-w-none"
-                    style="object-fit: cover;"
-                  />
-                </div>
-              ` : ''}
-            </div>
+    ${lesson.lessonImage ? `
+      <div class="flex-shrink-0 md:w-48">
+        <img 
+          src="${lesson.lessonImage}" 
+          alt="${lesson.title.split('\n')[0]}" 
+          class="rounded-lg w-full h-auto max-w-[200px] md:max-w-none"
+          style="object-fit: cover;"
+        />
+      </div>
+    ` : ''}
+  </div>
           `
         }));
 
@@ -208,6 +679,12 @@ export default function LessonsPage() {
         setLessons(transformedLessons);
         setSelectedSection(sectionId);
         setSelectedLessonIndex(0);
+        
+        // Find which chapter this section belongs to
+        const chapter = chapters.find(ch => ch.sections.some(s => s.id === sectionId));
+        if (chapter) {
+          setSelectedChapter(chapter);
+        }
       }
     } catch (error) {
       console.error('Error fetching lessons:', error);
@@ -220,10 +697,11 @@ export default function LessonsPage() {
     // Update URL to reflect selected section
     window.history.pushState(null, "", `/inyigisho/${sectionId}`);
     
-    // Expand the chapter containing this section
+    // Find and expand the chapter containing this section
     const chapter = chapters.find(ch => ch.sections.some(s => s.id === sectionId));
     if (chapter) {
       setExpandedChapters(prev => new Set(prev).add(chapter.id));
+      setSelectedChapter(chapter);
     }
     
     fetchLessonsBySection(sectionId);
@@ -248,6 +726,12 @@ export default function LessonsPage() {
 
   const collapseAllChapters = () => {
     setExpandedChapters(new Set());
+  };
+
+  const handleQuizClick = () => {
+    if (selectedChapter) {
+      setShowQuizModal(true);
+    }
   };
 
   const currentLesson = lessons[selectedLessonIndex];
@@ -287,7 +771,7 @@ export default function LessonsPage() {
             
             <div className="flex-1 min-w-0 overflow-hidden">
               <div className="font-medium text-sm truncate">
-                Isomo rya {chapter.chapterNumber} {/* Translated */}
+                Isomo rya {chapter.chapterNumber}
               </div>
               <div className="text-xs text-muted-foreground truncate">
                 {chapter.title}
@@ -301,7 +785,6 @@ export default function LessonsPage() {
           )}
         </Button>
         
-        {/* Line separator added below */}
         <div className="border-t-2 border-muted mx-3"></div>
         
         {isExpanded && (
@@ -317,7 +800,7 @@ export default function LessonsPage() {
                   <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0" />
                   <div className="flex-1 min-w-0 overflow-hidden">
                     <div className="text-xs font-medium truncate">
-                      Igice {section.sectionNumber} {/* Translated */}
+                      Igice {section.sectionNumber}
                     </div>
                     <div className="text-xs text-muted-foreground truncate">
                       {section.title}
@@ -335,166 +818,201 @@ export default function LessonsPage() {
   // Mobile Section List Component
   const MobileSectionList = () => (
     <div className="space-y-4 pb-4">
-
       {/* Chapters and Sections */}
-<div className="space-y-4">
-  {chapters.map((chapter) => (
-    <Card key={chapter.id}>
-      <CardContent className="p-4">
-        <Button
-          variant="ghost"
-          className="w-full justify-between h-auto p-0 mb-3 hover:bg-transparent min-w-0"
-          onClick={() => toggleChapter(chapter.id)}
-        >
-          <div className="flex items-start gap-3 text-left flex-1 min-w-0">
-            {/* Image preview for chapter from backend */}
-            <div className="flex-shrink-0">
-              <img 
-                src={chapter.image} 
-                alt={chapter.title}
-                className="w-12 h-12 object-cover rounded-lg"
-              />
-            </div>
-            
-            <div className="flex-1 min-w-0 overflow-hidden">
-              <div className="font-medium text-sm truncate">
-                Isomo rya {chapter.chapterNumber} {/* Translated */}
-              </div>
-              <div className="text-xs text-muted-foreground truncate">
-                {chapter.title}
-              </div>
-            </div>
-          </div>
-          
-          {expandedChapters.has(chapter.id) ? (
-            <ChevronUp className="h-5 w-5 flex-shrink-0 ml-2" />
-          ) : (
-            <ChevronDown className="h-5 w-5 flex-shrink-0 ml-2" />
-          )}
-        </Button>
-        
-        {/* Line separator added below */}
-        <div className="border-t-2 border-muted mb-3"></div>
-        
-        {expandedChapters.has(chapter.id) && (
-          <div className="space-y-2">
-            {chapter.sections.map((section) => (
+      <div className="space-y-4">
+        {chapters.map((chapter) => (
+          <Card key={chapter.id}>
+            <CardContent className="p-4">
               <Button
-                key={section.id}
-                variant={selectedSection === section.id ? "secondary" : "outline"}
-                className="w-full justify-start h-auto py-3 text-left min-w-0"
-                onClick={() => handleSectionSelect(section.id)}
+                variant="ghost"
+                className="w-full justify-between h-auto p-0 mb-3 hover:bg-transparent min-w-0"
+                onClick={() => toggleChapter(chapter.id)}
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <BookOpen className="h-4 w-4 flex-shrink-0" />
+                <div className="flex items-start gap-3 text-left flex-1 min-w-0">
+                  {/* Image preview for chapter from backend */}
+                  <div className="flex-shrink-0">
+                    <img 
+                      src={chapter.image} 
+                      alt={chapter.title}
+                      className="w-12 h-12 object-cover rounded-lg"
+                    />
+                  </div>
+                  
                   <div className="flex-1 min-w-0 overflow-hidden">
                     <div className="font-medium text-sm truncate">
-                      Igice {section.sectionNumber}: {section.title} {/* Translated */}
+                      Isomo rya {chapter.chapterNumber}
                     </div>
                     <div className="text-xs text-muted-foreground truncate">
-                      Kanda utangire kwiga {/* Translated */}
+                      {chapter.title}
                     </div>
                   </div>
                 </div>
+                
+                {expandedChapters.has(chapter.id) ? (
+                  <ChevronUp className="h-5 w-5 flex-shrink-0 ml-2" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 flex-shrink-0 ml-2" />
+                )}
               </Button>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  ))}
-</div>
+              
+              <div className="border-t-2 border-muted mb-3"></div>
+              
+              {expandedChapters.has(chapter.id) && (
+                <div className="space-y-2">
+                  {chapter.sections.map((section) => (
+                    <Button
+                      key={section.id}
+                      variant={selectedSection === section.id ? "secondary" : "outline"}
+                      className="w-full justify-start h-auto py-3 text-left min-w-0"
+                      onClick={() => handleSectionSelect(section.id)}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <BookOpen className="h-4 w-4 flex-shrink-0" />
+                        <div className="flex-1 min-w-0 overflow-hidden">
+                          <div className="font-medium text-sm truncate">
+                            Igice {section.sectionNumber}: {section.title}
+                          </div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            Kanda utangire kwiga
+                          </div>
+                        </div>
+                      </div>
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
 
       {loadingLessons && lessons.length === 0 && (
         <div className="text-center py-6">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-          <p className="text-sm text-muted-foreground">Birimo gushakisha amayigisho...</p> {/* Translated */}
+          <p className="text-sm text-muted-foreground">Birimo gushakisha amayigisho...</p>
         </div>
       )}
     </div>
   );
 
-  // Lesson Content Component
-const LessonContent = () => {
-  const hasPreviousLesson = selectedLessonIndex > 0;
-  const hasNextLesson = selectedLessonIndex < lessons.length - 1;
+  // Lesson Content Component with Quiz Button
+  const LessonContent = () => {
+    const hasPreviousLesson = selectedLessonIndex > 0;
+    const hasNextLesson = selectedLessonIndex < lessons.length - 1;
 
-  return (
-    <div className="space-y-6">
-      {/* Lesson Header */}
-      <div className="text-center md:text-left">
-        <h1 className="text-2xl md:text-3xl text-primary font-bold mb-3">Ibisobanuro birambuye</h1>
-      </div>
-
-      {/* Progress Bar */}
-      <div className="bg-muted/50 rounded-lg p-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium">Iterambere</span>
-          <span className="text-sm text-muted-foreground">
-            {currentLesson.progressValue}% Byarakozwe
-          </span>
+    return (
+      <div className="space-y-6">
+        {/* Lesson Header with Quiz Button */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="text-center sm:text-left">
+            <h1 className="text-2xl md:text-3xl text-primary font-bold mb-2">Ibisobanuro birambuye</h1>
+            <p className="text-gray-600">
+              Isomo rya {selectedChapter?.chapterNumber}: {selectedChapter?.title}
+            </p>
+          </div>
+          
+          {/* Quiz Button - Prominently placed */}
+          <Button
+            onClick={handleQuizClick}
+            className="gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold"
+          >
+            <Brain className="h-5 w-5" />
+            Gerageza Ubumenyi Bwawe
+          </Button>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div 
-            className="bg-primary h-2 rounded-full transition-all duration-300"
-            style={{ width: `${currentLesson.progressValue}%` }}
-          />
-        </div>
-      </div>
 
-      {/* Lesson Content with Fixed Height */}
-      <Card className="overflow-hidden flex flex-col h-[500px] md:h-[380px]"> {/* Fixed height */}
-        <CardContent className="p-4 md:p-6 flex-1 overflow-y-auto"> {/* Scrollable content */}
-          <div 
-            className="prose prose-sm md:prose-base max-w-none"
-            dangerouslySetInnerHTML={{ __html: currentLesson.content }}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Fixed Navigation - Stays at bottom */}
-      <div className="flex justify-between items-center gap-4 mt-auto"> {/* mt-auto pushes to bottom */}
-        <Button
-          variant="outline"
-          className="flex-1 gap-2 h-10 md:flex-initial md:px-4"
-          onClick={handlePreviousLesson}
-          disabled={!hasPreviousLesson}
-        >
-          <ChevronLeft className="h-4 w-4" />
-          <span className="md:hidden">Inyuma</span>
-          <span className="hidden md:inline">Inyuma</span>
-        </Button>
-        
-        <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-12 justify-center">
-          <span>{selectedLessonIndex + 1}</span>
-          <span>/</span>
-          <span>{lessons.length}</span>
+        {/* Progress Bar */}
+        <div className="bg-muted/50 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium">Iterambere</span>
+            <span className="text-sm text-muted-foreground">
+              {currentLesson.progressValue}% Byarakozwe
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className="bg-primary h-2 rounded-full transition-all duration-300"
+              style={{ width: `${currentLesson.progressValue}%` }}
+            />
+          </div>
         </div>
-        
-        <Button
-          variant="outline"
-          className="flex-1 gap-2 h-10 md:flex-initial md:px-4"
-          onClick={handleNextLesson}
-          disabled={!hasNextLesson}
-        >
-          <span className="md:hidden">Imbere</span>
-          <span className="hidden md:inline">Imbere</span>
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+
+        {/* Lesson Content with Fixed Height */}
+        <Card className="overflow-hidden flex flex-col h-[500px] md:h-[450px]">
+          <CardContent className="p-4 md:p-6 flex-1 overflow-y-auto">
+            <div 
+              className="prose prose-sm md:prose-base max-w-none"
+              dangerouslySetInnerHTML={{ __html: currentLesson.content }}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Fixed Navigation - Stays at bottom */}
+        <div className="flex justify-between items-center gap-4">
+          <Button
+            variant="outline"
+            className="flex-1 gap-2 h-10 md:flex-initial md:px-4"
+            onClick={handlePreviousLesson}
+            disabled={!hasPreviousLesson}
+          >
+            <ChevronLeft className="h-4 w-4" />
+            <span className="md:hidden">Inyuma</span>
+            <span className="hidden md:inline">Inyuma</span>
+          </Button>
+          
+          <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-12 justify-center">
+            <span>{selectedLessonIndex + 1}</span>
+            <span>/</span>
+            <span>{lessons.length}</span>
+          </div>
+          
+          <Button
+            variant="outline"
+            className="flex-1 gap-2 h-10 md:flex-initial md:px-4"
+            onClick={handleNextLesson}
+            disabled={!hasNextLesson}
+          >
+            <span className="md:hidden">Imbere</span>
+            <span className="hidden md:inline">Imbere</span>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Quick Quiz Access Card - Always visible */}
+        <Card className="mt-6 bg-gradient-to-r from-blue-50 to-purple-50 border-primary/20">
+          <CardContent className="p-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white rounded-lg shadow-sm">
+                  <Zap className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-gray-900">Gerageza ubumenyi bwawe</h4>
+                  <p className="text-sm text-gray-600">
+                    Gukora quiz ni ubwiza bwo kumenya niba wize neza ibyo ushaka kwiga.
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={handleQuizClick}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold"
+              >
+                Tangira Ikizamini
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
   // Loading state for initial chapters
   if (loading && chapters.length === 0) {
     return (
       <div className="min-h-screen bg-background">
-        
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
           <div className="text-center py-12">
             <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-            <p className="text-muted-foreground"> ...</p> {/* Translated */}
           </div>
         </div>
       </div>
@@ -514,11 +1032,12 @@ const LessonContent = () => {
               setSelectedSection(null);
               setLessons([]);
               setSelectedLessonIndex(0);
+              setSelectedChapter(null);
               window.history.replaceState(null, "", "/inyigisho");
             }}
           >
             <ArrowLeft className="h-4 w-4" />
-            Subira mu Bice {/* Translated */}
+            Subira mu Bice
           </Button>
 
           {/* Lesson Content */}
@@ -544,9 +1063,9 @@ const LessonContent = () => {
             <div className="flex items-center gap-3 mb-4">
               <BookOpen className="h-5 w-5 text-primary" />
               <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-base truncate">Amasomo & Ibice</h3> {/* Translated */}
+                <h3 className="font-semibold text-base truncate">Amasomo & Ibice</h3>
                 <p className="text-xs text-muted-foreground truncate">
-                  {chapters.length} Amasomo araboneka {/* Translated */}
+                  {chapters.length} Amasomo araboneka
                 </p>
               </div>
             </div>
@@ -559,7 +1078,7 @@ const LessonContent = () => {
                 onClick={expandAllChapters}
                 className="flex-1 text-xs h-8"
               >
-                Garagaza Byose {/* Translated */}
+                Garagaza Byose
               </Button>
               <Button
                 variant="outline"
@@ -567,7 +1086,7 @@ const LessonContent = () => {
                 onClick={collapseAllChapters}
                 className="flex-1 text-xs h-8"
               >
-                Garagaza Bike {/* Translated */}
+                Garagaza Bike
               </Button>
             </div>
 
@@ -576,6 +1095,22 @@ const LessonContent = () => {
                 <ChapterItem key={chapter.id} chapter={chapter} />
               ))}
             </div>
+
+            {/* Quiz Quick Access in Sidebar */}
+            {selectedChapter && (
+              <div className="mt-6 pt-4 border-t">
+                <Button
+                  onClick={handleQuizClick}
+                  className="w-full gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold"
+                >
+                  <Brain className="h-4 w-4" />
+                  Ikizamini cy'isomo
+                </Button>
+                <p className="text-xs text-muted-foreground mt-2 text-center">
+                  Gerageza ubumenyi bwawe muri iri somo
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -591,12 +1126,12 @@ const LessonContent = () => {
             )}
           </div>
         ) : (
-          <Card className="bg-blue-50">
+          <Card className="bg-gradient-to-br from-blue-50 to-purple-50">
             <CardContent className="p-12 text-center">
-              <BookOpen className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Hitamo Igice</h3> {/* Translated */}
+              <Brain className="h-16 w-16 text-primary mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Hitamo Igice</h3>
               <p className="text-muted-foreground mb-6">
-                Hitamo igice mu rutonde rw'ibitabo kugirango utangire kwiga {/* Translated */}
+                Hitamo igice mu rutonde rw'ibitabo kugirango utangire kwiga
               </p>
             </CardContent>
           </Card>
@@ -606,12 +1141,24 @@ const LessonContent = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
-       <Navbar/>
-      <div className="max-w-7xl mx-auto px-4 md:px-6 py-4">
-        <MobileLayout />
-        <DesktopLayout />
+    <ProtectedRoute>
+      <div className="min-h-screen bg-background">
+        <Navbar/>
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-4">
+          <MobileLayout />
+          <DesktopLayout />
+        </div>
+        
+        {/* Quiz Modal */}
+        {selectedChapter && showQuizModal && (
+          <ChapterQuizModal
+            chapterId={selectedChapter.id}
+            chapterNumber={selectedChapter.chapterNumber}
+            isOpen={showQuizModal}
+            onClose={() => setShowQuizModal(false)}
+          />
+        )}
       </div>
-    </div>
+    </ProtectedRoute>
   );
 }

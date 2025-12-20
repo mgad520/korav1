@@ -598,7 +598,7 @@ const startExam = () => {
           <div className="px-2 py-2">
             
             <section className="mb-8">
-              <h2 className="text-black text-2xl font-bold mb-4 px-2">Ahabanza</h2>
+              <h2 className="text-black text-2xl font-bold mb-2 px-2"></h2>
 
              {/* Week Days - Mobile Only - Updated to match Desktop */}
 <div className="mb-6 px-1">
@@ -944,8 +944,8 @@ const startExam = () => {
               <div className="lg:col-span-2 space-y-12">
                 <section>
                   <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text text-transparent">
-                      Ahabanza
+                    <h2 className="text-3xl font-bold bg-green-500 bg-clip-text text-transparent">
+                     For You
                     </h2>
                     
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">

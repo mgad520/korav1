@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Crown, Check, X, Loader2, ChevronRight, X as XIcon } from "lucide-react";
 import { FaCreditCard } from "react-icons/fa";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 // Types
 interface SubscriptionPlan {
@@ -1255,6 +1256,7 @@ const renderConfirmation = () => {
   ];
 
   return (
+    <ProtectedRoute>
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Top Navigation Bar - Fixed for Mobile */}
       <div className="sticky top-0 z-40 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sm:relative sm:bg-transparent sm:border-0">
@@ -1324,5 +1326,6 @@ const renderConfirmation = () => {
       {showPaymentOverlay && renderMobilePaymentOverlay()}
       {showDurationOverlay && renderMobileDurationOverlay()}
     </div>
+    </ProtectedRoute>
   );
 }

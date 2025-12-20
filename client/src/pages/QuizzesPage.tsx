@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -329,7 +329,7 @@ const transformQuestions = (questionSets: QuestionSet[] | null | undefined, user
       questionsCount: set.questions?.length || 0,
       isPremium,
       requiresLogin,
-      duration: Math.ceil((set.questions?.length || 0) * 1),
+      duration: Math.ceil((set.questions?.length || 0) * 0.05),
       difficulty: setNumber === 1 ? "Gutangira" : setNumber === 2 ? "Hagati" : "Ikizamini",
       category: "Iby'umuhanda",
       completed: false,
@@ -383,12 +383,16 @@ export default function ExamPage() {
   const [upgradeMessage, setUpgradeMessage] = useState("");
   const [showImmediateFeedback, setShowImmediateFeedback] = useState(true);
   const [isReady, setIsReady] = useState(false); // New state for "Uriteguye Gutangira"
+  const answersRef = useRef(answers);
   
   // NEW STATE: Track if we're loading from homepage exam
   const [loadingHomepageExam, setLoadingHomepageExam] = useState(false);
   const [homepageExamData, setHomepageExamData] = useState<any>(null);
   const [homepageExamQuestions, setHomepageExamQuestions] = useState<any[]>([]);
-
+// Keep the ref updated whenever answers change
+useEffect(() => {
+  answersRef.current = answers;
+}, [answers]);
   // Update this useEffect in ExamPage
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -641,49 +645,52 @@ export default function ExamPage() {
     }));
   };
 
-  const handleTimeUp = () => {
-    if (!examData) return;
-    
-    // Calculate score before navigating
-    const totalQuestions = examData.totalQuestions;
-    const correctAnswers = Object.values(answers).filter(answer => answer.isCorrect).length;
-    const score = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
-    
-    const resultsData = {
-      questions: examData.questions,
-      userAnswers: answers,
-      totalQuestions: examData.totalQuestions,
-      timeSpent: (examData.duration * 60) - timeRemaining,
-      quizTitle: examData.title,
-      score: score,
-      correctAnswers: correctAnswers
-    };
-    
-    console.log("Time's up! Navigating to results...", resultsData);
-    setLocation(`/results?data=${encodeURIComponent(JSON.stringify(resultsData))}`);
+ const handleTimeUp = () => {
+  if (!examData) return;
+  
+  // Use the REF instead of the STATE to avoid stale closures
+  const finalAnswers = answersRef.current;
+  
+  const totalQuestions = examData.totalQuestions;
+  const correctAnswersCount = Object.values(finalAnswers).filter(ans => ans.isCorrect).length;
+  const score = totalQuestions > 0 ? Math.round((correctAnswersCount / totalQuestions) * 100) : 0;
+  
+  const resultsData = {
+    questions: examData.questions,
+    userAnswers: finalAnswers,
+    totalQuestions: totalQuestions,
+    timeSpent: (examData.duration * 60), 
+    quizTitle: examData.title,
+    score: score,
+    correctAnswers: correctAnswersCount
   };
+  
+  console.log("Time's up! Results collected from Ref:", resultsData);
+  setLocation(`/results?data=${encodeURIComponent(JSON.stringify(resultsData))}`);
+};
 
-  const handleFinish = () => {
-    if (!examData) return;
-    
-    // Calculate score before navigating
-    const totalQuestions = examData.totalQuestions;
-    const correctAnswers = Object.values(answers).filter(answer => answer.isCorrect).length;
-    const score = totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
-    
-    const resultsData = {
-      questions: examData.questions,
-      userAnswers: answers,
-      totalQuestions: examData.totalQuestions,
-      timeSpent: (examData.duration * 60) - timeRemaining,
-      quizTitle: examData.title,
-      score: score,
-      correctAnswers: correctAnswers
-    };
-    
-    console.log("Finishing exam...", resultsData);
-    setLocation(`/results?data=${encodeURIComponent(JSON.stringify(resultsData))}`);
+const handleFinish = () => {
+  if (!examData) return;
+  
+  // Use the REF here as well for consistency
+  const finalAnswers = answersRef.current;
+  
+  const totalQuestions = examData.totalQuestions;
+  const correctAnswersCount = Object.values(finalAnswers).filter(ans => ans.isCorrect).length;
+  const score = totalQuestions > 0 ? Math.round((correctAnswersCount / totalQuestions) * 100) : 0;
+  
+  const resultsData = {
+    questions: examData.questions,
+    userAnswers: finalAnswers,
+    totalQuestions: totalQuestions,
+    timeSpent: (examData.duration * 60) - timeRemaining,
+    quizTitle: examData.title,
+    score: score,
+    correctAnswers: correctAnswersCount
   };
+  
+  setLocation(`/results?data=${encodeURIComponent(JSON.stringify(resultsData))}`);
+};
 
   const handleNext = () => {
     if (!examData) return;
