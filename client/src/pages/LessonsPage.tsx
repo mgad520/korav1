@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, BookOpen, Clock, CheckCircle, Play, ArrowLeft, ChevronRight, ChevronDown, ChevronUp, XCircle, HelpCircle, Trophy, BarChart3, RotateCcw, Brain, Zap, X, CheckCircle2, AlertCircle, AlertTriangle, Loader2 } from "lucide-react";
+import { ChevronLeft, BookOpen, Clock, CheckCircle, Play, ArrowLeft, ChevronRight, ChevronDown, ChevronUp, XCircle, HelpCircle, Trophy, BarChart3, RotateCcw, Brain, Zap, X, CheckCircle2, AlertCircle, AlertTriangle, Loader2, ClipboardList, Timer, Target } from "lucide-react";
 import { Link, useRoute } from "wouter";
 import Navbar from "@/components/Navbar";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -147,7 +147,6 @@ const ChapterQuizModal = ({
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<number, string>>({});
-  const [showImmediateFeedback, setShowImmediateFeedback] = useState(false);
   const [score, setScore] = useState(0);
   const [noQuestionsAvailable, setNoQuestionsAvailable] = useState(false);
   
@@ -247,45 +246,36 @@ const ChapterQuizModal = ({
     setSelectedAnswer(null);
     setAnswers({});
     setScore(0);
-    setShowImmediateFeedback(false);
   };
 
   const handleAnswerSelect = (choiceId: string) => {
-    if (showImmediateFeedback) return;
+    // Prevent re-selecting if already answered
+    if (answers[currentQuestion]) return;
     
-    setSelectedAnswer(choiceId);
-    setAnswers(prev => ({
-      ...prev,
-      [currentQuestion]: choiceId
-    }));
-    
-    // Show immediate feedback
-    setShowImmediateFeedback(false);
-    
-    // Check if answer is correct
     const currentQ = quizQuestions[currentQuestion];
     const selectedChoice = currentQ.choices.find(c => c.id === choiceId);
+    
+    // Update selected answer
+    setSelectedAnswer(choiceId);
+    
+    // Store answer
+    const newAnswers = {
+      ...answers,
+      [currentQuestion]: choiceId
+    };
+    setAnswers(newAnswers);
+    
+    // Update score if correct
     if (selectedChoice?.isCorrect) {
       setScore(prev => prev + 1);
     }
-    
-    // Auto-advance after 2 seconds
-    setTimeout(() => {
-      if (currentQuestion < quizQuestions.length - 1) {
-        setCurrentQuestion(prev => prev + 1);
-        setSelectedAnswer(null);
-        setShowImmediateFeedback(false);
-      } else {
-        setQuizCompleted(true);
-      }
-    }, 2000);
   };
 
   const handleNextQuestion = () => {
     if (currentQuestion < quizQuestions.length - 1) {
       setCurrentQuestion(prev => prev + 1);
-      setSelectedAnswer(null);
-      setShowImmediateFeedback(false);
+      // Set the previously selected answer for this question if it exists
+      setSelectedAnswer(answers[currentQuestion + 1] || null);
     } else {
       setQuizCompleted(true);
     }
@@ -295,7 +285,6 @@ const ChapterQuizModal = ({
     if (currentQuestion > 0) {
       setCurrentQuestion(prev => prev - 1);
       setSelectedAnswer(answers[currentQuestion - 1] || null);
-      setShowImmediateFeedback(false);
     }
   };
 
@@ -305,7 +294,6 @@ const ChapterQuizModal = ({
     setSelectedAnswer(null);
     setAnswers({});
     setScore(0);
-    setShowImmediateFeedback(false);
   };
 
   const handleCloseQuiz = () => {
@@ -318,7 +306,6 @@ const ChapterQuizModal = ({
       setSelectedAnswer(null);
       setAnswers({});
       setScore(0);
-      setShowImmediateFeedback(false);
       setNoQuestionsAvailable(false);
     }, 300);
   };
@@ -338,10 +325,10 @@ const ChapterQuizModal = ({
               <AlertTriangle className="h-10 w-10 text-amber-600 dark:text-amber-500" />
             </div>
             <h3 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 dark:text-white mb-4">
-              Nta kizamini kiboneka
+              Nta Gerageza riboneka
             </h3>
             <p className="text-zinc-500 dark:text-zinc-400 mb-8 max-w-sm text-sm sm:text-base">
-              Nta bibazo by'ikizamini bishyizweho kuri isomo rya {chapterNumber}. Gerageza nanone nyuma y'igihe gito cyangwa subira inyuma mu masomo.
+              Nta bibazo by'igerageza kuri isomo rya {chapterNumber}. Komeza kwiga ayandi masomo.
             </p>
             
             <div className="w-full space-y-3 mt-8">
@@ -397,19 +384,21 @@ const ChapterQuizModal = ({
               Isomo rya {chapterNumber}: Garagaza ubumenyi bwawe mu minota mike.
             </p>
 
-            <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full mb-8 sm:mb-10">
-              {[
-                { label: 'Ibibazo', val: '10', icon: '📝' },
-                { label: 'Iminota', val: '5', icon: '⏱️' },
-                { label: 'Gutsinda', val: '70%', icon: '🎯' },
-              ].map((stat, i) => (
-                <div key={i} className="bg-zinc-50 dark:bg-zinc-800/50 p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-zinc-100 dark:border-zinc-800">
-                  <span className="text-base sm:text-lg mb-1 block">{stat.icon}</span>
-                  <div className="text-base sm:text-lg font-bold text-emerald-600">{stat.val}</div>
-                  <div className="text-[10px] uppercase font-bold text-zinc-400">{stat.label}</div>
-                </div>
-              ))}
-            </div>
+           <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full mb-6 sm:mb-10">
+  {[
+    { label: 'Ibibazo', val: '10', icon: <ClipboardList className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600" /> },
+    { label: 'Iminota', val: '5', icon: <Timer className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600" /> },
+    { label: 'Gutsinda', val: '70%', icon: <Target className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-600" /> },
+  ].map((stat, i) => (
+    <div key={i} className="bg-zinc-50 dark:bg-zinc-800/50 p-2 sm:p-3 rounded-2xl border border-zinc-100 dark:border-zinc-800 flex flex-col items-center">
+      <div className="mb-1 sm:mb-2 p-1.5 sm:p-2 bg-white dark:bg-zinc-900 rounded-xl shadow-sm">
+        {stat.icon}
+      </div>
+      <div className="text-sm sm:text-lg font-bold text-zinc-800 dark:text-zinc-200">{stat.val}</div>
+      <div className="text-[8px] sm:text-[10px] uppercase font-black text-zinc-400 tracking-wider">{stat.label}</div>
+    </div>
+  ))}
+</div>
 
             <div className="w-full space-y-3 mt-auto sm:mt-0">
               <button
@@ -507,7 +496,7 @@ const ChapterQuizModal = ({
                 </button>
                 <button
                   onClick={handleCloseQuiz}
-                  className="flex text-sm sm:text-base items-center justify-center gap-2 py-3 sm:py-4 px-4 sm:px-6 rounded-xl sm:rounded-2xl bg-zinc-900 dark:bg-emerald-600 text-white font-bold hover:opacity-90 transition-all shadow-lg"
+                  className="flex text-sm sm:text-sm items-center justify-center gap-2 py-3 sm:py-4 px-4 sm:px-6 rounded-xl sm:rounded-2xl bg-zinc-900 dark:bg-emerald-600 text-white font-bold hover:opacity-90 transition-all shadow-lg"
                 >
                   <BookOpen className="h-4 w-4 sm:h-5 sm:w-5" />
                   Garuka ku Isomo
@@ -540,13 +529,16 @@ const ChapterQuizModal = ({
           </button>
         </div>
 
-        {/* 2. Main Content Area (Flex Row on Desktop) */}
+        {/* 2. Main Content Area */}
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           
-          {/* Left Side: Question & Answers (Scrolls if needed) */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-10 custom-scrollbar">
-            <div className="max-w-2xl">
-              {/* Show image on mobile if available */}
+          {/* Left Side: Question & Answers */}
+          <div className={`flex-1 overflow-y-auto p-4 sm:p-6 lg:p-10 custom-scrollbar flex flex-col ${
+            !currentQ.imageUrl ? "w-full items-center" : ""
+          }`}>
+            <div className={`w-full ${!currentQ.imageUrl ? "max-w-3xl" : "max-w-2xl"}`}>
+              
+              {/* Mobile Image (Only shows if imageUrl exists) */}
               {currentQ.imageUrl && (
                 <div className="md:hidden mb-6">
                   <div className="relative w-full h-48 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-700">
@@ -555,40 +547,43 @@ const ChapterQuizModal = ({
                       alt="Quiz Context"
                       className="w-full h-full object-contain p-4"
                     />
-                    <div className="absolute bottom-3 right-3 bg-black/20 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded uppercase tracking-widest font-bold">
-                      Ishusho
-                    </div>
                   </div>
                 </div>
               )}
 
-              <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-zinc-800 dark:text-zinc-100 mb-6 lg:mb-8 leading-snug">
+              {/* Question Text */}
+              <h2 className={`font-bold text-zinc-800 dark:text-zinc-100 mb-6 lg:mb-8 leading-snug ${
+                !currentQ.imageUrl ? "text-lg sm:text-xl lg:text-2xl text-center" : "text-xl sm:text-sm lg:text-xl"
+              }`}>
                 {currentQ.text}
               </h2>
 
-              <div className="grid grid-cols-1 gap-2 sm:gap-3">
+              {/* Choices Grid */}
+              <div className={`grid grid-cols-1 gap-2 sm:gap-3 ${!currentQ.imageUrl ? "max-w-2xl mx-auto w-full" : ""}`}>
                 {currentQ.choices.map((choice) => {
                   const isSelected = selectedAnswer === choice.id;
-                  const showResult = showImmediateFeedback || answers[currentQuestion];
+                  const isAnswered = !!answers[currentQuestion];
                   const isCorrect = choice.isCorrect;
 
                   return (
                     <button
                       key={choice.id}
-                      disabled={!!selectedAnswer}
+                      disabled={isAnswered}
                       onClick={() => handleAnswerSelect(choice.id)}
-                      className={`group w-full p-3 sm:p-4 rounded-xl border-2 transition-all flex items-center gap-3 sm:gap-4 text-left active:scale-[0.99] ${
+                      className={`group w-full p-3.5 sm:p-5 rounded-xl border-2 transition-all flex items-center gap-3 sm:gap-4 text-left active:scale-[0.99] ${
                         isSelected 
                           ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20" 
-                          : "border-zinc-100 dark:border-zinc-800 hover:border-emerald-200"
-                      } ${showResult && isCorrect ? "bg-emerald-500/10 border-emerald-500" : ""}`}
+                          : "border-zinc-100 dark:border-zinc-800"
+                      } ${isAnswered && isCorrect ? "" : ""}`}
                     >
-                      <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center font-bold shrink-0 text-sm sm:text-base ${
+                      <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg flex items-center justify-center font-bold shrink-0 text-sm sm:text-sm ${
                         isSelected ? "bg-emerald-600 text-white" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
                       }`}>
                         {choice.id}
                       </div>
-                      <span className="text-zinc-700 dark:text-zinc-300 font-medium text-sm sm:text-base">{choice.text}</span>
+                      <span className="text-zinc-700 dark:text-zinc-300 font-medium text-sm sm:text-lg">
+                        {choice.text}
+                      </span>
                     </button>
                   );
                 })}
@@ -596,18 +591,15 @@ const ChapterQuizModal = ({
             </div>
           </div>
 
-          {/* Right Side: Image (Pinned on Desktop, hidden on mobile) */}
+          {/* Right Side: Desktop Image (Only renders if imageUrl exists) */}
           {currentQ.imageUrl && (
-            <div className="hidden md:flex md:w-5/12 bg-zinc-50 dark:bg-zinc-800/50 items-center justify-center p-6 lg:p-8 border-l border-zinc-100 dark:border-zinc-800">
+            <div className="hidden md:flex md:w-5/12 bg-zinc-50 dark:bg-zinc-800/50  p-6 lg:p-8 border-l border-zinc-100 dark:border-zinc-800">
               <div className="relative w-full h-full max-h-[500px] bg-white dark:bg-zinc-900 rounded-3xl shadow-inner overflow-hidden border border-zinc-200 dark:border-zinc-700">
                 <img 
                   src={currentQ.imageUrl} 
                   alt="Quiz Context"
                   className="w-full h-full object-contain p-6"
                 />
-                <div className="absolute bottom-4 right-4 bg-black/20 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded uppercase tracking-widest font-bold">
-                  Ishusho
-                </div>
               </div>
             </div>
           )}
@@ -633,14 +625,14 @@ const ChapterQuizModal = ({
 
             <button
               onClick={handleNextQuestion}
-              disabled={!selectedAnswer}
+              disabled={!answers[currentQuestion]} // Changed from !selectedAnswer
               className="px-6 sm:px-10 py-3 sm:py-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-zinc-200 dark:disabled:bg-zinc-800 text-white rounded-xl sm:rounded-2xl font-bold flex items-center gap-2 shadow-lg shadow-emerald-600/20 text-sm sm:text-base"
             >
               <span className="hidden sm:inline">
-                {currentQuestion < 9 ? "Kibazo Gikurikira" : "Reba Igisubizo"}
+                {currentQuestion < quizQuestions.length - 1 ? "Kibazo Gikurikira" : "Reba Igisubizo"}
               </span>
               <span className="sm:hidden">
-                {currentQuestion < 9 ? "Gikurikira" : "Isubiza"}
+                {currentQuestion < quizQuestions.length - 1 ? "Gikurikira" : "Isubiza"}
               </span>
               <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
@@ -650,6 +642,7 @@ const ChapterQuizModal = ({
     </div>
   );
 };
+
 export default function LessonsPage() {
   const [selectedLessonIndex, setSelectedLessonIndex] = useState<number>(0);
   const [chapters, setChapters] = useState<Chapter[]>([]);
@@ -1005,7 +998,7 @@ export default function LessonsPage() {
           {/* Quiz Button - Prominently placed */}
           <Button
             onClick={handleQuizClick}
-            className="gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold"
+            className="gap-2 bg-gradient-to-r from-green-600 to-green-400 hover:from-green-700 hover:to-green-500 text-white font-semibold"
           >
             <Brain className="h-5 w-5" />
             Gerageza Ubumenyi Bwawe
