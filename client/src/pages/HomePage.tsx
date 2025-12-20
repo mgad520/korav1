@@ -945,7 +945,7 @@ const startExam = () => {
                 <section>
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-3xl font-bold bg-green-500 bg-clip-text text-transparent">
-                     For You
+                     Ahabanza
                     </h2>
                     
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
