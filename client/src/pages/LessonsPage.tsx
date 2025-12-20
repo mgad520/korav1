@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, BookOpen, Clock, CheckCircle, Play, ArrowLeft, ChevronRight, ChevronDown, ChevronUp, XCircle, HelpCircle, Trophy, BarChart3, RotateCcw, Brain, Zap, X, CheckCircle2, AlertCircle } from "lucide-react";
+import { ChevronLeft, BookOpen, Clock, CheckCircle, Play, ArrowLeft, ChevronRight, ChevronDown, ChevronUp, XCircle, HelpCircle, Trophy, BarChart3, RotateCcw, Brain, Zap, X, CheckCircle2, AlertCircle, AlertTriangle, Loader2 } from "lucide-react";
 import { Link, useRoute } from "wouter";
 import Navbar from "@/components/Navbar";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -149,18 +149,20 @@ const ChapterQuizModal = ({
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [showImmediateFeedback, setShowImmediateFeedback] = useState(false);
   const [score, setScore] = useState(0);
+  const [noQuestionsAvailable, setNoQuestionsAvailable] = useState(false);
   
-const transformWixImage = (wixUrl: string | undefined | null) => {
-  if (!wixUrl || !wixUrl.startsWith('wix:image')) return undefined;
+  const transformWixImage = (wixUrl: string | undefined | null) => {
+    if (!wixUrl || !wixUrl.startsWith('wix:image')) return undefined;
 
-  // Wix format: wix:image://v1/FILE_ID/FILE_NAME#originWidth=X&originHeight=Y
-  // We need the FILE_ID (the part after v1/ and before the next /)
-  const parts = wixUrl.split('/');
-  if (parts.length < 4) return undefined;
+    // Wix format: wix:image://v1/FILE_ID/FILE_NAME#originWidth=X&originHeight=Y
+    // We need the FILE_ID (the part after v1/ and before the next /)
+    const parts = wixUrl.split('/');
+    if (parts.length < 4) return undefined;
 
-  const fileId = parts[3]; 
-  return `https://static.wixstatic.com/media/${fileId}`;
-};
+    const fileId = parts[3]; 
+    return `https://static.wixstatic.com/media/${fileId}`;
+  };
+
   useEffect(() => {
     const fetchQuizQuestions = async () => {
       // Check cache first
@@ -169,11 +171,13 @@ const transformWixImage = (wixUrl: string | undefined | null) => {
       if (cachedQuiz && (now - cachedQuiz.timestamp) < CACHE_DURATION) {
         console.log('Using cached quiz questions for chapter:', chapterId);
         setQuizQuestions(cachedQuiz.data);
+        setNoQuestionsAvailable(cachedQuiz.data.length === 0);
         return;
       }
 
       try {
         setLoadingQuiz(true);
+        setNoQuestionsAvailable(false);
         const response = await fetch('https://dataapis.wixsite.com/kora/_functions/AllQuestionsbychapter', {
           method: 'POST',
           headers: {
@@ -187,6 +191,12 @@ const transformWixImage = (wixUrl: string | undefined | null) => {
         if (data.success) {
           // Flatten all questions from all sets
           const allQuestions: QuizQuestion[] = data.sets.flat();
+          
+          if (allQuestions.length === 0) {
+            setNoQuestionsAvailable(true);
+            setQuizQuestions([]);
+            return;
+          }
           
           // Transform questions to our format
           const transformedQuestions: TransformedQuestion[] = allQuestions.map((q, index) => ({
@@ -213,9 +223,13 @@ const transformWixImage = (wixUrl: string | undefined | null) => {
           };
           
           setQuizQuestions(shuffled);
+          setNoQuestionsAvailable(shuffled.length === 0);
+        } else {
+          setNoQuestionsAvailable(true);
         }
       } catch (error) {
         console.error('Error fetching quiz questions:', error);
+        setNoQuestionsAvailable(true);
       } finally {
         setLoadingQuiz(false);
       }
@@ -305,6 +319,7 @@ const transformWixImage = (wixUrl: string | undefined | null) => {
       setAnswers({});
       setScore(0);
       setShowImmediateFeedback(false);
+      setNoQuestionsAvailable(false);
     }, 300);
   };
 
@@ -312,31 +327,85 @@ const transformWixImage = (wixUrl: string | undefined | null) => {
 
   if (!isOpen) return null;
 
+  // ===== NO QUESTIONS AVAILABLE UI =====
+  if (noQuestionsAvailable) {
+    return (
+      <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={handleCloseQuiz} />
+        <div className="relative bg-white dark:bg-zinc-900 w-full h-[90vh] sm:h-auto sm:max-w-lg rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-10 duration-300">
+          <div className="p-8 flex-1 flex flex-col items-center justify-center text-center">
+            <div className="w-20 h-20 bg-amber-100 dark:bg-amber-500/20 rounded-3xl flex items-center justify-center mb-6 rotate-3">
+              <AlertTriangle className="h-10 w-10 text-amber-600 dark:text-amber-500" />
+            </div>
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 dark:text-white mb-4">
+              Nta kizamini kiboneka
+            </h3>
+            <p className="text-zinc-500 dark:text-zinc-400 mb-8 max-w-sm text-sm sm:text-base">
+              Nta bibazo by'ikizamini bishyizweho kuri isomo rya {chapterNumber}. Gerageza nanone nyuma y'igihe gito cyangwa subira inyuma mu masomo.
+            </p>
+            
+            <div className="w-full space-y-3 mt-8">
+              <button
+                onClick={handleCloseQuiz}
+                className="w-full py-4 bg-zinc-900 dark:bg-emerald-600 hover:bg-zinc-800 dark:hover:bg-emerald-700 active:scale-[0.98] text-white rounded-2xl font-bold text-lg transition-all shadow-lg flex items-center justify-center gap-2"
+              >
+                <ArrowLeft className="h-5 w-5" />
+                Garuka Inyuma
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ===== LOADING STATE =====
+  if (loadingQuiz) {
+    return (
+      <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={handleCloseQuiz} />
+        <div className="relative bg-white dark:bg-zinc-900 w-full h-[90vh] sm:h-auto sm:max-w-lg rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-10 duration-300">
+          <div className="p-8 flex-1 flex flex-col items-center justify-center text-center">
+            <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-500/20 rounded-3xl flex items-center justify-center mb-6 animate-pulse">
+              <Loader2 className="h-10 w-10 text-emerald-600 dark:text-emerald-500 animate-spin" />
+            </div>
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 dark:text-white mb-4">
+              Irebereza Ikizamini...
+            </h3>
+            <p className="text-zinc-500 dark:text-zinc-400 mb-8 max-w-sm text-sm sm:text-base">
+              Dukora isuzuma ibibazo byawe. Bihorereho gato.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!quizStarted) {
     return (
       <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
         <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={handleCloseQuiz} />
         <div className="relative bg-white dark:bg-zinc-900 w-full h-[90vh] sm:h-auto sm:max-w-xl rounded-t-[2rem] sm:rounded-[2rem] shadow-2xl overflow-hidden flex flex-col animate-in fade-in slide-in-from-bottom-10 duration-300">
-          <div className="p-8 flex-1 flex flex-col items-center text-center">
-            <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-500/20 rounded-3xl flex items-center justify-center mb-6 rotate-3">
-              <Brain className="h-10 w-10 text-emerald-600" />
+          <div className="p-6 sm:p-8 flex-1 flex flex-col items-center text-center">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-emerald-100 dark:bg-emerald-500/20 rounded-3xl flex items-center justify-center mb-4 sm:mb-6 rotate-3">
+              <Brain className="h-8 w-8 sm:h-10 sm:w-10 text-emerald-600" />
             </div>
-            <h3 className="text-3xl font-extrabold text-zinc-900 dark:text-white mb-2">
+            <h3 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 dark:text-white mb-2">
               Isuzumanyigisho
             </h3>
-            <p className="text-zinc-500 dark:text-zinc-400 mb-8 max-w-xs">
+            <p className="text-zinc-500 dark:text-zinc-400 mb-6 sm:mb-8 max-w-xs text-sm sm:text-base">
               Isomo rya {chapterNumber}: Garagaza ubumenyi bwawe mu minota mike.
             </p>
 
-            <div className="grid grid-cols-3 gap-3 w-full mb-10">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 w-full mb-8 sm:mb-10">
               {[
                 { label: 'Ibibazo', val: '10', icon: '📝' },
                 { label: 'Iminota', val: '5', icon: '⏱️' },
                 { label: 'Gutsinda', val: '70%', icon: '🎯' },
               ].map((stat, i) => (
-                <div key={i} className="bg-zinc-50 dark:bg-zinc-800/50 p-3 rounded-2xl border border-zinc-100 dark:border-zinc-800">
-                  <span className="text-lg mb-1 block">{stat.icon}</span>
-                  <div className="text-lg font-bold text-emerald-600">{stat.val}</div>
+                <div key={i} className="bg-zinc-50 dark:bg-zinc-800/50 p-2 sm:p-3 rounded-xl sm:rounded-2xl border border-zinc-100 dark:border-zinc-800">
+                  <span className="text-base sm:text-lg mb-1 block">{stat.icon}</span>
+                  <div className="text-base sm:text-lg font-bold text-emerald-600">{stat.val}</div>
                   <div className="text-[10px] uppercase font-bold text-zinc-400">{stat.label}</div>
                 </div>
               ))}
@@ -345,12 +414,12 @@ const transformWixImage = (wixUrl: string | undefined | null) => {
             <div className="w-full space-y-3 mt-auto sm:mt-0">
               <button
                 onClick={handleStartQuiz}
-                className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white rounded-2xl font-bold text-lg transition-all shadow-lg shadow-emerald-200 dark:shadow-none flex items-center justify-center gap-2"
+                className="w-full py-3 sm:py-4 bg-emerald-600 hover:bg-emerald-700 active:scale-[0.98] text-white rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg transition-all shadow-lg shadow-emerald-200 dark:shadow-none flex items-center justify-center gap-2"
               >
-                <Play className="h-5 w-5 fill-current" />
+                <Play className="h-4 w-4 sm:h-5 sm:w-5 fill-current" />
                 Tangira Ikizamini
               </button>
-              <button onClick={handleCloseQuiz} className="w-full py-3 text-zinc-400 font-semibold hover:text-zinc-600 transition-colors">
+              <button onClick={handleCloseQuiz} className="w-full py-2 sm:py-3 text-zinc-400 font-semibold hover:text-zinc-600 transition-colors text-sm sm:text-base">
                 Gufunga
               </button>
             </div>
@@ -359,205 +428,227 @@ const transformWixImage = (wixUrl: string | undefined | null) => {
       </div>
     );
   }
- if (quizCompleted) {
-  const percentage = Math.round((score / quizQuestions.length) * 100);
-  const passed = percentage >= 70;
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/60 backdrop-blur-md p-0 sm:p-4">
+  if (quizCompleted) {
+    const percentage = Math.round((score / quizQuestions.length) * 100);
+    const passed = percentage >= 70;
+
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/60 backdrop-blur-md p-0 sm:p-4">
         <div className="absolute inset-0 bg-transparent backdrop-blur-md" onClick={handleCloseQuiz} />
-      <div className="relative bg-white dark:bg-zinc-900 w-full h-full sm:h-auto sm:max-w-4xl sm:rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-        
-        <div className="flex flex-col md:flex-row">
+        <div className="relative bg-white dark:bg-zinc-900 w-full h-full sm:h-auto sm:max-w-4xl sm:rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
           
-          {/* Left Side: Score Hero */}
-          <div className={`md:w-5/12 p-8 md:p-12 text-center flex flex-col items-center justify-center ${
-            passed ? 'bg-emerald-600' : 'bg-orange-500'
-          } text-white`}>
-            <div className="w-24 h-24 bg-white/20 backdrop-blur-lg rounded-full flex items-center justify-center mb-6 shadow-xl">
-              {passed ? (
-                <Trophy className="h-12 w-12 text-white" />
-              ) : (
-                <AlertCircle className="h-12 w-12 text-white" />
-              )}
-            </div>
-            <h2 className="text-3xl font-black mb-2">
-              {passed ? 'Watsinze!' : 'Gerageza nanone'}
-            </h2>
-            <p className="text-white/80 font-medium mb-8">
-              {passed 
-                ? 'Urashoboye! Wageze ku ntego isabwa.' 
-                : 'Ukeneye gusubira mu masomo make.'}
-            </p>
-            <div className="text-7xl font-black tracking-tighter mb-2">
-              {percentage}%
-            </div>
-            <div className="text-sm uppercase font-bold tracking-widest opacity-70">
-              Amanota yose
-            </div>
-          </div>
-
-          {/* Right Side: Details & Actions */}
-          <div className="flex-1 p-8 md:p-12 bg-white dark:bg-zinc-900">
-            <h3 className="text-xl font-bold text-zinc-800 dark:text-zinc-100 mb-6">
-              Incamake y'igerageza
-            </h3>
+          <div className="flex flex-col md:flex-row">
             
-            <div className="space-y-4 mb-10">
-              <div className="flex items-center justify-between p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-emerald-100 dark:bg-emerald-500/20 rounded-lg">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
-                  </div>
-                  <span className="font-semibold text-zinc-600 dark:text-zinc-400">Ibibazo watsinze</span>
-                </div>
-                <span className="text-xl font-bold text-zinc-900 dark:text-white">{score}</span>
+            {/* Left Side: Score Hero */}
+            <div className={`md:w-5/12 p-6 sm:p-8 md:p-12 text-center flex flex-col items-center justify-center ${
+              passed ? 'bg-emerald-600' : 'bg-orange-500'
+            } text-white`}>
+              <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white/20 backdrop-blur-lg rounded-full flex items-center justify-center mb-4 sm:mb-6 shadow-xl">
+                {passed ? (
+                  <Trophy className="h-10 w-10 sm:h-12 sm:w-12 text-white" />
+                ) : (
+                  <AlertCircle className="h-10 w-10 sm:h-12 sm:w-12 text-white" />
+                )}
               </div>
-
-              <div className="flex items-center justify-between p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-zinc-200 dark:bg-zinc-700 rounded-lg">
-                    <X className="h-5 w-5 text-zinc-500" />
-                  </div>
-                  <span className="font-semibold text-zinc-600 dark:text-zinc-400">Ibibazo utatsinze</span>
-                </div>
-                <span className="text-xl font-bold text-zinc-900 dark:text-white">
-                  {quizQuestions.length - score}
-                </span>
+              <h2 className="text-2xl sm:text-3xl font-black mb-2">
+                {passed ? 'Watsinze!' : 'Gerageza nanone'}
+              </h2>
+              <p className="text-white/80 font-medium mb-6 sm:mb-8 text-sm sm:text-base">
+                {passed 
+                  ? 'Urashoboye! Wageze ku ntego isabwa.' 
+                  : 'Ukeneye gusubira mu masomo make.'}
+              </p>
+              <div className="text-6xl sm:text-7xl font-black tracking-tighter mb-2">
+                {percentage}%
+              </div>
+              <div className="text-xs sm:text-sm uppercase font-bold tracking-widest opacity-70">
+                Amanota yose
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <button
-                onClick={handleRetryQuiz}
-                className="flex items-center justify-center gap-2 py-4 px-6 rounded-2xl border-2 border-zinc-100 dark:border-zinc-800 font-bold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all"
-              >
-                <RotateCcw className="h-5 w-5" />
-                Subiramo
-              </button>
-              <button
-                onClick={handleCloseQuiz}
-                className="flex text-sm items-center justify-center gap-2 py-4 px-6 rounded-2xl bg-zinc-900 dark:bg-emerald-600 text-white font-bold hover:opacity-90 transition-all shadow-lg"
-              >
-                <BookOpen className="h-5 w-5" />
-                Garuka ku Isomo
-              </button>
+            {/* Right Side: Details & Actions */}
+            <div className="flex-1 p-6 sm:p-8 md:p-12 bg-white dark:bg-zinc-900">
+              <h3 className="text-lg sm:text-xl font-bold text-zinc-800 dark:text-zinc-100 mb-6">
+                Incamake y'igerageza
+              </h3>
+              
+              <div className="space-y-3 sm:space-y-4 mb-8 sm:mb-10">
+                <div className="flex items-center justify-between p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="p-1.5 sm:p-2 bg-emerald-100 dark:bg-emerald-500/20 rounded-lg">
+                      <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />
+                    </div>
+                    <span className="font-semibold text-zinc-600 dark:text-zinc-400 text-sm sm:text-base">Ibibazo watsinze</span>
+                  </div>
+                  <span className="text-lg sm:text-xl font-bold text-zinc-900 dark:text-white">{score}</span>
+                </div>
+
+                <div className="flex items-center justify-between p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className="p-1.5 sm:p-2 bg-zinc-200 dark:bg-zinc-700 rounded-lg">
+                      <X className="h-4 w-4 sm:h-5 sm:w-5 text-zinc-500" />
+                    </div>
+                    <span className="font-semibold text-zinc-600 dark:text-zinc-400 text-sm sm:text-base">Ibibazo utatsinze</span>
+                  </div>
+                  <span className="text-lg sm:text-xl font-bold text-zinc-900 dark:text-white">
+                    {quizQuestions.length - score}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <button
+                  onClick={handleRetryQuiz}
+                  className="flex items-center justify-center gap-2 py-3 sm:py-4 px-4 sm:px-6 rounded-xl sm:rounded-2xl border-2 border-zinc-100 dark:border-zinc-800 font-bold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-all text-sm sm:text-base"
+                >
+                  <RotateCcw className="h-4 w-4 sm:h-5 sm:w-5" />
+                  Subiramo
+                </button>
+                <button
+                  onClick={handleCloseQuiz}
+                  className="flex text-sm sm:text-base items-center justify-center gap-2 py-3 sm:py-4 px-4 sm:px-6 rounded-xl sm:rounded-2xl bg-zinc-900 dark:bg-emerald-600 text-white font-bold hover:opacity-90 transition-all shadow-lg"
+                >
+                  <BookOpen className="h-4 w-4 sm:h-5 sm:w-5" />
+                  Garuka ku Isomo
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- MAIN QUIZ INTERFACE ---
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/50 backdrop-blur-sm p-0 sm:p-4">
+      <div className="relative bg-white dark:bg-zinc-900 w-full h-full sm:h-[85vh] sm:max-w-6xl sm:rounded-[2rem] shadow-2xl flex flex-col overflow-hidden">
+        
+        {/* 1. Header (Fixed) */}
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center bg-white dark:bg-zinc-900 z-10">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="bg-emerald-600 text-white px-2.5 sm:px-3 py-1 rounded-lg text-xs sm:text-sm font-black">
+              {currentQuestion + 1} / {quizQuestions.length}
+            </div>
+            <h4 className="font-bold text-zinc-800 dark:text-zinc-200 truncate max-w-[120px] sm:max-w-none text-sm sm:text-base">
+              Isomo rya {chapterNumber}
+            </h4>
+          </div>
+          <button onClick={handleCloseQuiz} className="p-1.5 sm:p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full">
+            <X className="h-5 w-5 sm:h-6 sm:w-6 text-zinc-400" />
+          </button>
+        </div>
+
+        {/* 2. Main Content Area (Flex Row on Desktop) */}
+        <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+          
+          {/* Left Side: Question & Answers (Scrolls if needed) */}
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-10 custom-scrollbar">
+            <div className="max-w-2xl">
+              {/* Show image on mobile if available */}
+              {currentQ.imageUrl && (
+                <div className="md:hidden mb-6">
+                  <div className="relative w-full h-48 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-700">
+                    <img 
+                      src={currentQ.imageUrl} 
+                      alt="Quiz Context"
+                      className="w-full h-full object-contain p-4"
+                    />
+                    <div className="absolute bottom-3 right-3 bg-black/20 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded uppercase tracking-widest font-bold">
+                      Ishusho
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-zinc-800 dark:text-zinc-100 mb-6 lg:mb-8 leading-snug">
+                {currentQ.text}
+              </h2>
+
+              <div className="grid grid-cols-1 gap-2 sm:gap-3">
+                {currentQ.choices.map((choice) => {
+                  const isSelected = selectedAnswer === choice.id;
+                  const showResult = showImmediateFeedback || answers[currentQuestion];
+                  const isCorrect = choice.isCorrect;
+
+                  return (
+                    <button
+                      key={choice.id}
+                      disabled={!!selectedAnswer}
+                      onClick={() => handleAnswerSelect(choice.id)}
+                      className={`group w-full p-3 sm:p-4 rounded-xl border-2 transition-all flex items-center gap-3 sm:gap-4 text-left active:scale-[0.99] ${
+                        isSelected 
+                          ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20" 
+                          : "border-zinc-100 dark:border-zinc-800 hover:border-emerald-200"
+                      } ${showResult && isCorrect ? "bg-emerald-500/10 border-emerald-500" : ""}`}
+                    >
+                      <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center font-bold shrink-0 text-sm sm:text-base ${
+                        isSelected ? "bg-emerald-600 text-white" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
+                      }`}>
+                        {choice.id}
+                      </div>
+                      <span className="text-zinc-700 dark:text-zinc-300 font-medium text-sm sm:text-base">{choice.text}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
+          {/* Right Side: Image (Pinned on Desktop, hidden on mobile) */}
+          {currentQ.imageUrl && (
+            <div className="hidden md:flex md:w-5/12 bg-zinc-50 dark:bg-zinc-800/50 items-center justify-center p-6 lg:p-8 border-l border-zinc-100 dark:border-zinc-800">
+              <div className="relative w-full h-full max-h-[500px] bg-white dark:bg-zinc-900 rounded-3xl shadow-inner overflow-hidden border border-zinc-200 dark:border-zinc-700">
+                <img 
+                  src={currentQ.imageUrl} 
+                  alt="Quiz Context"
+                  className="w-full h-full object-contain p-6"
+                />
+                <div className="absolute bottom-4 right-4 bg-black/20 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded uppercase tracking-widest font-bold">
+                  Ishusho
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 3. Footer (Fixed) */}
+        <div className="p-3 sm:p-4 lg:p-6 bg-white dark:bg-zinc-900 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
+          <button
+            onClick={handlePreviousQuestion}
+            disabled={currentQuestion === 0}
+            className="px-4 sm:px-6 py-2 sm:py-3 font-bold text-zinc-400 hover:text-zinc-600 disabled:opacity-0 transition-all text-sm sm:text-base"
+          >
+            Inyuma
+          </button>
+
+          <div className="flex gap-2 sm:gap-3 items-center">
+            {/* Progress Indicator Dots for Desktop */}
+            <div className="hidden sm:flex gap-1 mr-2 sm:mr-4">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <div key={i} className={`h-1.5 w-3 sm:w-4 rounded-full ${i <= currentQuestion ? 'bg-emerald-500' : 'bg-zinc-200 dark:bg-zinc-800'}`} />
+              ))}
+            </div>
+
+            <button
+              onClick={handleNextQuestion}
+              disabled={!selectedAnswer}
+              className="px-6 sm:px-10 py-3 sm:py-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-zinc-200 dark:disabled:bg-zinc-800 text-white rounded-xl sm:rounded-2xl font-bold flex items-center gap-2 shadow-lg shadow-emerald-600/20 text-sm sm:text-base"
+            >
+              <span className="hidden sm:inline">
+                {currentQuestion < 9 ? "Kibazo Gikurikira" : "Reba Igisubizo"}
+              </span>
+              <span className="sm:hidden">
+                {currentQuestion < 9 ? "Gikurikira" : "Isubiza"}
+              </span>
+              <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
-}
-  // --- MAIN QUIZ INTERFACE ---
-  return (
-  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-zinc-950/50 backdrop-blur-sm p-0 sm:p-4">
-    <div className="relative bg-white dark:bg-zinc-900 w-full h-full sm:h-[85vh] sm:max-w-6xl sm:rounded-[2rem] shadow-2xl flex flex-col overflow-hidden">
-      
-      {/* 1. Header (Fixed) */}
-      <div className="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center bg-white dark:bg-zinc-900 z-10">
-        <div className="flex items-center gap-4">
-          <div className="bg-emerald-600 text-white px-3 py-1 rounded-lg text-sm font-black">
-            {currentQuestion + 1} / {quizQuestions.length}
-          </div>
-          <h4 className="font-bold text-zinc-800 dark:text-zinc-200 truncate max-w-[150px] sm:max-w-none">
-            Isomo rya {chapterNumber}
-          </h4>
-        </div>
-        <button onClick={handleCloseQuiz} className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full">
-          <X className="h-6 w-6 text-zinc-400" />
-        </button>
-      </div>
-
-      {/* 2. Main Content Area (Flex Row on Desktop) */}
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-        
-        {/* Left Side: Question & Answers (Scrolls if needed) */}
-        <div className="flex-1 overflow-y-auto p-6 sm:p-10 custom-scrollbar">
-          <div className="max-w-2xl">
-            <h2 className="text-xl sm:text-2xl font-bold text-zinc-800 dark:text-zinc-100 mb-8 leading-snug">
-              {currentQ.text}
-            </h2>
-
-            <div className="grid grid-cols-1 gap-3">
-              {currentQ.choices.map((choice) => {
-                const isSelected = selectedAnswer === choice.id;
-                const showResult = showImmediateFeedback || answers[currentQuestion];
-                const isCorrect = choice.isCorrect;
-
-                return (
-                  <button
-                    key={choice.id}
-                    disabled={!!selectedAnswer}
-                    onClick={() => handleAnswerSelect(choice.id)}
-                    className={`group w-full p-4 rounded-xl border-2 transition-all flex items-center gap-4 text-left active:scale-[0.99] ${
-                      isSelected 
-                        ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20" 
-                        : "border-zinc-100 dark:border-zinc-800 hover:border-emerald-200"
-                    } ${showResult && isCorrect ? "bg-emerald-500/10 border-emerald-500" : ""}`}
-                  >
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold shrink-0 ${
-                      isSelected ? "bg-emerald-600 text-white" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
-                    }`}>
-                      {choice.id}
-                    </div>
-                    <span className="text-zinc-700 dark:text-zinc-300 font-medium">{choice.text}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-
-        {/* Right Side: Image (Pinned on Desktop, hidden or top on mobile) */}
-        {currentQ.imageUrl && (
-          <div className="hidden md:flex md:w-5/12 bg-zinc-50 dark:bg-zinc-800/50 items-center justify-center p-8 border-l border-zinc-100 dark:border-zinc-800">
-            <div className="relative w-full h-full max-h-[500px] bg-white dark:bg-zinc-900 rounded-3xl shadow-inner overflow-hidden border border-zinc-200 dark:border-zinc-700">
-              <img 
-                src={currentQ.imageUrl} 
-                alt="Quiz Context"
-                className="w-full h-full object-contain p-6"
-              />
-              <div className="absolute bottom-4 right-4 bg-black/20 backdrop-blur-md text-white text-[10px] px-2 py-1 rounded uppercase tracking-widest font-bold">
-                Ishusho
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* 3. Footer (Fixed) */}
-      <div className="p-4 sm:p-6 bg-white dark:bg-zinc-900 border-t border-zinc-100 dark:border-zinc-800 flex items-center justify-between">
-        <button
-          onClick={handlePreviousQuestion}
-          disabled={currentQuestion === 0}
-          className="px-6 py-3 font-bold text-zinc-400 hover:text-zinc-600 disabled:opacity-0 transition-all"
-        >
-          Inyuma
-        </button>
-
-        <div className="flex gap-3 items-center">
-           {/* Progress Indicator Dots for Desktop */}
-           <div className="hidden sm:flex gap-1 mr-4">
-              {Array.from({ length: 10 }).map((_, i) => (
-                <div key={i} className={`h-1.5 w-4 rounded-full ${i <= currentQuestion ? 'bg-emerald-500' : 'bg-zinc-200 dark:bg-zinc-800'}`} />
-              ))}
-           </div>
-
-          <button
-            onClick={handleNextQuestion}
-            disabled={!selectedAnswer}
-            className="px-10 py-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-zinc-200 dark:disabled:bg-zinc-800 text-white rounded-2xl font-bold flex items-center gap-2 shadow-lg shadow-emerald-600/20"
-          >
-            {currentQuestion < 9 ? "Kibazo Gikurikira" : "Reba Igisubizo"}
-            <ChevronRight className="h-5 w-5" />
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-);
 };
 export default function LessonsPage() {
   const [selectedLessonIndex, setSelectedLessonIndex] = useState<number>(0);
