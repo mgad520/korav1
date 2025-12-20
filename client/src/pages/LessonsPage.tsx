@@ -1061,31 +1061,6 @@ export default function LessonsPage() {
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-
-        {/* Quick Quiz Access Card - Always visible */}
-        <Card className="mt-6 bg-gradient-to-r from-blue-50 to-purple-50 border-primary/20">
-          <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-white rounded-lg shadow-sm">
-                  <Zap className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <h4 className="font-semibold text-gray-900">Gerageza ubumenyi bwawe</h4>
-                  <p className="text-sm text-gray-600">
-                    Gukora quiz ni ubwiza bwo kumenya niba wize neza ibyo ushaka kwiga.
-                  </p>
-                </div>
-              </div>
-              <Button
-                onClick={handleQuizClick}
-                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold"
-              >
-                Tangira Ikizamini
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     );
   };
